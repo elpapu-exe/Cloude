@@ -2,3 +2,7 @@
 patches/*.patch -whitespace
 # Preserve the third-party license byte for byte.
 installer/LICENSE -whitespace
+
+# Preserve generated export-table records and imported upstream source.
+downloads/*.symvers -whitespace
+kernel-source/** -whitespace

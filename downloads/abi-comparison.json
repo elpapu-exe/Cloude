@@ -1,0 +1,12 @@
+{
+  "candidate_image_sha256": "4815d37749575f349d66146811911332c46973208a8eb3bfba4de55db731d713",
+  "reference_exports": 15543,
+  "candidate_exports": 15543,
+  "matching_exports": 15543,
+  "missing_exports": [],
+  "changed_crcs": {},
+  "added_exports": [],
+  "decoder_cross_checked_with_vmlinux_symvers": true,
+  "hardware_tested": false,
+  "phone_vendor_modules_tested": false
+}

@@ -1,3 +1,15 @@
+# Descargar ChatGPT Kernel 0.1.0-rc1
+
+[Descargar ZIP para Redmi Note 12 4G / Android 13 / KSU](https://github.com/elpapu-exe/Cloude/raw/refs/heads/chatgpt-kernel-download/downloads/ChatGPTKernel-0.1.0-rc1-topaz-tapas-A13-KSU.zip)
+
+Si GitHub pide iniciar sesión, usa la cuenta que tiene acceso a este repositorio. En móvil también puedes abrir el ZIP en `downloads/` y pulsar **Download raw file**.
+
+[Instalación y recuperación](downloads/LEEME-instalacion.md) · [Notas y límites conocidos](downloads/release-notes.md) · [Checksums](downloads/SHA256SUMS) · [Fuentes completas](kernel-source/)
+
+**Experimental: todavía no probado en el teléfono.** Incluye tres avisos BTF documentados. Conserva una copia recuperable del boot actual antes de instalar.
+
+---
+
 # ChatGPT Kernel
 
 Kernel personalizado para Redmi Note 12 4G (topaz/tapas), basado en el Zepharo R10 que ya funciona con la LineageOS 20 no oficial del usuario.
