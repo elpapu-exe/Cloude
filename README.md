@@ -8,6 +8,20 @@ Si GitHub pide iniciar sesión, usa la cuenta que tiene acceso a este repositori
 
 **Experimental: todavía no probado en el teléfono.** Incluye tres avisos BTF documentados. Conserva una copia recuperable del boot actual antes de instalar.
 
+
+## Prueba con un solo archivo de logs
+
+[Descargar recolector](https://github.com/elpapu-exe/Cloude/raw/chatgpt-kernel-download/downloads/chatgpt-kernel-logs.sh) · [Instrucciones](docs/testing.md)
+
+Guarda el script en Descargas y ejecuta una sola vez en Termux:
+
+```sh
+su -c '/system/bin/sh /sdcard/Download/chatgpt-kernel-logs.sh'
+```
+
+Usa TikTok normalmente durante diez minutos y comparte el `.txt` de Descargas cuando termine. No cambia ajustes ni sube datos. Revisa la guía de recuperación antes de probar el kernel experimental.
+
+
 ---
 
 # ChatGPT Kernel
