@@ -1,6 +1,6 @@
 # Prueba breve y un solo archivo de diagnóstico
 
-La versión 0.1.0-rc1 está compilada y comprobada estáticamente, pero aún necesita prueba de arranque y uso en el teléfono. Mantén disponible R10 KSU y una copia recuperable del boot, como explica [instalación y recuperación](installation.md).
+La versión 0.1.0-rc1 está compilada, comprobada estáticamente y tiene una primera prueba de arranque y uso registrada en un teléfono. Eso no valida todas sus funciones ni la estabilidad a largo plazo. Mantén disponible R10 KSU y una copia recuperable del boot, como explica [instalación y recuperación](installation.md).
 
 ## Uso
 
@@ -29,8 +29,20 @@ No se necesitan capturas ni comandos adicionales. El informe incluye la identida
 
 Los archivos sysfs y proc solo se leen. El recolector escribe el informe y su directorio temporal de control; no modifica ajustes, detiene apps, limpia cachés/logs ni sube datos. No instala un servicio de arranque.
 
-El `.txt` contiene nombres de apps y datos de diagnóstico; puedes revisarlo antes de compartirlo. Se excluyen líneas de comando completas y mensajes generales de excepciones de otras apps. La batería y las zonas CPU/SoC son sensores distintos; las frecuencias leídas pueden ser solicitadas en lugar de medidas. Las muestras no equivalen a una medición de FPS ni certifican estabilidad.
+El `.txt` contiene nombres de apps y datos de diagnóstico; puedes revisarlo antes de compartirlo. Se excluyen líneas de comando completas, mensajes generales de excepciones de otras apps y las secciones de bases de datos de `meminfo`. La batería y las zonas CPU/SoC son sensores distintos; las frecuencias leídas pueden ser solicitadas en lugar de medidas. Las muestras no equivalen a una medición de FPS ni certifican estabilidad.
+
+## Captura puntual de SecureElement
+
+Si el informe muestra cierres repetidos de `com.android.se` con motivo `bg anr`, usa [chatgpt-secureelement-logs.sh](../downloads/chatgpt-secureelement-logs.sh). Descárgalo en Descargas y ejecuta:
+
+```sh
+su -c '/system/bin/sh /sdcard/Download/chatgpt-secureelement-logs.sh'
+```
+
+Termina en primer plano, normalmente en pocos segundos, y muestra la ruta de un único `ChatGPTKernel-SE-<fecha>-<id>.txt`. Comparte ese archivo. No hay que repetir la prueba de diez minutos ni reiniciar.
+
+Solo consulta el último resumen ANR si corresponde a SecureElement, su bloque de proceso en las tres trazas ANR más recientes y sus eventos/servicios/HAL declarados. Informa de los comandos que fallan o agotan su tiempo. Una traza puede contener SecureElement como proceso secundario; eso se indica expresamente. No modifica ajustes ni detiene servicios. `com.android.se` gestiona elementos seguros eSE/UICC/SIM y no debe desactivarse suponiendo que únicamente sirve para NFC.
 
 ## Validación del recolector
 
-Se comprobó su sintaxis con BusyBox ash y se ejecutó con archivos y comandos Android simulados. Las pruebas verifican muestras, terminación, ausencia de cambios a los archivos de sistema simulados y exclusión de otro proceso en ANR. Su primera ejecución real en esta ROM todavía debe verificarse.
+Se comprobó la sintaxis con BusyBox ash y se ejecutó con archivos y comandos Android simulados. Las pruebas verifican muestras, terminación, ausencia de cambios a los archivos de sistema simulados y exclusión de otro proceso en ANR. El recolector general ya completó una captura real en esta ROM; el puntual de SecureElement todavía necesita esa primera ejecución real.

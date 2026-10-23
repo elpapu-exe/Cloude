@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# ChatGPT Kernel diagnostic v1. Read-only diagnostics; one shareable text file.
+# ChatGPT Kernel diagnostic v2. Read-only diagnostics; one shareable text file.
 # No network access, tuning, cache clearing, app closing or automatic upload.
 PATH=/system/bin:/system/xbin:/vendor/bin:/product/bin
 export PATH
@@ -73,7 +73,7 @@ finish_logs() {
   processes
   heading 'TikTok process memory summaries (at the end of the test)'
   for package in com.zhiliaoapp.musically com.ss.android.ugc.trill; do
-    bounded dumpsys meminfo "$package" | sed -n '1,80p'
+    bounded dumpsys meminfo "$package" | sed -E '/^[[:space:]]*(Objects|SQL|DATABASES)([[:space:]]|$)/,$d' | sed -n '1,60p'
   done
   heading 'LMKD logs since test started (max 250 lines)'
   bounded logcat -d -T "$START_LOGCAT" -b main -b system -v threadtime \
@@ -116,7 +116,7 @@ if [ "${1:-}" = --worker ]; then
   trap 'exit 130' 1 2 15
   START_EPOCH=$(date +%s)
   START_LOGCAT=$(date '+%m-%d %H:%M:%S.000')
-  heading 'ChatGPT Kernel diagnostic v1'
+  heading 'ChatGPT Kernel diagnostic v2'
   printf 'Start UTC: '; date -u '+%Y-%m-%dT%H:%M:%SZ'
   printf 'Duration target: %s seconds; samples every %s seconds. Sleep may extend wall time.\n' "$DURATION" "$INTERVAL"
   uname -a

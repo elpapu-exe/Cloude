@@ -55,7 +55,7 @@ class DiagnosticTests(unittest.TestCase):
                 'dumpsys': '''case "$1 $2" in
 "activity lastanr") cat "$FIXTURE_ANR";;
 "package "*) printf 'versionName=1.0\\nversionCode=10\\n';;
-"meminfo "*) printf 'TOTAL PSS: 646469 TOTAL SWAP PSS: 279234\\n';;
+"meminfo "*) printf 'TOTAL PSS: 646469 TOTAL SWAP PSS: 279234\\nObjects\\nDATABASES\\nACCOUNT_IDENTIFIER_NOT_FOR_REPORT\\n';;
 esac''',
             }
             for name, body in commands.items():
@@ -83,6 +83,7 @@ esac''',
             self.assertIn('"main" waiting in fixture', contents)
             self.assertNotIn('SECRET_URI', contents)
             self.assertNotIn('SECRET_OTHER_PROCESS', contents)
+            self.assertNotIn('ACCOUNT_IDENTIFIER_NOT_FOR_REPORT', contents)
             if tiktok_anr:
                 self.assertIn('Reason: Input dispatch timeout', contents)
             else:
