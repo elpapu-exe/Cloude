@@ -45,6 +45,8 @@ La versión 2 consulta el último resumen ANR si corresponde a SecureElement o T
 
 También consulta servicios/HAL de SecureElement y el estado actual de batería, límites de CPU y refrigeración. Informa de los comandos que fallan o agotan su tiempo. El estado térmico recogido después no reconstruye el estado exacto del momento del ANR. No modifica ajustes ni detiene servicios. `com.android.se` gestiona elementos seguros eSE/UICC/SIM y no debe desactivarse suponiendo que únicamente sirve para NFC.
 
+Si las pilas confirman una espera de eSE ausente mientras SIM1/SIM2 están registrados, existe un [parche experimental específico para tapas con Android 13](../modules/chatgpt-se-fix/README.md). Se instala como APK de LSPosed, con ámbito exclusivo `com.android.se`; necesita validación en el teléfono y no sustituye el diagnóstico de memoria o temperatura.
+
 ## Validación del recolector
 
 Se comprobó la sintaxis con BusyBox ash y se ejecutó con archivos y comandos Android simulados. Las pruebas verifican muestras, terminación, ausencia de cambios a los archivos de sistema simulados y exclusión de otro proceso en ANR. El recolector general ya completó una captura real en esta ROM; el puntual de SecureElement todavía necesita esa primera ejecución real.

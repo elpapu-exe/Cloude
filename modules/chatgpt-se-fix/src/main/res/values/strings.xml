@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ChatGPT SE Fix</string>
+    <string name="module_description">Parche experimental de la espera eSE1 en tapas con Android 13. Solo com.android.se; conserva la inicialización SIM.</string>
+</resources>

@@ -1,0 +1,65 @@
+{
+  "alignment_verified": true,
+  "artifact": "ChatGPT-SE-Fix-0.1.0-rc1.apk",
+  "bytes": 16851,
+  "certificate_sha256": "a4d1431303e5a686249b5721c4cc0c9b96d0029ef9c4ce857d3486f4571a83f6",
+  "compile_only_descriptors_in_dex": false,
+  "dex_class_definitions": [
+    "Lorg/cloude/chatgpt/sefix/SeFix$1;",
+    "Lorg/cloude/chatgpt/sefix/SeFix;"
+  ],
+  "hardware_tested": false,
+  "java": "openjdk version \"21.0.12.1\" 2026-08-18\nOpenJDK Runtime Environment (build 21.0.12.1+1-1-deb13u1-Debian)\nOpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-deb13u1-Debian, mixed mode, sharing)",
+  "package_badging": [
+    "package: name='org.cloude.chatgpt.sefix' versionCode='1' versionName='0.1.0-rc1' platformBuildVersionName='13' platformBuildVersionCode='33' compileSdkVersion='33' compileSdkVersionCodename='13'",
+    "minSdkVersion:'33'",
+    "targetSdkVersion:'33'",
+    "application-label:'ChatGPT SE Fix'",
+    "application: label='ChatGPT SE Fix' icon=''",
+    "feature-group: label=''",
+    "  uses-feature: name='android.hardware.faketouch'",
+    "  uses-implied-feature: name='android.hardware.faketouch' reason='default feature for all apps'",
+    "supports-screens: 'small' 'normal' 'large' 'xlarge'",
+    "supports-any-density: 'true'",
+    "locales: '--_--'",
+    "densities: '160'"
+  ],
+  "sha256": "eae34df74b21c6b94911327280cc0c7a8e7357dadd658166eb25ae0fca993f8c",
+  "signature_verified": true,
+  "source_date_epoch": 1792713600,
+  "source_digest_sha256": "91d3c6f8033b44f47ea569d0056829d6a601cba1db6baefda80e982019c6c891",
+  "sources": {
+    "modules/chatgpt-se-fix/README.md": "50a3c999cee0ac9cacede6c14321b0388a1192c3a6a79d99bf336cbacdef7175",
+    "modules/chatgpt-se-fix/compile-only/README.md": "bcc3fc596adae7015c580e414e8e3ed0ab8accb2cf4b57333f5f358508ee5a54",
+    "modules/chatgpt-se-fix/compile-only/java/de/robv/android/xposed/IXposedHookLoadPackage.java": "70e4bf9ad410a8b39e50511a3f49e3d63c8d69445ce81118fd30af5df9fdb183",
+    "modules/chatgpt-se-fix/compile-only/java/de/robv/android/xposed/IXposedMod.java": "d63cd83c363bcca71d38060fc11558979d49f16201c2df30e5a475a173fa834d",
+    "modules/chatgpt-se-fix/compile-only/java/de/robv/android/xposed/XC_MethodHook.java": "05ddaa29db86d7793d7d10926a362430efbc2b0b47dbe8b348ed22cfaaf25492",
+    "modules/chatgpt-se-fix/compile-only/java/de/robv/android/xposed/XposedBridge.java": "e4dc68b9528da1ca407890e1e39303ab699007b254e902808bf3cbfc1a28da23",
+    "modules/chatgpt-se-fix/compile-only/java/de/robv/android/xposed/XposedHelpers.java": "ffe4a06117bdbdd5592c20bef3ed1309af6c996d400503ac209487d4ca2deae7",
+    "modules/chatgpt-se-fix/compile-only/java/de/robv/android/xposed/callbacks/XC_LoadPackage.java": "d9d21b337f8b4f00db12ac61756daffef78dbe2c066e3f6ecac41f9fb57c4758",
+    "modules/chatgpt-se-fix/compile-only/java/de/robv/android/xposed/callbacks/XCallback.java": "e8d8d54127699ef5503173e7e74bb850b8ea3f9855dd9a78190126c3447a049c",
+    "modules/chatgpt-se-fix/src/main/AndroidManifest.xml": "2abc2c94380005178168656ae5a38f40221fef650068940cfa96a4836ea8f1d7",
+    "modules/chatgpt-se-fix/src/main/assets/xposed_init": "6a165b7239050eac73b8df6ce99ac2e1e13e02f25da077a15abea0013579580f",
+    "modules/chatgpt-se-fix/src/main/java/org/cloude/chatgpt/sefix/SeFix.java": "900f297172a1b9d06117581e2154c737548720bfb5a9f9385171deeb1376b896",
+    "modules/chatgpt-se-fix/src/main/res/values/arrays.xml": "be852d0180665c3756b8f2c2068e11c8c7177f7103c171ceb6df9254eb544b17",
+    "modules/chatgpt-se-fix/src/main/res/values/strings.xml": "eb0095c386a863a9b7c415974bdd3b20c41b5c2dc51f51423b3c748b583a8057",
+    "scripts/build-se-fix.sh": "974b8d3a333497e7ded12ad3ba380044229856f5e04e218b0500dca8a478f708"
+  },
+  "tools": [
+    {
+      "file": "build-tools_r35_linux.zip",
+      "sha256": "bd3a4966912eb8b30ed0d00b0cda6b6543b949d5ffe00bea54c04c81e1561d88",
+      "url": "https://dl.google.com/android/repository/build-tools_r35_linux.zip"
+    },
+    {
+      "file": "platform-33-ext3_r03.zip",
+      "sha256": "b32b10f787867987f03ae8e101d217e053a9065b7136379fb353b388379aed1d",
+      "url": "https://dl.google.com/android/repository/platform-33-ext3_r03.zip"
+    },
+    {
+      "file": "ecj-3.39.0.jar",
+      "sha256": "01f5a92ac19bb2b3bf85e295a68f2c73c264369109158b566ce9b490af982948",
+      "url": "https://repo.maven.apache.org/maven2/org/eclipse/jdt/ecj/3.39.0/ecj-3.39.0.jar"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+package de.robv.android.xposed.callbacks;
+
+/** Compile-only API descriptor. Never include this class in the APK. */
+public abstract class XC_LoadPackage extends XCallback {
+    public static final class LoadPackageParam extends XCallback.Param {
+        public String packageName;
+        public String processName;
+        public ClassLoader classLoader;
+    }
+}
