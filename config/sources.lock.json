@@ -1,0 +1,93 @@
+{
+  "project": "ChatGPT Kernel",
+  "version": "0.1.0-rc1",
+  "kernel": {
+    "repository": "https://github.com/belowzeroiq/kernel_msm-5.15.git",
+    "commit": "d246c8c17548bb1a2756092cabf34d11eedcde8c",
+    "defconfig": "unified_defconfig"
+  },
+  "toolchain": {
+    "url": "https://github.com/greenforce-project/greenforce_clang/releases/download/20260912/gf-clang-24.0.0-20260912.tar.gz",
+    "sha256": "33dc3bfa3a5c9c56797f218de8a33d1a85719c3219cebfd5818bcba9933ea961",
+    "llvm_commit": "c1100cd94b7b89db8c0929192e80aeaea95bc30e",
+    "status": "downloaded; SHA-256 and LLVM revision verified"
+  },
+  "kernelsu": {
+    "repository": "https://github.com/Baka-SU/BakaSU.git",
+    "commit": "7e92d45ed5c7e0ed6e3e0f7e87d1cea510d068ea",
+    "expected_family": "ReSukiSU v4.2.0-rc1",
+    "status": "full Git history verified",
+    "commit_count": 4442,
+    "version_code": 35142,
+    "nearest_tag": "v4.2.0-rc1"
+  },
+  "susfs": {
+    "status": "chronological_candidate_not_binary_provenance_verified",
+    "repository": "https://gitlab.com/simonpunk/susfs4ksu",
+    "branch_reference": "gki-android13-5.15",
+    "commit": "7af04b08f86a5f811cbea28805f96d52368e005f",
+    "commit_time_utc": "2026-09-13T07:09:55Z",
+    "version_in_header": "v2.3.0",
+    "commit_url": "https://gitlab.com/simonpunk/susfs4ksu/-/commit/7af04b08f86a5f811cbea28805f96d52368e005f",
+    "archive_url": "https://gitlab.com/simonpunk/susfs4ksu/-/archive/7af04b08f86a5f811cbea28805f96d52368e005f/susfs4ksu-7af04b08f86a5f811cbea28805f96d52368e005f.tar.gz",
+    "archive_downloaded": false,
+    "archive_sha256": null,
+    "selection_evidence": {
+      "method": "Latest commit returned from gki-android13-5.15 branch history before the stated cutoff; header version checked independently at that commit.",
+      "cutoff_utc": "2026-09-14T12:00:00Z",
+      "history_query_url": "https://gitlab.com/api/v4/projects/simonpunk%2Fsusfs4ksu/repository/commits?ref_name=gki-android13-5.15&until=2026-09-14T12%3A00%3A00Z&per_page=5",
+      "limit": "No original build manifest or binary/source attestation fixes this SUSFS commit to R10; version v2.3.0 alone is insufficient."
+    },
+    "reviewed_files": [
+      {
+        "path": "kernel_patches/50_add_susfs_in_gki-android13-5.15.patch",
+        "url": "https://gitlab.com/simonpunk/susfs4ksu/-/raw/7af04b08f86a5f811cbea28805f96d52368e005f/kernel_patches/50_add_susfs_in_gki-android13-5.15.patch",
+        "bytes": 82156,
+        "sha256": "d5d7ebf934ed1478873bb4651bdef97ff6b16a3911b5bc8c9ab47d9f72d097d5"
+      },
+      {
+        "path": "kernel_patches/fs/susfs.c",
+        "url": "https://gitlab.com/simonpunk/susfs4ksu/-/raw/7af04b08f86a5f811cbea28805f96d52368e005f/kernel_patches/fs/susfs.c",
+        "bytes": 57795,
+        "sha256": "4ff984276e09ac68e0e7cdf9840a215338ee4c0cad6ee902176869ce140c98c5"
+      },
+      {
+        "path": "kernel_patches/include/linux/susfs.h",
+        "url": "https://gitlab.com/simonpunk/susfs4ksu/-/raw/7af04b08f86a5f811cbea28805f96d52368e005f/kernel_patches/include/linux/susfs.h",
+        "bytes": 7449,
+        "sha256": "28a6cbbfe4e3b7bf97dcc89b9c7e235b7b49f571473f9cc24134bfa91eb52b3a"
+      },
+      {
+        "path": "kernel_patches/include/linux/susfs_def.h",
+        "url": "https://gitlab.com/simonpunk/susfs4ksu/-/raw/7af04b08f86a5f811cbea28805f96d52368e005f/kernel_patches/include/linux/susfs_def.h",
+        "bytes": 5547,
+        "sha256": "db7f98dcf8119a4eb5c45c05205b6c1065766047d6f803b0e86f3d14b1a251f0"
+      },
+      {
+        "path": "README.md",
+        "url": "https://gitlab.com/simonpunk/susfs4ksu/-/raw/7af04b08f86a5f811cbea28805f96d52368e005f/README.md",
+        "bytes": 9320,
+        "sha256": "ed68c8321e00ae89f18f8057527a6506154a090173a5501b78c8b4caa72fc1d1"
+      }
+    ],
+    "integration_notes": [
+      "The R10 kernel source commit lacks fs/susfs.c and include/linux/susfs.h; sampled fs/open.c and fs/Makefile also lack SUSFS hooks.",
+      "ReSukiSU at its pinned commit already includes CONFIG_KSU_SUSFS, inline hook checks, and compatibility handling.",
+      "Do not automatically apply the SUSFS patch for upstream KernelSU to ReSukiSU.",
+      "Applying the pinned kernel patch cleanly to R10 has not been verified by this read-only review."
+    ]
+  },
+  "installer": {
+    "reference_url": "https://github.com/topnotchfreaks/kernel_msm-5.15/releases/tag/ZEPHARO",
+    "reference_filename": "Anykernel3_Zepharo_R10_2026-09-14.zip",
+    "sha256": "b5f536b1c624172d4e44ccdacde56205966b8a7522f319d94778cc8ac464fc80",
+    "url": "https://github.com/topnotchfreaks/kernel_msm-5.15/releases/download/ZEPHARO/Anykernel3_Zepharo_R10_2026-09-14.zip"
+  },
+  "baseband_guard": {
+    "repository": "https://github.com/vc-teahouse/Baseband-guard",
+    "commit": "a54e0dc6cf0aff4dd87fec49644a02d2eb612905",
+    "archive_url": "https://codeload.github.com/vc-teahouse/Baseband-guard/tar.gz/a54e0dc6cf0aff4dd87fec49644a02d2eb612905",
+    "archive_sha256": "304fe409a90d2562dc839b6165995106d80e89479ec14a6956c3c0ec42f89f2b",
+    "evidence": "Exact short commit and repository embedded in both R10 images"
+  }
+}

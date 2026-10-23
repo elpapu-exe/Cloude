@@ -1,0 +1,54 @@
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index 0d399ddaa..9265a2fe2 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -236,4 +236,6 @@ source "drivers/interconnect/Kconfig"
+ source "drivers/counter/Kconfig"
+ 
+ source "drivers/most/Kconfig"
++source "drivers/kernelsu/Kconfig"
++
+ endmenu
+diff --git a/drivers/Makefile b/drivers/Makefile
+index a110338c8..f25c0c20e 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -187,3 +187,5 @@ obj-$(CONFIG_GNSS)		+= gnss/
+ obj-$(CONFIG_INTERCONNECT)	+= interconnect/
+ obj-$(CONFIG_COUNTER)		+= counter/
+ obj-$(CONFIG_MOST)		+= most/
++
++obj-$(CONFIG_KSU) += kernelsu/
+diff --git a/kernel/Makefile b/kernel/Makefile
+index d1a5f1bc5..1f712db74 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -148,7 +148,7 @@ $(obj)/config_data.gz: $(obj)/config_data FORCE
+ 
+ filechk_cat = cat $<
+ 
+-$(obj)/config_data: arch/arm64/configs/khaje-stock_defconfig FORCE
++$(obj)/config_data: $(KCONFIG_CONFIG) FORCE
+ 	$(call filechk,cat)
+ 
+ $(obj)/kheaders.o: $(obj)/kheaders_data.tar.xz
+diff --git a/security/Kconfig b/security/Kconfig
+index 6c9b5869e..b273ef522 100644
+--- a/security/Kconfig
++++ b/security/Kconfig
+@@ -318,3 +318,5 @@ source "security/Kconfig.hardening"
+ 
+ endmenu
+ 
++
++source "security/baseband-guard/Kconfig"
+diff --git a/security/Makefile b/security/Makefile
+index 18121f8f8..b80f3f360 100644
+--- a/security/Makefile
++++ b/security/Makefile
+@@ -27,3 +27,5 @@ obj-$(CONFIG_SECURITY_LANDLOCK)		+= landlock/
+ 
+ # Object integrity file lists
+ obj-$(CONFIG_INTEGRITY)			+= integrity/
++
++obj-$(CONFIG_BBG) += baseband-guard/

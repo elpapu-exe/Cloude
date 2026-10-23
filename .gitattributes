@@ -1,0 +1,4 @@
+# Unified-diff context intentionally starts with a space before source tabs.
+patches/*.patch -whitespace
+# Preserve the third-party license byte for byte.
+installer/LICENSE -whitespace

@@ -1,0 +1,359 @@
+diff --git a/drivers/misc/kprofiles/main.c b/drivers/misc/kprofiles/main.c
+index f29d28551..c2ac08269 100644
+--- a/drivers/misc/kprofiles/main.c
++++ b/drivers/misc/kprofiles/main.c
+@@ -38,7 +38,7 @@
+ #include <linux/notifier.h>
+ #include <linux/kthread.h>
+ #include <linux/cpufreq.h>
+-#include <linux/blkdev.h>
++#include <linux/workqueue.h>
+ 
+ #ifdef CONFIG_AUTO_KPROFILES_MSM_DRM
+ #define KP_EVENT_BLANK MSM_DRM_EVENT_BLANK
+@@ -88,8 +88,8 @@ DEFINE_SPINLOCK(kp_set_mode_lock);
+ #define kp_info(fmt, ...) pr_info(fmt, ##__VA_ARGS__)
+ 
+ static void kp_trigger_mode_change_event(void);
+-
+-static void kp_apply_performance_profile(void);
++static void kp_mode_change_workfn(struct work_struct *work);
++static DECLARE_WORK(kp_mode_change_work, kp_mode_change_workfn);
+ 
+ /**
+  * kp_set_mode_rollback - Change profile to a given mode for a specific duration
+@@ -99,34 +99,42 @@ static void kp_apply_performance_profile(void);
+  * This function changes the profile to the specified mode for a specific
+  * duration during any in-kernel event, and then returns to the previously
+  * active mode.
++ * The caller must be in sleepable context. Notifications are deferred and
++ * rapid transitions may coalesce.
+  *
+  * Usage example: kp_set_mode_rollback(3, 55);
+  */
+ void kp_set_mode_rollback(unsigned int level, unsigned int duration_ms)
+ {
++	unsigned long flags;
++
++	if (unlikely(level > 3)) {
++		kp_err("Invalid mode requested, skipping mode change.\n");
++		return;
++	}
++
+ #ifdef CONFIG_AUTO_KPROFILES
+-	if (!screen_on) {
++	if (!READ_ONCE(screen_on)) {
+ 		kp_dbg("Screen is off, skipping mode change.\n");
+ 		return;
+ 	}
+ #endif
+ 
+-	if (!auto_kp) {
++	if (!READ_ONCE(auto_kp)) {
+ 		kp_dbg("Auto Kprofiles is disabled, skipping mode change.\n");
+ 		return;
+ 	}
+ 
+ 	mutex_lock(&kp_set_mode_rb_lock);
+-	if (unlikely(level > 3)) {
+-		kp_err("Invalid mode requested, skipping mode change.\n");
+-		return;
+-	}
+-
++	spin_lock_irqsave(&kp_set_mode_lock, flags);
+ 	kp_override_mode = level;
+ 	kp_override = true;
++	spin_unlock_irqrestore(&kp_set_mode_lock, flags);
+ 	kp_trigger_mode_change_event();
+ 	msleep(duration_ms);
++	spin_lock_irqsave(&kp_set_mode_lock, flags);
+ 	kp_override = false;
++	spin_unlock_irqrestore(&kp_set_mode_lock, flags);
+ 	kp_trigger_mode_change_event();
+ 	mutex_unlock(&kp_set_mode_rb_lock);
+ }
+@@ -137,7 +145,7 @@ static __always_inline int __kp_set_mode(unsigned int level)
+ 	if (unlikely(level > 3))
+ 		return -EINVAL;
+ 
+-	kp_mode = level;
++	WRITE_ONCE(kp_mode, level);
+ 	return 0;
+ }
+ 
+@@ -147,34 +155,36 @@ static __always_inline int __kp_set_mode(unsigned int level)
+  *
+  * This function changes the profile to the specified mode during any
+  * in-kernel event.
++ * State changes are immediate; blocking notifications are deferred so that
++ * this function can also be called from atomic context.
+  *
+  * Usage example: kp_set_mode(3);
+  */
+ void kp_set_mode(unsigned int level)
+ {
+-	int ret = 0;
++	unsigned long flags;
++
++	if (unlikely(level > 3)) {
++		kp_err("Invalid mode requested, skipping mode change.\n");
++		return;
++	}
+ 
+ #ifdef CONFIG_AUTO_KPROFILES
+-	if (!screen_on) {
++	if (!READ_ONCE(screen_on)) {
+ 		kp_dbg("Screen is off, skipping mode change.\n");
+ 		return;
+ 	}
+ #endif
+ 
+-	if (!auto_kp) {
++	if (!READ_ONCE(auto_kp)) {
+ 		kp_dbg("Auto Kprofiles is disabled, skipping mode change.\n");
+ 		return;
+ 	}
+ 
+-	spin_lock(&kp_set_mode_lock);
+-	ret = __kp_set_mode(level);
+-	if (ret) {
+-		kp_err("Invalid mode requested, skipping mode change.\n");
+-		return;
+-	}
+-
++	spin_lock_irqsave(&kp_set_mode_lock, flags);
++	__kp_set_mode(level);
++	spin_unlock_irqrestore(&kp_set_mode_lock, flags);
+ 	kp_trigger_mode_change_event();
+-	spin_unlock(&kp_set_mode_lock);
+ }
+ EXPORT_SYMBOL(kp_set_mode);
+ 
+@@ -207,40 +217,58 @@ EXPORT_SYMBOL(kp_set_mode);
+  */
+ int kp_active_mode(void)
+ {
++	unsigned long flags;
++	unsigned int mode;
++	bool invalid = false;
++
++	spin_lock_irqsave(&kp_set_mode_lock, flags);
+ #ifdef CONFIG_AUTO_KPROFILES
+-	if (!screen_on && auto_kp)
+-		return 1;
++	if (!screen_on && READ_ONCE(auto_kp)) {
++		mode = 1;
++		goto unlock;
++	}
+ #endif
+ 
+-	if (kp_override)
+-		return kp_override_mode;
++	if (kp_override) {
++		mode = kp_override_mode;
++		goto unlock;
++	}
+ 
+ 	if (unlikely(kp_mode > 3)) {
+-		kp_mode = 0;
++		WRITE_ONCE(kp_mode, 0);
++		invalid = true;
++	}
++	mode = kp_mode;
++unlock:
++	spin_unlock_irqrestore(&kp_set_mode_lock, flags);
++	if (invalid) {
+ 		kp_trigger_mode_change_event();
+ 		kp_err("Invalid value passed, falling back to level 0\n");
+ 	}
+ 
+-	return kp_mode;
++	return mode;
+ }
+ EXPORT_SYMBOL(kp_active_mode);
+ 
+ /**
+  * kp_trigger_mode_change_event - Trigger a mode change event
+  *
+- * This function triggers a mode change event by calling the blocking notifier
+- * chain for kp_mode_notifier. It informs all registered listeners about the
+- * change in the profile mode.
++ * Queue notification of the latest active mode. This is safe for atomic
++ * callers: blocking listeners run in process context, outside the state lock.
++ * Rapid transitions may coalesce; the event describes the mode sampled by the
++ * worker, rather than promising delivery of every intermediate transition.
+  */
+ static __always_inline void kp_trigger_mode_change_event(void)
++{
++	schedule_work(&kp_mode_change_work);
++}
++
++static void kp_mode_change_workfn(struct work_struct *work)
+ {
+ 	unsigned int current_mode = kp_active_mode();
++
+ 	blocking_notifier_call_chain(&kp_mode_notifier, KP_MODE_CHANGE,
+ 				     (void *)(uintptr_t)current_mode);
+-
+-	if (current_mode == 3) {
+-		kp_apply_performance_profile();
+-	}
+ }
+ 
+ /**
+@@ -279,28 +307,34 @@ static inline int kp_display_notifier_callback(struct notifier_block *self,
+ {
+ 	struct kp_events *evdata = data;
+ 	unsigned int blank;
++	unsigned long flags;
++	bool changed = false;
+ 
+ 	if (event != KP_EVENT_BLANK)
+ 		return 0;
+ 
+ 	if (evdata && evdata->data) {
+ 		blank = *(int *)(evdata->data);
++		spin_lock_irqsave(&kp_set_mode_lock, flags);
+ 		switch (blank) {
+ 		case KP_BLANK_POWERDOWN:
+ 			if (!screen_on)
+ 				break;
+-			screen_on = false;
+-			kp_trigger_mode_change_event();
++			WRITE_ONCE(screen_on, false);
++			changed = true;
+ 			break;
+ 		case KP_BLANK_UNBLANK:
+ 			if (screen_on)
+ 				break;
+-			screen_on = true;
+-			kp_trigger_mode_change_event();
++			WRITE_ONCE(screen_on, true);
++			changed = true;
+ 			break;
+ 		default:
+ 			break;
+ 		}
++		spin_unlock_irqrestore(&kp_set_mode_lock, flags);
++		if (changed)
++			kp_trigger_mode_change_event();
+ 	}
+ 
+ 	return NOTIFY_OK;
+@@ -349,7 +383,7 @@ static inline void kp_unregister_display_notifier(void)
+ static inline ssize_t kp_mode_show(struct kobject *kobj,
+ 				   struct kobj_attribute *attr, char *buf)
+ {
+-	return scnprintf(buf, PAGE_SIZE, "%u\n", kp_mode);
++	return scnprintf(buf, PAGE_SIZE, "%u\n", READ_ONCE(kp_mode));
+ }
+ 
+ static inline ssize_t kp_mode_store(struct kobject *kobj,
+@@ -357,17 +391,20 @@ static inline ssize_t kp_mode_store(struct kobject *kobj,
+ 				    const char *buf, size_t count)
+ {
+ 	unsigned int new_mode;
++	unsigned long flags;
+ 	int ret;
+ 
+ 	ret = kstrtouint(buf, 10, &new_mode);
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = __kp_set_mode(new_mode);
+-	if (ret) {
++	if (unlikely(new_mode > 3)) {
+ 		kp_err("User changed mode is invalid, skipping mode change.\n");
+-		return ret;
++		return -EINVAL;
+ 	}
++	spin_lock_irqsave(&kp_set_mode_lock, flags);
++	__kp_set_mode(new_mode);
++	spin_unlock_irqrestore(&kp_set_mode_lock, flags);
+ 
+ 	return count;
+ }
+@@ -391,23 +428,21 @@ static int __init kp_init(void)
+ 	kp_kobj = kobject_create_and_add("kprofiles", kernel_kobj);
+ 	if (!kp_kobj) {
+ 		kp_err("Failed to create Kprofiles kobject\n");
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto cancel_work;
+ 	}
+ 
+ 	ret = sysfs_create_group(kp_kobj, &kp_attr_group);
+ 	if (ret) {
+ 		kp_err("Failed to create sysfs attributes for Kprofiles\n");
+-		kobject_put(kp_kobj);
+-		return ret;
++		goto put_kobject;
+ 	}
+ 
+ 	ret = kp_register_display_notifier();
+ 	if (ret) {
+ 		kp_err("Failed to register Kprofiles display notifier, err: %d\n",
+ 		       ret);
+-		sysfs_remove_group(kp_kobj, &kp_attr_group);
+-		kobject_put(kp_kobj);
+-		return ret;
++		goto remove_sysfs;
+ 	}
+ 
+ 	kp_info("Kprofiles " KPROFILES_VERSION
+@@ -415,6 +450,14 @@ static int __init kp_init(void)
+ 	kp_info("Copyright (C) 2021-2023 Dakkshesh <dakkshesh5@gmail.com>.\n");
+ 
+ 	return ret;
++
++remove_sysfs:
++	sysfs_remove_group(kp_kobj, &kp_attr_group);
++put_kobject:
++	kobject_put(kp_kobj);
++cancel_work:
++	cancel_work_sync(&kp_mode_change_work);
++	return ret;
+ }
+ module_init(kp_init);
+ 
+@@ -422,6 +465,7 @@ static void __exit kp_exit(void)
+ {
+ 	kp_unregister_display_notifier();
+ 	sysfs_remove_group(kp_kobj, &kp_attr_group);
++	cancel_work_sync(&kp_mode_change_work);
+ 	kobject_put(kp_kobj);
+ }
+ module_exit(kp_exit);
+@@ -430,32 +474,3 @@ MODULE_LICENSE("GPL v2");
+ MODULE_DESCRIPTION("KernelSpace Profiles");
+ MODULE_AUTHOR("Dakkshesh <dakkshesh5@gmail.com>");
+ MODULE_VERSION(KPROFILES_VERSION);
+-
+-static void kp_apply_performance_profile(void)
+-{
+-    struct gendisk *gd;
+-    struct request_queue *q;
+-    struct class_dev_iter iter;
+-    class_dev_iter_init(&iter, &block_class, NULL, NULL);
+-    while ((gd = dev_to_disk(class_dev_iter_next(&iter)))) {
+-        q = bdev_get_queue(gd->part0);
+-        if (!q || !q->elevator)
+-            continue;
+-
+-        if (strcmp(q->elevator->type->elevator_name, "ssg") != 0) {
+-            if (elv_iosched_store(q, "ssg", strlen("ssg")) == 0) {
+-                kp_info("Set IO scheduler to ssg for %s\n", gd->disk_name);
+-                continue;
+-            }
+-        }
+-#if defined(CONFIG_IOSCHED_BFQ)
+-        if (strcmp(q->elevator->type->elevator_name, "bfq") != 0) {
+-            if (elv_iosched_store(q, "bfq", strlen("bfq")) == 0) {
+-                kp_info("Set IO scheduler to bfq for %s\n", gd->disk_name);
+-                continue;
+-            }
+-        }
+-#endif
+-    }
+-    class_dev_iter_exit(&iter);
+-}

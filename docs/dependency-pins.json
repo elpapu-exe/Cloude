@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "reviewed_date_utc": "2026-10-23",
+  "purpose": "Dependency provenance review for a source rebuild of the known-working Zepharo R10; not a claim of binary reproduction, boot compatibility, or performance improvement.",
+  "kernel_reference": {
+    "repository": "https://github.com/belowzeroiq/kernel_msm-5.15",
+    "commit": "d246c8c17548bb1a2756092cabf34d11eedcde8c"
+  },
+  "hash_method": "SHA-256 calculated locally from immutable raw file responses obtained with normal TLS verification; no publisher signature or independently published archive digest was verified.",
+  "components": {
+    "resukisu": {
+      "status": "exact_commit_identified_from_reported_release_version",
+      "reported_r10_version": "v4.2.0-rc1-7e92d45e",
+      "historical_repository": "https://github.com/ReSukiSU/ReSukiSU",
+      "current_canonical_repository": "https://github.com/Baka-SU/BakaSU",
+      "commit": "7e92d45ed5c7e0ed6e3e0f7e87d1cea510d068ea",
+      "commit_time_utc": "2026-09-14T11:24:02Z",
+      "commit_url": "https://github.com/Baka-SU/BakaSU/commit/7e92d45ed5c7e0ed6e3e0f7e87d1cea510d068ea",
+      "archive_url": "https://codeload.github.com/Baka-SU/BakaSU/tar.gz/7e92d45ed5c7e0ed6e3e0f7e87d1cea510d068ea",
+      "archive_downloaded": false,
+      "archive_sha256": null,
+      "related_tag": {
+        "name": "v4.2.0-rc1",
+        "target_commit": "a9216b04e29cc973ddbf845342f2cbf85b47b460",
+        "note": "The tag target is not the R10 dependency commit; use the full R10 commit pin."
+      },
+      "version_metadata": {
+        "repo_name": "ReSukiSU",
+        "version_code_formula": "30000 + git rev-list --count HEAD + 700",
+        "tag_command": "git describe --abbrev=0 --tags",
+        "short_commit_command": "git rev-parse --short=8 HEAD",
+        "full_version_format_config": "CONFIG_KSU_FULL_NAME_FORMAT",
+        "github_tree_reported_commit_count": 4442,
+        "rev_list_count_verified_locally": true,
+        "version_code_verified_locally": 35142,
+        "git_metadata_required": true,
+        "shallow_history_behavior": "kernel/Kbuild attempts git fetch --unshallow if ../.git/shallow exists; fetch complete history and tags explicitly before an offline build."
+      },
+      "reviewed_files": [
+        {
+          "path": "kernel/setup.sh",
+          "url": "https://raw.githubusercontent.com/Baka-SU/BakaSU/7e92d45ed5c7e0ed6e3e0f7e87d1cea510d068ea/kernel/setup.sh",
+          "bytes": 4359,
+          "sha256": "6f2b8cc78167afbd2318103f7fa68dffcd6575d7052ec4dd2651b1896b0d66dc"
+        },
+        {
+          "path": "kernel/Kbuild",
+          "url": "https://raw.githubusercontent.com/Baka-SU/BakaSU/7e92d45ed5c7e0ed6e3e0f7e87d1cea510d068ea/kernel/Kbuild",
+          "bytes": 8661,
+          "sha256": "5b4351521f283fffc333b20461b4045781494c4689a5ad34d1a07d45dd18d220"
+        },
+        {
+          "path": "kernel/Kconfig",
+          "url": "https://raw.githubusercontent.com/Baka-SU/BakaSU/7e92d45ed5c7e0ed6e3e0f7e87d1cea510d068ea/kernel/Kconfig",
+          "bytes": 9135,
+          "sha256": "858edd0d1c802f2f63c5ad5f746005681eca693c3c670cb9404f90e160c5f0fa"
+        }
+      ]
+    },
+    "susfs": {
+      "status": "chronological_candidate_not_binary_provenance_verified",
+      "repository": "https://gitlab.com/simonpunk/susfs4ksu",
+      "branch_reference": "gki-android13-5.15",
+      "commit": "7af04b08f86a5f811cbea28805f96d52368e005f",
+      "commit_time_utc": "2026-09-13T07:09:55Z",
+      "version_in_header": "v2.3.0",
+      "commit_url": "https://gitlab.com/simonpunk/susfs4ksu/-/commit/7af04b08f86a5f811cbea28805f96d52368e005f",
+      "archive_url": "https://gitlab.com/simonpunk/susfs4ksu/-/archive/7af04b08f86a5f811cbea28805f96d52368e005f/susfs4ksu-7af04b08f86a5f811cbea28805f96d52368e005f.tar.gz",
+      "archive_downloaded": false,
+      "archive_sha256": null,
+      "selection_evidence": {
+        "method": "Latest commit returned from gki-android13-5.15 branch history before the stated cutoff; header version checked independently at that commit.",
+        "cutoff_utc": "2026-09-14T12:00:00Z",
+        "history_query_url": "https://gitlab.com/api/v4/projects/simonpunk%2Fsusfs4ksu/repository/commits?ref_name=gki-android13-5.15&until=2026-09-14T12%3A00%3A00Z&per_page=5",
+        "limit": "No original build manifest or binary/source attestation fixes this SUSFS commit to R10; version v2.3.0 alone is insufficient."
+      },
+      "reviewed_files": [
+        {
+          "path": "kernel_patches/50_add_susfs_in_gki-android13-5.15.patch",
+          "url": "https://gitlab.com/simonpunk/susfs4ksu/-/raw/7af04b08f86a5f811cbea28805f96d52368e005f/kernel_patches/50_add_susfs_in_gki-android13-5.15.patch",
+          "bytes": 82156,
+          "sha256": "d5d7ebf934ed1478873bb4651bdef97ff6b16a3911b5bc8c9ab47d9f72d097d5"
+        },
+        {
+          "path": "kernel_patches/fs/susfs.c",
+          "url": "https://gitlab.com/simonpunk/susfs4ksu/-/raw/7af04b08f86a5f811cbea28805f96d52368e005f/kernel_patches/fs/susfs.c",
+          "bytes": 57795,
+          "sha256": "4ff984276e09ac68e0e7cdf9840a215338ee4c0cad6ee902176869ce140c98c5"
+        },
+        {
+          "path": "kernel_patches/include/linux/susfs.h",
+          "url": "https://gitlab.com/simonpunk/susfs4ksu/-/raw/7af04b08f86a5f811cbea28805f96d52368e005f/kernel_patches/include/linux/susfs.h",
+          "bytes": 7449,
+          "sha256": "28a6cbbfe4e3b7bf97dcc89b9c7e235b7b49f571473f9cc24134bfa91eb52b3a"
+        },
+        {
+          "path": "kernel_patches/include/linux/susfs_def.h",
+          "url": "https://gitlab.com/simonpunk/susfs4ksu/-/raw/7af04b08f86a5f811cbea28805f96d52368e005f/kernel_patches/include/linux/susfs_def.h",
+          "bytes": 5547,
+          "sha256": "db7f98dcf8119a4eb5c45c05205b6c1065766047d6f803b0e86f3d14b1a251f0"
+        },
+        {
+          "path": "README.md",
+          "url": "https://gitlab.com/simonpunk/susfs4ksu/-/raw/7af04b08f86a5f811cbea28805f96d52368e005f/README.md",
+          "bytes": 9320,
+          "sha256": "ed68c8321e00ae89f18f8057527a6506154a090173a5501b78c8b4caa72fc1d1"
+        }
+      ],
+      "integration_notes": [
+        "The R10 kernel source commit lacks fs/susfs.c and include/linux/susfs.h; sampled fs/open.c and fs/Makefile also lack SUSFS hooks.",
+        "ReSukiSU at its pinned commit already includes CONFIG_KSU_SUSFS, inline hook checks, and compatibility handling.",
+        "Do not automatically apply the SUSFS patch for upstream KernelSU to ReSukiSU.",
+        "Applying the pinned kernel patch cleanly to R10 has not been verified by this read-only review."
+      ]
+    }
+  },
+  "outstanding": [
+    "Verify ReSukiSU reachable commit count and nearest tag using complete local Git history before recording the generated numeric version.",
+    "Establish or explicitly qualify the SUSFS dependency identity; chronological compatibility is not exact release provenance.",
+    "Audit and dry-run kernel patch application and resulting hooks without suppressing rejected hunks.",
+    "Pin remaining build dependencies, resolve effective kernel configuration, and validate a baseline rebuild before claiming equivalence."
+  ],
+  "execution_updates": {
+    "date": "2026-10-23",
+    "susfs_patch": "Applied with fuzz=0 after adapting only context to retain existing Android trace-hook includes; replayed against pristine source",
+    "kernelsu": "Complete local history, 4442 commits, version 35142 verified",
+    "remaining": "SUSFS exact R10 source identity and phone vendor modules/hardware unverified"
+  }
+}
