@@ -31,7 +31,7 @@ Los archivos sysfs y proc solo se leen. El recolector escribe el informe y su di
 
 El `.txt` contiene nombres de apps y datos de diagnóstico; puedes revisarlo antes de compartirlo. Se excluyen líneas de comando completas, mensajes generales de excepciones de otras apps y las secciones de bases de datos de `meminfo`. La batería y las zonas CPU/SoC son sensores distintos; las frecuencias leídas pueden ser solicitadas en lugar de medidas. Las muestras no equivalen a una medición de FPS ni certifican estabilidad.
 
-## Captura puntual de SecureElement
+## Captura puntual de SecureElement y TikTok
 
 Si el informe muestra cierres repetidos de `com.android.se` con motivo `bg anr`, usa [chatgpt-secureelement-logs.sh](../downloads/chatgpt-secureelement-logs.sh). Descárgalo en Descargas y ejecuta:
 
@@ -41,7 +41,9 @@ su -c '/system/bin/sh /sdcard/Download/chatgpt-secureelement-logs.sh'
 
 Termina en primer plano, normalmente en pocos segundos, y muestra la ruta de un único `ChatGPTKernel-SE-<fecha>-<id>.txt`. Comparte ese archivo. No hay que repetir la prueba de diez minutos ni reiniciar.
 
-Solo consulta el último resumen ANR si corresponde a SecureElement, su bloque de proceso en las tres trazas ANR más recientes y sus eventos/servicios/HAL declarados. Informa de los comandos que fallan o agotan su tiempo. Una traza puede contener SecureElement como proceso secundario; eso se indica expresamente. No modifica ajustes ni detiene servicios. `com.android.se` gestiona elementos seguros eSE/UICC/SIM y no debe desactivarse suponiendo que únicamente sirve para NFC.
+La versión 2 consulta el último resumen ANR si corresponde a SecureElement o TikTok, el bloque SecureElement en las tres trazas ANR más recientes y un bloque de TikTok entre las últimas 32 trazas. Busca primero una traza cuyo proceso principal sea TikTok; si solo lo encuentra como secundario, lo indica expresamente. Así puede recuperar un fallo que haya dejado de ser el ANR más reciente, siempre que su traza todavía exista.
+
+También consulta servicios/HAL de SecureElement y el estado actual de batería, límites de CPU y refrigeración. Informa de los comandos que fallan o agotan su tiempo. El estado térmico recogido después no reconstruye el estado exacto del momento del ANR. No modifica ajustes ni detiene servicios. `com.android.se` gestiona elementos seguros eSE/UICC/SIM y no debe desactivarse suponiendo que únicamente sirve para NFC.
 
 ## Validación del recolector
 

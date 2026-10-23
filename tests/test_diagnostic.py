@@ -9,7 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 class DiagnosticTests(unittest.TestCase):
-    def run_worker(self, *, tiktok_anr):
+    def run_worker(self, *, tiktok_anr, missing_trace_end=False):
         with tempfile.TemporaryDirectory() as directory:
             sandbox = Path(directory)
             def put(name, contents):
@@ -62,7 +62,9 @@ esac''',
                 command = put('bin/' + name, '#!/bin/sh\n' + body + '\n')
                 command.chmod(0o755)
             anr = put('fixture-anr', 'ANR in com.zhiliaoapp.musically\nReason: Input dispatch timeout\n' if tiktok_anr else 'ANR in unrelated.app\nReason: SECRET_URI\nCPU: com.zhiliaoapp.musically\n')
-            trace = put('anr/anr_fixture', '----- pid 100 -----\nCmd line: com.zhiliaoapp.musically\n"main" waiting in fixture\n----- end 100 -----\nCmd line: unrelated.app\nSECRET_OTHER_PROCESS\n')
+            trace = put('anr/anr_fixture', '----- pid 100 -----\nCmd line: com.zhiliaoapp.musically\n"main" waiting in fixture\n'
+                + ('' if missing_trace_end else '----- end 100 -----\n')
+                + '----- pid 200 -----\nCmd line: unrelated.app\nSECRET_OTHER_PROCESS\n')
             import time
             os.utime(trace, (time.time() + 5, time.time() + 5))
             source = (ROOT / 'scripts/chatgpt-kernel-logs.sh').read_text()
@@ -93,5 +95,6 @@ esac''',
 
     def test_tiktok_anr_and_unchanged_system_files(self): self.run_worker(tiktok_anr=True)
     def test_other_app_anr_omitted(self): self.run_worker(tiktok_anr=False)
+    def test_incomplete_trace_does_not_include_next_process(self): self.run_worker(tiktok_anr=True, missing_trace_end=True)
 
 if __name__ == '__main__': unittest.main()

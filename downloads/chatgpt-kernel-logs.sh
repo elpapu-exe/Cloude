@@ -97,7 +97,11 @@ finish_logs() {
     [ "$modified" -ge "$START_EPOCH" ] || continue
     if bounded grep -qE '^Cmd line: (com\.zhiliaoapp\.musically|com\.ss\.android\.ugc\.trill)$' "$trace"; then
       printf 'Trace: %s\n' "$trace"
-      bounded sed -n -E '/^Cmd line: (com\.zhiliaoapp\.musically|com\.ss\.android\.ugc\.trill)$/,/^----- end/p' "$trace" | sed -n '1,260p'
+      bounded sed -n -E '/^Cmd line: (com\.zhiliaoapp\.musically|com\.ss\.android\.ugc\.trill)$/,/^----- (end|pid )/{
+        /^----- pid /q
+        p
+        /^----- end/q
+      }' "$trace" | sed -n '1,260p;260q'
       break
     fi
   done
