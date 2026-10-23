@@ -1,36 +1,31 @@
 # Estado y continuación
 
-Actualización: 2026-10-23. Proyecto solicitado: **ChatGPT Kernel** para topaz/tapas, manteniendo LineageOS 20 Android 13, KernelSU, WaEnhancer e InstaEclipse.
+Actualización: 2026-10-23. Proyecto: **ChatGPT Kernel 0.1.0-rc1**, Redmi Note 12 4G topaz/tapas, LineageOS 20 Android 13.
 
 ## Terminado
 
-- Fuentes R10 fijadas en `d246c8c17548bb1a2756092cabf34d11eedcde8c`, descargadas en `.cache/linux`.
-- Toolchain Cirrus 24 verificado con SHA-256 oficial; LLVM `c1100cd94…`.
-- KernelSU histórico fijado en `7e92d45e…`; historia Git completa comprobada: 4442 commits, versión 35142, tag `v4.2.0-rc1`.
-- Herramientas de host descargadas de Debian y extraídas localmente, sin instalar ni alterar el sistema; incluida `cpio`, cuya ausencia interrumpió el primer intento.
-- Investigación de memoria, rendimiento y ABI en `docs/`.
-- Confirmación del usuario: MGLRU actual desactivado (`0x0000`).
-- Parche KProfiles revisado, compilado y validado con checkpatch: `patches/0003-kprofiles-fix-context-and-input.patch`.
-- Serie de tres parches repetida contra los archivos originales: los 30 archivos finales coinciden.
-- ReSukiSU y SUSFS ya compilados; log confirma versión 35142 / v4.2.0-rc1-7e92d45e / SUSFS 2.3.0.
+- Fuentes R10 fijadas en `d246c8c17548bb1a2756092cabf34d11eedcde8c` y dependencias registradas en `config/sources.lock.json`.
+- Toolchain Cirrus 24, SHA-256 y LLVM revision verificados.
+- ReSukiSU histórico con historia Git completa: 4442 commits, versión 35142, identidad v4.2.0-rc1-7e92d45e. SUSFS 2.3.0 y BBG a54e0dc6 integrados.
+- MGLRU activado por defecto; el usuario confirmó que estaba desactivado en su teléfono.
+- Compilación completa con O2, Full LTO, CFI, BTF, protecciones térmicas y de módulos. Full LTO llegó cerca del límite de 32 GiB y terminó correctamente; no se cambió a ThinLTO.
+- Primera interrupción por ausencia de cpio resuelta añadiendo herramientas Debian extraídas localmente, sin modificar el sistema.
+- Cabeceras ARM64/ELF, release, identidades y configuración incorporada verificados.
+- Los 15.543 exports y CRC coinciden con R10; no falta ninguno. Decoder contrastado contra vmlinux.symvers.
+- Serie de tres parches repetida contra los archivos originales: 30 archivos finales idénticos. Checkpatch KProfiles sin errores/avisos.
+- Instalador KSU-only boot/slot activo con respaldo obligatorio. Cuatro pruebas de copia y fallos pasadas; sintaxis BusyBox ash pasada.
+- Investigación y límites en docs/, incluidos tres avisos BTF conocidos en release-notes.md.
 
-## En curso
+## Entrega
 
-- Integración fijada de SUSFS 2.3.0 y Baseband Guard completa. BBG `a54e0dc6` coincide con la identidad incorporada en los binarios R10.
-- Configuración efectiva verificada y compilación de una candidata en marcha (`logs/build.log`). No se realizará otra compilación completa de referencia en esta entrega.
-- Instalador AnyKernel3 preparado con copia local previa del boot; cuatro pruebas de copia y fallos pasadas. Limitado a topaz/tapas Android 13, slot activo.
+- Imagen compilada: `out/arch/arm64/boot/Image`.
+- Artefactos y fuentes preparados en `dist/` mediante `scripts/package-sources.sh`; checksums en `dist/SHA256SUMS` al concluir el empaquetado.
+- Reconstrucción: docs/build.md. Instalación manual y recuperación: docs/installation.md.
 
-## Pendiente antes de entregar un ZIP
+## Pendiente en el teléfono
 
-- Compilación correcta de la imagen, configuración efectiva, hashes y metadatos.
-- Validación de formato ARM64, KSU, protecciones, símbolos/ABI y contenido del paquete.
-- Documentación de recuperación y límites: **no hay prueba de arranque ni rendimiento en el teléfono**.
-- El instalador no debe flashearse automáticamente ni presentarse como una versión estable validada.
+No hay acceso al dispositivo. No se ha flasheado ni se certifica arranque, módulos del vendor, root, TikTok, temperatura o batería. El instalador no debe presentarse como estable validado en hardware.
 
-## Decisiones
+## Límites de la sesión
 
-- Mantener frecuencias, voltajes, térmicas, CFI, MODVERSIONS y módulos del vendor.
-- Habilitar MGLRU por defecto con TTL cero; no imponer nuevos umbrales LMKD ni tamaño/algoritmo zRAM desde el kernel.
-- No prometer equivalencia binaria con R10: su receta usa dependencias móviles y una configuración IKCONFIG stock explícitamente incorporada desde `khaje-stock_defconfig`.
-- Las pruebas finales de arranque y funciones del teléfono no pueden realizarse desde este entorno.
-- No se puede observar la cuota de Plus. Dos revisiones auxiliares recibieron un límite del servicio; el proceso principal continuó con compilación y comprobaciones locales.
+No se puede observar la cuota de Plus. Dos revisiones auxiliares recibieron un límite del servicio; el proceso principal continuó con compilación y comprobaciones locales. Este archivo conserva el punto de continuación.

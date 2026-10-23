@@ -2,7 +2,7 @@
 
 Kernel personalizado para Redmi Note 12 4G (topaz/tapas), basado en el Zepharo R10 que ya funciona con la LineageOS 20 no oficial del usuario.
 
-**Estado: 0.1.0-rc1 en compilación; todavía sin validación en el teléfono.** La compilación y las comprobaciones estáticas no sustituyen una prueba real de arranque, llamadas, cámara, Wi-Fi, carga y suspensión. El avance concreto queda en [STATUS.md](STATUS.md).
+**Estado: 0.1.0-rc1 compilado y verificado estáticamente; todavía sin prueba de arranque ni rendimiento en el teléfono.** Los 15.543 exports y sus CRC coinciden con R10. La compilación no sustituye una prueba real de arranque, llamadas, cámara, Wi-Fi, carga y suspensión. Véanse [estado](STATUS.md) y [notas de versión](docs/release-notes.md), incluidos tres avisos BTF conocidos.
 
 ## Objetivo
 

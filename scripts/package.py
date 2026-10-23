@@ -32,6 +32,7 @@ members.update({
     'build-manifest.json': ((ROOT / 'out/build-manifest.json').read_bytes(), 0o644),
     'abi-comparison.json': ((ROOT / 'out/abi-comparison.json').read_bytes(), 0o644),
     'README.md': ((ROOT / 'docs/installation.md').read_bytes(), 0o644),
+    'RELEASE-NOTES.md': ((ROOT / 'docs/release-notes.md').read_bytes(), 0o644),
 })
 with zipfile.ZipFile(package, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as output:
     for path, (data, mode) in sorted(members.items()):
@@ -50,8 +51,10 @@ for source, target in (
     ('out/build-manifest.json', 'build-manifest.json'),
     ('out/.config', 'ChatGPTKernel.config'),
     ('docs/installation.md', 'LEEME-instalacion.md'),
-    ('out/Module.symvers', 'Module.symvers'),
+    ('out/vmlinux.symvers', 'vmlinux.symvers'),
     ('out/abi-comparison.json', 'abi-comparison.json'),
+    ('docs/release-notes.md', 'release-notes.md'),
+    ('logs/build.log', 'build.log'),
 ):
     (DIST / target).write_bytes((ROOT / source).read_bytes())
 checksums = []

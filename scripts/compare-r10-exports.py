@@ -3,7 +3,7 @@
 
 The layout follows this pinned tree's include/linux/export.h and
 include/asm-generic/vmlinux.lds.h. Validate the decoder against the newly built
-Image AND its independent Module.symvers before accepting the R10 comparison.
+Image AND its independent vmlinux.symvers before accepting the R10 comparison.
 This is not a substitute for testing the phone's actual vendor modules.
 """
 from pathlib import Path
@@ -67,19 +67,20 @@ def main():
     with zipfile.ZipFile(reference_zip) as source: reference = decode(source.read('Image.ksu'))
     candidate = decode((ROOT / 'out/arch/arm64/boot/Image').read_bytes())
     symvers = {}
-    for line in (ROOT / 'out/Module.symvers').read_text().splitlines():
+    for line in (ROOT / 'out/vmlinux.symvers').read_text().splitlines():
         fields = line.split()
         if len(fields) >= 3 and fields[2] == 'vmlinux': symvers[fields[1]] = int(fields[0], 16)
-    assert symvers == candidate, 'Decoder output differs from independent Module.symvers'
+    assert symvers == candidate, 'Decoder output differs from independent vmlinux.symvers'
     missing = sorted(reference.keys() - candidate.keys())
     changed = {name: {'R10': f'0x{reference[name]:08x}', 'candidate': f'0x{candidate[name]:08x}'}
                for name in sorted(reference.keys() & candidate.keys()) if reference[name] != candidate[name]}
     report = {
+        'candidate_image_sha256': hashlib.sha256((ROOT / 'out/arch/arm64/boot/Image').read_bytes()).hexdigest(),
         'reference_exports': len(reference), 'candidate_exports': len(candidate),
         'matching_exports': len(reference.keys() & candidate.keys()) - len(changed),
         'missing_exports': missing, 'changed_crcs': changed,
         'added_exports': sorted(candidate.keys() - reference.keys()),
-        'decoder_cross_checked_with_module_symvers': True,
+        'decoder_cross_checked_with_vmlinux_symvers': True,
         'hardware_tested': False, 'phone_vendor_modules_tested': False,
     }
     (ROOT / 'out/abi-comparison.json').write_text(json.dumps(report, indent=2) + '\n')
