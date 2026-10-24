@@ -9,7 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 class DiagnosticTests(unittest.TestCase):
-    def run_worker(self, *, tiktok_anr, missing_trace_end=False):
+    def run_worker(self, *, tiktok_anr, missing_trace_end=False, extra_zram=False):
         with tempfile.TemporaryDirectory() as directory:
             sandbox = Path(directory)
             def put(name, contents):
@@ -40,6 +40,13 @@ class DiagnosticTests(unittest.TestCase):
                 'sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq': '1900800\n',
                 'sys/devices/system/cpu/cpufreq/walt/up_rate_limit_us': '500\n',
             }
+            if extra_zram:
+                fixtures.update({
+                    'sys/block/zram1/disksize': '1073741824\n',
+                    'sys/block/zram1/comp_algorithm': 'lz4 [lz4kd] zstd\n',
+                    'sys/block/zram1/mm_stat': '104857600 35000000 40000000 0 40000000 0 0 0\n',
+                    'sys/block/zram1/io_stat': '0 0 0 0\n',
+                })
             for name, value in fixtures.items(): put(name, value)
             lock = sandbox / 'tmp/chatgpt-kernel-logger.lock'
             lock.mkdir(parents=True)
@@ -100,6 +107,10 @@ esac''',
             self.assertNotIn('ACCOUNT_IDENTIFIER_NOT_FOR_REPORT', contents)
             self.assertNotIn('PRIVATE_WINDOW_TITLE', contents)
             self.assertNotIn('PRIVATE_VIEW_TREE', contents)
+            if extra_zram:
+                self.assertIn('Additional zRAM device:', contents)
+                self.assertIn('disksize: 1073741824', contents)
+                self.assertIn('104857600 35000000 40000000', contents)
             if tiktok_anr:
                 self.assertIn('Reason: Input dispatch timeout', contents)
             else:
@@ -110,5 +121,6 @@ esac''',
     def test_tiktok_anr_and_unchanged_system_files(self): self.run_worker(tiktok_anr=True)
     def test_other_app_anr_omitted(self): self.run_worker(tiktok_anr=False)
     def test_incomplete_trace_does_not_include_next_process(self): self.run_worker(tiktok_anr=True, missing_trace_end=True)
+    def test_second_zram_device_is_reported_and_unchanged(self): self.run_worker(tiktok_anr=False, extra_zram=True)
 
 if __name__ == '__main__': unittest.main()

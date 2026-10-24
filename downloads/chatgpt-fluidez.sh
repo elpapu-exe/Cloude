@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# ChatGPT Kernel diagnostic v3. Read-only diagnostics; one shareable text file.
+# ChatGPT Kernel diagnostic v4. Read-only diagnostics; one shareable text file.
 # No network access, tuning, cache clearing, app closing or automatic upload.
 PATH=/system/bin:/system/xbin:/vendor/bin:/product/bin
 export PATH
@@ -33,6 +33,14 @@ configuration() {
     printf '%s: ' "$file"; read_value "$file"
   done
   cat /proc/swaps 2>/dev/null
+  for extra in /sys/block/zram*; do
+    [ -d "$extra" ] || continue
+    [ "$extra" = /sys/block/zram0 ] && continue
+    printf 'Additional zRAM device: %s\n' "$extra"
+    for field in disksize comp_algorithm mm_stat; do
+      printf '  %s: ' "$field"; read_value "$extra/$field"
+    done
+  done
   heading 'CPU policy configuration (read only; missing tunables shown as NA)'
   for policy in /sys/devices/system/cpu/cpufreq/policy*; do
     [ -d "$policy" ] || continue
@@ -88,6 +96,12 @@ snapshot() {
   grep -E '^(pswpin|pswpout|pgmajfault|pgscan[^ ]*|pgsteal[^ ]*|allocstall[^ ]*|workingset_refault[^ ]*|compact_(stall|fail|success)|oom_kill) ' /proc/vmstat
   printf 'zram mm_stat: '; read_value /sys/block/zram0/mm_stat
   printf 'zram io_stat: '; read_value /sys/block/zram0/io_stat
+  for extra in /sys/block/zram*; do
+    [ -d "$extra" ] || continue
+    [ "$extra" = /sys/block/zram0 ] && continue
+    printf 'Additional zRAM %s mm_stat: ' "$extra"; read_value "$extra/mm_stat"
+    printf 'Additional zRAM %s io_stat: ' "$extra"; read_value "$extra/io_stat"
+  done
   for policy in /sys/devices/system/cpu/cpufreq/policy*; do
     [ -d "$policy" ] || continue
     printf '%s (frequency in kHz):\n' "$policy"
@@ -162,16 +176,19 @@ if [ "${1:-}" = --worker ]; then
   trap 'exit 130' 1 2 15
   START_EPOCH=$(date +%s)
   START_LOGCAT=$(date '+%m-%d %H:%M:%S.000')
-  heading 'ChatGPT Kernel diagnostic v3'
+  heading 'ChatGPT Kernel diagnostic v4'
   printf 'Start UTC: '; date -u '+%Y-%m-%dT%H:%M:%SZ'
   printf 'Duration target: %s seconds; samples every %s seconds. Sleep may extend wall time.\n' "$DURATION" "$INTERVAL"
   uname -a
   printf 'Kernel build: '; read_value /proc/version
-  for property in ro.product.device ro.build.display.id ro.lineage.version init.svc.lmkd; do
+  for property in ro.product.device ro.build.display.id ro.lineage.version init.svc.lmkd \
+    ro.config.low_ram ro.lmk.thrashing_limit ro.lmk.thrashing_limit_critical \
+    persist.device_config.lmkd_native.thrashing_limit persist.device_config.lmkd_native.thrashing_limit_critical \
+    persist.device_config.lmkd_native.psi_complete_stall_ms; do
     printf '%s: ' "$property"; getprop "$property"
   done
-  heading 'TikTok installed versions'
-  for package in com.zhiliaoapp.musically com.ss.android.ugc.trill; do
+  heading 'Relevant installed app versions'
+  for package in com.zhiliaoapp.musically com.ss.android.ugc.trill com.instagram.android ps.reso.instaeclipse; do
     printf '%s:\n' "$package"
     bounded dumpsys package "$package" | grep -E 'versionName=|versionCode=|Unable to find' | sed -n '1,6p'
   done
@@ -210,7 +227,7 @@ if ! mkdir "$LOCK" 2>/dev/null; then
   [ -n "$previous_pid" ] || fail 'A collector is starting, or its lock is incomplete. No second collector was started.'
   case "$previous_pid" in *[!0-9]*) fail 'Invalid diagnostic lock; no processes were stopped.';; esac
   if [ "$previous_boot" = "$BOOT_ID" ] && kill -0 "$previous_pid" 2>/dev/null && \
-    tr '\000' ' ' < "/proc/$previous_pid/cmdline" 2>/dev/null | grep -qE 'chatgpt-(kernel-logs|fluidez)\.sh'; then
+    tr '\000' ' ' < "/proc/$previous_pid/cmdline" 2>/dev/null | grep -qE 'chatgpt-(kernel-logs|fluidez(-zram)?)\.sh'; then
     fail 'A collector is already running. Wait for its text file to finish.'
   fi
   cleanup

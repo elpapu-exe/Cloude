@@ -35,11 +35,13 @@ Para tirones sin ANR, descarga [chatgpt-fluidez.sh](../downloads/chatgpt-fluidez
 su -c '/system/bin/sh /sdcard/Download/chatgpt-fluidez.sh 120'
 ```
 
-Es el recolector general v3 con un nombre de descarga distinto para evitar ejecutar por error una copia antigua. Usa las apps normalmente durante unos dos minutos, con el teléfono desenchufado, y comparte el único `ChatGPTKernel-<fecha>-<id>.txt` cuando aparezca `TEST FINISHED`. Las consultas y la suspensión pueden alargar el tiempo. No necesita provocar un bloqueo, reiniciar, limpiar datos ni modificar ajustes.
+Es el recolector general v4 con un nombre de descarga distinto para evitar ejecutar por error una copia antigua. Usa las apps normalmente durante unos dos minutos, con el teléfono desenchufado, y comparte el único `ChatGPTKernel-<fecha>-<id>.txt` cuando aparezca `TEST FINISHED`. Las consultas y la suspensión pueden alargar el tiempo. No necesita provocar un bloqueo, reiniciar, limpiar datos ni modificar ajustes.
 
 Esta versión añade uso de CPU por núcleo, máximos de hardware/política, parámetros WALT y KProfiles disponibles, preferencias de refresco y contadores HWUI al inicio/final de TikTok y SystemUI. Las preferencias de pantalla no prueban el refresco real. Los títulos de ventanas y las jerarquías de vistas quedan excluidos; solo se guardan resúmenes y filas numéricas de fotogramas.
 
 Los contadores gráficos solo pueden compararse si coinciden PID y `Stats since`. Sus percentiles son acumulados; no se restan para calcular el intervalo. El anillo de fotogramas cubre solo actividad reciente, puede repetir registros entre capturas y no representa necesariamente el vídeo de TikTok, que puede usar una superficie distinta. No usar un umbral fijo de 16,67 ms para todos los modos ni convertir estos datos automáticamente a FPS de pantalla. El muestreo de recursos cada diez segundos permite detectar presión sostenida, pero no demuestra por sí solo la causa de cada microtirón.
+
+La versión 4 incluye los dispositivos zRAM adicionales y los valores concretos disponibles de LMKD, junto con versiones de Instagram/InstaEclipse. Para el ensayo temporal de capacidad adicional, consulta [la guía específica](zram-trial.md); el recolector por sí mismo sigue siendo de solo lectura.
 
 Los archivos sysfs y proc solo se leen. El recolector escribe el informe y su directorio temporal de control; no modifica ajustes, detiene apps, limpia cachés/logs ni sube datos. No instala un servicio de arranque.
 
