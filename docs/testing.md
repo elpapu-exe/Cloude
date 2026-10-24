@@ -27,6 +27,20 @@ No se necesitan capturas ni comandos adicionales. El informe incluye la identida
 - PSS/swap de TikTok al terminar, eventos LMKD y de ANR/muerte de procesos, resumen de ANR de TikTok y un extracto acotado de sus pilas si existe una traza reciente.
 - Errores concretos del kernel desde el arranque. Las trazas pueden incluir TikTok como proceso secundario y se etiquetan así; su mera presencia no demuestra que sufriera el ANR.
 
+## Captura de fluidez de dos minutos
+
+Para tirones sin ANR, descarga [chatgpt-fluidez.sh](../downloads/chatgpt-fluidez.sh) en Descargas y ejecuta:
+
+```sh
+su -c '/system/bin/sh /sdcard/Download/chatgpt-fluidez.sh 120'
+```
+
+Es el recolector general v3 con un nombre de descarga distinto para evitar ejecutar por error una copia antigua. Usa las apps normalmente durante unos dos minutos, con el teléfono desenchufado, y comparte el único `ChatGPTKernel-<fecha>-<id>.txt` cuando aparezca `TEST FINISHED`. Las consultas y la suspensión pueden alargar el tiempo. No necesita provocar un bloqueo, reiniciar, limpiar datos ni modificar ajustes.
+
+Esta versión añade uso de CPU por núcleo, máximos de hardware/política, parámetros WALT y KProfiles disponibles, preferencias de refresco y contadores HWUI al inicio/final de TikTok y SystemUI. Las preferencias de pantalla no prueban el refresco real. Los títulos de ventanas y las jerarquías de vistas quedan excluidos; solo se guardan resúmenes y filas numéricas de fotogramas.
+
+Los contadores gráficos solo pueden compararse si coinciden PID y `Stats since`. Sus percentiles son acumulados; no se restan para calcular el intervalo. El anillo de fotogramas cubre solo actividad reciente, puede repetir registros entre capturas y no representa necesariamente el vídeo de TikTok, que puede usar una superficie distinta. No usar un umbral fijo de 16,67 ms para todos los modos ni convertir estos datos automáticamente a FPS de pantalla. El muestreo de recursos cada diez segundos permite detectar presión sostenida, pero no demuestra por sí solo la causa de cada microtirón.
+
 Los archivos sysfs y proc solo se leen. El recolector escribe el informe y su directorio temporal de control; no modifica ajustes, detiene apps, limpia cachés/logs ni sube datos. No instala un servicio de arranque.
 
 El `.txt` contiene nombres de apps y datos de diagnóstico; puedes revisarlo antes de compartirlo. Se excluyen líneas de comando completas, mensajes generales de excepciones de otras apps y las secciones de bases de datos de `meminfo`. La batería y las zonas CPU/SoC son sensores distintos; las frecuencias leídas pueden ser solicitadas en lugar de medidas. Las muestras no equivalen a una medición de FPS ni certifican estabilidad.

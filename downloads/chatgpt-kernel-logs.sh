@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# ChatGPT Kernel diagnostic v2. Read-only diagnostics; one shareable text file.
+# ChatGPT Kernel diagnostic v3. Read-only diagnostics; one shareable text file.
 # No network access, tuning, cache clearing, app closing or automatic upload.
 PATH=/system/bin:/system/xbin:/vendor/bin:/product/bin
 export PATH
@@ -22,7 +22,7 @@ bounded() {
   fi
 }
 cleanup() {
-  rm -f "$LOCK/pid" "$LOCK/bootid" "$LOCK/thermal-paths" "$LOCK/lastanr" "$LOCK/processes"
+  rm -f "$LOCK/pid" "$LOCK/bootid" "$LOCK/thermal-paths" "$LOCK/lastanr" "$LOCK/processes" "$LOCK/graphics"
   rmdir "$LOCK" 2>/dev/null
 }
 configuration() {
@@ -33,6 +33,47 @@ configuration() {
     printf '%s: ' "$file"; read_value "$file"
   done
   cat /proc/swaps 2>/dev/null
+  heading 'CPU policy configuration (read only; missing tunables shown as NA)'
+  for policy in /sys/devices/system/cpu/cpufreq/policy*; do
+    [ -d "$policy" ] || continue
+    printf '%s:\n' "$policy"
+    for field in cpuinfo_max_freq scaling_governor scaling_min_freq scaling_max_freq; do
+      printf '  %s: ' "$field"; read_value "$policy/$field"
+    done
+    for field in up_rate_limit_us down_rate_limit_us hispeed_load hispeed_freq rtg_boost_freq boost adaptive_low_freq adaptive_high_freq target_load_thresh target_load_shift; do
+      tunable="$policy/walt/$field"
+      [ -r "$tunable" ] || tunable="/sys/devices/system/cpu/cpufreq/walt/$field"
+      printf '  walt/%s: ' "$field"; read_value "$tunable"
+    done
+  done
+  for file in /sys/kernel/kprofiles/kp_mode /sys/module/kprofiles/parameters/auto_kp; do
+    printf '%s: ' "$file"; read_value "$file"
+  done
+  heading 'Requested display refresh preferences (not measured refresh rate)'
+  for setting in min_refresh_rate peak_refresh_rate; do
+    printf '%s: ' "$setting"; bounded settings get system "$setting"
+  done
+}
+graphics() {
+  heading "Graphics $1: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+  printf 'Read-only HWUI counters and recent numeric frame records; no resets or window titles.\n'
+  printf 'Compare counters only for the same PID and Stats since. Video surfaces may not be represented.\n'
+  for package in com.zhiliaoapp.musically com.android.systemui; do
+    printf '\nPackage: %s\n' "$package"
+    bounded dumpsys gfxinfo "$package" framestats > "$LOCK/graphics"
+    printf 'gfxinfo exit status: %s\n' "$?"
+    sed -n -E '
+      /^\*\* Graphics info for pid [0-9]+ \[[A-Za-z0-9_.:]+\] \*\*$/p
+      /^Stats since: [0-9]+ns$/p
+      /^Total frames rendered: [0-9]+$/p
+      /^Janky frames( \(legacy\))?: [0-9]+ \([0-9.]+%\)$/p
+      /^[0-9]+th percentile: [0-9]+ms$/p
+      /^Number [A-Za-z ]+: [0-9]+$/p
+      /^No process found for: [A-Za-z0-9_.:]+$/p
+      /^Flags,([A-Za-z][A-Za-z0-9]*,)*[A-Za-z0-9]*$/p
+      /^[0-9]+([[:space:]]*,[[:space:]]*[0-9]+)+[[:space:]]*,?[[:space:]]*$/p
+    ' "$LOCK/graphics" | sed -n '1,650p;650q'
+  done
 }
 snapshot() {
   heading "Sample $1: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
@@ -41,7 +82,7 @@ snapshot() {
   for kind in memory cpu io; do
     printf 'PSI %s:\n' "$kind"; read_value "/proc/pressure/$kind"
   done
-  printf 'CPU ticks: '; grep '^cpu ' /proc/stat
+  printf 'CPU ticks (aggregate and per core):\n'; grep -E '^cpu([0-9]+)? ' /proc/stat
   printf 'loadavg: '; read_value /proc/loadavg
   printf 'vmstat counters:\n'
   grep -E '^(pswpin|pswpout|pgmajfault|pgscan[^ ]*|pgsteal[^ ]*|allocstall[^ ]*|workingset_refault[^ ]*|compact_(stall|fail|success)|oom_kill) ' /proc/vmstat
@@ -50,7 +91,7 @@ snapshot() {
   for policy in /sys/devices/system/cpu/cpufreq/policy*; do
     [ -d "$policy" ] || continue
     printf '%s (frequency in kHz):\n' "$policy"
-    for field in scaling_governor scaling_cur_freq cpuinfo_cur_freq scaling_min_freq scaling_max_freq; do
+    for field in scaling_governor scaling_cur_freq cpuinfo_cur_freq scaling_min_freq scaling_max_freq cpuinfo_max_freq; do
       printf '  %s: ' "$field"; read_value "$policy/$field"
     done
   done
@@ -69,6 +110,7 @@ processes() {
   sort -k2,2nr "$LOCK/processes" | sed -n '1,15p'
 }
 finish_logs() {
+  graphics END
   configuration
   processes
   heading 'TikTok process memory summaries (at the end of the test)'
@@ -120,7 +162,7 @@ if [ "${1:-}" = --worker ]; then
   trap 'exit 130' 1 2 15
   START_EPOCH=$(date +%s)
   START_LOGCAT=$(date '+%m-%d %H:%M:%S.000')
-  heading 'ChatGPT Kernel diagnostic v2'
+  heading 'ChatGPT Kernel diagnostic v3'
   printf 'Start UTC: '; date -u '+%Y-%m-%dT%H:%M:%SZ'
   printf 'Duration target: %s seconds; samples every %s seconds. Sleep may extend wall time.\n' "$DURATION" "$INTERVAL"
   uname -a
@@ -144,6 +186,7 @@ if [ "${1:-}" = --worker ]; then
   done
   configuration
   processes
+  graphics BEGIN
   elapsed=0; sample=0
   while :; do
     snapshot "$sample"
@@ -167,7 +210,7 @@ if ! mkdir "$LOCK" 2>/dev/null; then
   [ -n "$previous_pid" ] || fail 'A collector is starting, or its lock is incomplete. No second collector was started.'
   case "$previous_pid" in *[!0-9]*) fail 'Invalid diagnostic lock; no processes were stopped.';; esac
   if [ "$previous_boot" = "$BOOT_ID" ] && kill -0 "$previous_pid" 2>/dev/null && \
-    tr '\000' ' ' < "/proc/$previous_pid/cmdline" 2>/dev/null | grep -qF 'chatgpt-kernel-logs.sh'; then
+    tr '\000' ' ' < "/proc/$previous_pid/cmdline" 2>/dev/null | grep -qE 'chatgpt-(kernel-logs|fluidez)\.sh'; then
     fail 'A collector is already running. Wait for its text file to finish.'
   fi
   cleanup
@@ -184,4 +227,4 @@ worker_pid=$!
 printf '%s\n' "$worker_pid" > "$LOCK/pid"
 trap - 0 1 2 15
 printf 'Collector started for %s seconds. Use TikTok normally and leave Termux in recent apps.\n' "$DURATION"
-printf 'Share this one text file after it ends (allow 10-12 minutes):\n%s\n' "$OUTPUT"
+printf 'Allow %s seconds plus diagnostic overhead. Share this one text file after TEST FINISHED appears:\n%s\n' "$DURATION" "$OUTPUT"

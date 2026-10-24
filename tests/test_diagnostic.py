@@ -21,7 +21,7 @@ class DiagnosticTests(unittest.TestCase):
                 'proc/uptime': '600.00 2000.00\n',
                 'proc/version': 'Test fixture kernel\n',
                 'proc/meminfo': 'MemTotal: 3744164 kB\nMemAvailable: 700000 kB\nSwapTotal: 3145724 kB\nSwapFree: 8996 kB\n',
-                'proc/stat': 'cpu 10 0 20 300 0 0 0 0\n',
+                'proc/stat': 'cpu 10 0 20 300 0 0 0 0\ncpu0 5 0 10 150 0 0 0 0\n',
                 'proc/loadavg': '1.00 0.80 0.50 1/100 99\n',
                 'proc/vmstat': 'pswpin 5\npswpout 20\npgscan_direct 100\nworkingset_refault_file 10\noom_kill 0\n',
                 'proc/swaps': 'Filename Type Size Used Priority\n/dev/block/zram0 partition 3145724 3136728 -2\n',
@@ -37,6 +37,8 @@ class DiagnosticTests(unittest.TestCase):
                 'sys/class/thermal/thermal_zone0/temp': '52000\n',
                 'sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq': '1800000\n',
                 'sys/devices/system/cpu/cpufreq/policy0/scaling_governor': 'schedhorizon\n',
+                'sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq': '1900800\n',
+                'sys/devices/system/cpu/cpufreq/walt/up_rate_limit_us': '500\n',
             }
             for name, value in fixtures.items(): put(name, value)
             lock = sandbox / 'tmp/chatgpt-kernel-logger.lock'
@@ -48,6 +50,7 @@ class DiagnosticTests(unittest.TestCase):
                 'id': 'printf "0\\n"',
                 'sleep': ':',
                 'getprop': 'printf "fixture\\n"',
+                'settings': 'printf "120.0\\n"',
                 'ps': 'printf "PID CPU RSS NAME\\n100 20 500000 com.zhiliaoapp.musically\\n"',
                 'top': 'printf "CPU fixture\\n100 com.zhiliaoapp.musically\\n"',
                 'logcat': 'printf "selected diagnostic event\\n"',
@@ -56,6 +59,7 @@ class DiagnosticTests(unittest.TestCase):
 "activity lastanr") cat "$FIXTURE_ANR";;
 "package "*) printf 'versionName=1.0\\nversionCode=10\\n';;
 "meminfo "*) printf 'TOTAL PSS: 646469 TOTAL SWAP PSS: 279234\\nObjects\\nDATABASES\\nACCOUNT_IDENTIFIER_NOT_FOR_REPORT\\n';;
+"gfxinfo "*) printf '** Graphics info for pid 100 [com.zhiliaoapp.musically] **\\nStats since: 123000ns\\nTotal frames rendered: 200\\nJanky frames: 3 (1.50%%)\\n90th percentile: 12ms\\nNumber Missed Vsync: 1\\nWindow: PRIVATE_WINDOW_TITLE\\nFlags,FrameTimelineVsyncId,IntendedVsync,FrameCompleted,\\n0,123,1000000,2000000,\\nView hierarchy: PRIVATE_VIEW_TREE\\n';;
 esac''',
             }
             for name, body in commands.items():
@@ -83,9 +87,19 @@ esac''',
             self.assertIn('0x0007', contents)
             self.assertIn('TOTAL SWAP PSS: 279234', contents)
             self.assertIn('"main" waiting in fixture', contents)
+            self.assertIn('cpu0 5 0 10 150', contents)
+            self.assertIn('cpuinfo_max_freq: 1900800', contents)
+            self.assertIn('walt/up_rate_limit_us: 500', contents)
+            self.assertIn('Graphics BEGIN:', contents)
+            self.assertIn('Graphics END:', contents)
+            self.assertEqual(contents.count('Total frames rendered: 200'), 4)
+            self.assertIn('0,123,1000000,2000000,', contents)
+            self.assertIn('peak_refresh_rate: 120.0', contents)
             self.assertNotIn('SECRET_URI', contents)
             self.assertNotIn('SECRET_OTHER_PROCESS', contents)
             self.assertNotIn('ACCOUNT_IDENTIFIER_NOT_FOR_REPORT', contents)
+            self.assertNotIn('PRIVATE_WINDOW_TITLE', contents)
+            self.assertNotIn('PRIVATE_VIEW_TREE', contents)
             if tiktok_anr:
                 self.assertIn('Reason: Input dispatch timeout', contents)
             else:
