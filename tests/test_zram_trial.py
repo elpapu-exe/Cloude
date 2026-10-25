@@ -49,7 +49,8 @@ elif name == 'stat':
     values = [value for value in args if value != '-L']
     if values[:2] == ['-c', '%t:%T']:
         index = int(Path(values[2]).name.removeprefix('zram'))
-        if mode == 'identity' and index == 0:
+        if ((mode == 'identity' and index == 0)
+                or (mode == 'alias-identity' and Path(values[2]).parent == root / 'block')):
             index = 9
         print('fe:' + format(index, 'x'))
     elif values[:2] == ['-c', '%u']:
@@ -109,11 +110,13 @@ elif name == 'cat':
 elif name in ('busybox', 'mkswap', 'swapon', 'swapoff'):
     if name == 'busybox':
         if args == ['--list']:
-            print('mkswap\nswapon')
+            print('awk\nmkswap\nswapon')
             sys.exit(0)
         applet, *args = args
     else:
         applet = name
+    if applet == 'awk':
+        sys.exit(subprocess.call(['/usr/bin/awk', *args]))
     event(applet, args=args)
     if applet == 'mkswap':
         if mode in ('mkswap', 'hot-remove', 'hot-remove-partial'):
@@ -121,7 +124,12 @@ elif name in ('busybox', 'mkswap', 'swapon', 'swapoff'):
     elif applet == 'swapon':
         if mode == 'swapon':
             sys.exit(1)
-        priority = args[args.index('-p') + 1]
+        if '-p' in args:
+            priority = args[args.index('-p') + 1]
+        else:
+            entries = (root / 'proc/swaps').read_text().splitlines()[1:]
+            priority = str(min([-1] + [int(line.split()[4]) for line in entries
+                                     if int(line.split()[4]) < 0]) - 1)
         device = args[-1]
         index = int(Path(device).name.removeprefix('zram'))
         size = int((root / f'sys/block/zram{index}/disksize').read_text()) // 1024 - 4
@@ -188,8 +196,9 @@ class ZramTrialTests(unittest.TestCase):
         # One pass prevents /proc/sys/... from being redirected a second time
         # when matching the /sys/ prefix inside that already rewritten path.
         prefixes = ['/data/adb/', '/data/local/tmp', '/sdcard/Download',
-                    '/proc/', '/sys/', '/dev/block/', '/dev/zram']
-        source = re.sub('|'.join(map(re.escape, prefixes)),
+                    '/proc/', '/sys/', '/dev/block/', '/dev/zram', '/block/']
+        # The /block alias must not match the tail of /sys/devices/virtual/block.
+        source = re.sub(r'(?<![A-Za-z0-9_])(?:' + '|'.join(map(re.escape, prefixes)) + ')',
                         lambda match: str(self.root) + match[0], source)
         # Only the shell's own /proc liveness check uses the real host PID;
         # previous trial PIDs remain explicit fixture directories/dead PIDs.
@@ -205,6 +214,9 @@ class ZramTrialTests(unittest.TestCase):
 
     def snapshot_zero(self):
         paths = list((self.root / 'sys/block/zram0').iterdir()) + [self.base_device]
+        alias = self.root / 'block/zram0'
+        if alias.exists():
+            paths.append(alias)
         return {str(path.relative_to(self.root)): path.read_bytes() for path in paths}
 
     def events(self):
@@ -251,6 +263,56 @@ class ZramTrialTests(unittest.TestCase):
         self.assertEqual(sum(sizes) + 8, 3 * GIB // 1024)  # Two swap headers, 4 KiB each.
         self.assertEqual((self.root / 'sys/class/zram-control/hot_remove').read_text(), '')
         self.assertEqual((self.lock / 'state').read_text(), 'active\n')
+
+    def configure_base(self, *, size=2642411520, alias='/block/zram0', priority=-2,
+                       alias_exists=False):
+        self.put('sys/block/zram0/disksize', str(size) + '\n')
+        size_kib = size // 1024 - 4
+        self.base_row = f'{self.root}{alias} partition {size_kib} 1000000 {priority}\n'
+        self.put('proc/swaps', 'Filename Type Size Used Priority\n' + self.base_row)
+        self.put('proc/meminfo', f'MemTotal: 3746720 kB\nMemAvailable: 800000 kB\n'
+                 f'SwapTotal: {size_kib} kB\nSwapFree: {size_kib - 1000000} kB\n')
+        if alias_exists:
+            self.put(alias.removeprefix('/'), 'existing alias device: must not change\n')
+        self.original_zero = self.snapshot_zero()
+
+    def test_phone_alias_auto_priority_adds_only_missing_552_mib(self):
+        self.configure_base()
+        self.old_lock()
+        result = self.run_trial()
+        self.assertEqual(result.returncode, 0, self.report())
+        self.assertEqual((self.root / 'sys/block/zram1/disksize').read_bytes(), b'578813952')
+        self.assertIn(self.base_row, (self.root / 'proc/swaps').read_text())
+        self.assertIn(f'{self.root}/dev/block/zram1 partition 565244 0 -3\n',
+                      (self.root / 'proc/swaps').read_text())
+        activation = [e for e in self.events() if e['action'] == 'swapon']
+        self.assertEqual(len(activation), 1)
+        self.assertEqual(activation[0]['args'], [str(self.root / 'dev/block/zram1')])
+        sizes = [int(line.split()[2]) for line in (self.root / 'proc/swaps').read_text().splitlines()[1:]]
+        self.assertEqual(sum(sizes) + 8, 3 * GIB // 1024)
+        self.assertEqual(sum(e['action'] == 'hot_add' for e in self.events()), 1)
+
+    def test_accessible_phone_alias_requires_matching_block_identity(self):
+        self.configure_base(alias_exists=True)
+        result = self.run_trial()
+        self.assertEqual(result.returncode, 0, self.report())
+        self.assertEqual((self.root / 'sys/block/zram1/disksize').read_bytes(), b'578813952')
+
+    def test_wrong_accessible_alias_identity_is_not_silently_replaced(self):
+        self.configure_base(alias_exists=True)
+        result = self.run_trial(fail='alias-identity')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.events(), [])
+        self.assertFalse(self.lock.exists())
+
+    def test_base_capacity_outside_supported_range_never_allocates(self):
+        for size in [2 * GIB - 4096, 3 * GIB, 3 * GIB + 4096, 4 * GIB]:
+            with self.subTest(size=size):
+                self.configure_base(size=size)
+                result = self.run_trial()
+                self.assertNotEqual(result.returncode, 0, self.report())
+                self.assertEqual(self.events(), [])
+                self.assertFalse(self.lock.exists())
 
     def test_duplicate_does_not_allocate_another_device(self):
         first = self.run_trial()
