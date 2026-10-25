@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Exercise the actual trial script against fake Android/sysfs and BusyBox.
 
-No block devices are created. Only the copied script's S_IFBLK predicate and
-phone paths are substituted; allocation and swap applets use fixtures. Reading
+No block devices are created. The copied script's block predicate, sysfs writer
+and phone paths are substituted; allocation, sysfs effects and swap applets use fixtures. Reading
 hot_add is instrumented because that read itself allocates a kernel device.
 """
 from pathlib import Path
@@ -19,7 +19,7 @@ SCRIPT = ROOT / 'scripts/chatgpt-zram-try.sh'
 GIB = 1024 ** 3
 
 MOCK_COMMAND = r'''
-import json, os, subprocess, sys
+import json, os, shutil, subprocess, sys
 from pathlib import Path
 
 root = Path(os.environ['FIXTURE_ROOT'])
@@ -58,6 +58,27 @@ elif name == 'stat':
         print(format(Path(values[2]).stat().st_mode & 0o777, 'o'))
     else:
         sys.exit(subprocess.call(['/usr/bin/stat', *args]))
+elif name == 'sysfs-write':
+    path, value = Path(args[0]), args[1]
+    event('sysfs-write', path=str(path), value=value)
+    # Emulate an unbuffered sysfs store: a second bare newline is invalid.
+    if '\n' in value or '\r' in value:
+        sys.exit(22)
+    if path.name == 'comp_algorithm' and mode == 'compressor':
+        sys.exit(22)
+    if path.name == 'disksize' and mode == 'disksize':
+        sys.exit(22)
+    if path.name == 'hot_remove':
+        if mode == 'hot-remove':
+            sys.exit(22)
+        index = int(value)
+        if index == 0:
+            sys.exit(99)
+        shutil.rmtree(root / f'sys/block/zram{index}')
+        (root / f'dev/block/zram{index}').unlink(missing_ok=True)
+    path.write_text(value)
+    if path.name == 'hot_remove' and mode == 'hot-remove-partial':
+        sys.exit(22)  # An error status alone must not hide successful removal.
 elif name == 'cat':
     if len(args) == 1 and args[0] == str(root / 'sys/class/zram-control/hot_add'):
         index = int(os.environ.get('FIXTURE_NEW_ID', '1'))
@@ -66,13 +87,11 @@ elif name == 'cat':
             base = f'sys/block/zram{index}'
             for field, value in {'dev': f'254:{index}\n', 'disksize': '0\n',
                                  'reset': '0\n', 'mm_stat': '0 0 0 0 0 0 0 0 0\n',
-                                 'comp_algorithm': 'lzo [lzo-rle] lz4 lz4kd zstd\n'}.items():
+                                 'comp_algorithm': ('lzo [lzo-rle] lz4 lz4kd zstd\n'
+                                     if mode == 'compressor' or os.environ.get('FIXTURE_DEFAULT_COMP') == 'lzo-rle'
+                                     else 'lzo lzo-rle lz4 [lz4kd] zstd\n')}.items():
                 put(f'{base}/{field}', value)
             put(f'dev/block/zram{index}', 'fake block device\n')
-            if mode == 'compressor':
-                path = root / base / 'comp_algorithm'
-                path.unlink()
-                path.mkdir()  # A redirect here must fail, as a sysfs write may.
         print(index)
     elif len(args) == 1 and Path(args[0]).name == 'comp_algorithm':
         path = Path(args[0])
@@ -97,7 +116,7 @@ elif name in ('busybox', 'mkswap', 'swapon', 'swapoff'):
         applet = name
     event(applet, args=args)
     if applet == 'mkswap':
-        if mode == 'mkswap':
+        if mode in ('mkswap', 'hot-remove', 'hot-remove-partial'):
             sys.exit(1)
     elif applet == 'swapon':
         if mode == 'swapon':
@@ -127,6 +146,8 @@ class ZramTrialTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
         self.lock = self.root / 'data/local/tmp/chatgpt-zram-try-fixture-current-boot.lock'
+        self.gate = self.lock.with_name(self.lock.name + '.apply')
+        self.preexisting_gate = False
         self.put('proc/uptime', '600.00 2000.00\n')
         self.put('proc/sys/kernel/random/boot_id', 'fixture-current-boot\n')
         self.put('proc/meminfo', 'MemTotal: 3746720 kB\nMemAvailable: 800000 kB\n'
@@ -147,13 +168,17 @@ class ZramTrialTests(unittest.TestCase):
         bins = self.root / 'bin'
         bins.mkdir()
         for name in ['id', 'getprop', 'dumpsys', 'sleep', 'stat', 'cat',
-                     'mkswap', 'swapon', 'swapoff']:
+                     'mkswap', 'swapon', 'swapoff', 'sysfs-write']:
             command = self.put('bin/' + name, '#!' + sys.executable + '\n' + MOCK_COMMAND)
             command.chmod(0o755)
         busybox = self.put('data/adb/ksu/bin/busybox', '#!' + sys.executable + '\n' + MOCK_COMMAND)
         busybox.chmod(0o755)
 
         source = SCRIPT.read_text()
+        writer = "write_sysfs() { printf '%s' \"$2\" > \"$1\"; }"
+        self.assertEqual(source.count(writer), 1, 'Review the fixture if the sysfs writer changes')
+        self.writer = writer
+        source = source.replace(writer, 'write_sysfs() { sysfs-write "$1" "$2"; }')
         predicate = 'is_block_device() { [ -b "$1" ]; }'
         self.assertEqual(source.count(predicate), 1, 'Review the fixture if the block check changes')
         source = source.replace(predicate, 'is_block_device() { [ -f "$1" ]; }')
@@ -166,6 +191,9 @@ class ZramTrialTests(unittest.TestCase):
                     '/proc/', '/sys/', '/dev/block/', '/dev/zram']
         source = re.sub('|'.join(map(re.escape, prefixes)),
                         lambda match: str(self.root) + match[0], source)
+        # Only the shell's own /proc liveness check uses the real host PID;
+        # previous trial PIDs remain explicit fixture directories/dead PIDs.
+        source = source.replace(f'[ -d "{self.root}/proc/$$" ]', '[ -d "/proc/$$" ]')
         self.script = self.put('trial.sh', source)
         self.original_zero = self.snapshot_zero()
 
@@ -188,6 +216,7 @@ class ZramTrialTests(unittest.TestCase):
         result = subprocess.run(['/bin/sh', str(self.script), mode], env=env,
                                 capture_output=True, text=True, timeout=15)
         self.assertEqual(self.snapshot_zero(), self.original_zero, 'Existing zram0 was changed')
+        self.assertEqual(self.gate.exists(), self.preexisting_gate, 'Apply gate ownership was violated')
         self.assertFalse(any(e['action'] == 'swapoff' for e in self.events()))
         for event in self.events():
             if event['action'] in ('mkswap', 'swapon'):
@@ -199,8 +228,9 @@ class ZramTrialTests(unittest.TestCase):
         return '\n'.join(path.read_text() for path in reports)
 
     def assert_inactive_new_removed(self):
-        self.assertEqual((self.root / 'sys/class/zram-control/hot_remove').read_text(), '1\n')
-        self.assertEqual((self.root / 'sys/block/zram1/reset').read_text(), '0\n')
+        self.assertEqual((self.root / 'sys/class/zram-control/hot_remove').read_text(), '1')
+        self.assertFalse((self.root / 'sys/block/zram1').exists())
+        self.assertFalse((self.root / 'dev/block/zram1').exists())
         self.assertEqual((self.root / 'proc/swaps').read_text(),
                          'Filename Type Size Used Priority\n' + self.base_row)
         self.assertFalse(self.lock.exists())
@@ -209,8 +239,11 @@ class ZramTrialTests(unittest.TestCase):
         result = self.run_trial()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr + self.report())
         self.assertEqual(sum(e['action'] == 'hot_add' for e in self.events()), 1)
-        self.assertEqual((self.root / 'sys/block/zram1/disksize').read_text(), f'{GIB}\n')
-        self.assertEqual((self.root / 'sys/block/zram1/comp_algorithm').read_text(), 'lz4kd\n')
+        self.assertEqual((self.root / 'sys/block/zram1/disksize').read_text(), str(GIB))
+        self.assertEqual((self.root / 'sys/block/zram1/comp_algorithm').read_text(),
+                         'lzo lzo-rle lz4 [lz4kd] zstd\n')
+        self.assertFalse(any(e['action'] == 'sysfs-write' and Path(e['path']).name == 'comp_algorithm'
+                             for e in self.events()))
         swaps = (self.root / 'proc/swaps').read_text()
         self.assertIn(self.base_row, swaps)
         self.assertIn(f'{self.root}/dev/block/zram1 partition 1048572 0 32758\n', swaps)
@@ -280,6 +313,151 @@ class ZramTrialTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual((self.root / 'sys/class/zram-control/hot_remove').read_text(), '')
         self.assertFalse(any(e['action'] in ('mkswap', 'swapon') for e in self.events()))
+
+    def test_failed_removal_preserves_present_device_and_lock(self):
+        result = self.run_trial(fail='hot-remove')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue((self.root / 'sys/block/zram1').exists())
+        self.assertTrue(self.lock.exists())
+        self.assertIn('AFTER_FAILURE', self.report())
+        before = self.events()
+        retry = self.run_trial()
+        self.assertNotEqual(retry.returncode, 0)
+        self.assertEqual(self.events(), before)
+
+    def test_error_status_after_successful_removal_can_be_recovered(self):
+        result = self.run_trial(fail='hot-remove-partial')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.root / 'sys/block/zram1').exists())
+        self.assertTrue(self.lock.exists())
+        self.assertIn('AFTER_FAILURE', self.report())
+        retry = self.run_trial()
+        self.assertEqual(retry.returncode, 0, self.report())
+        self.assertEqual(sum(e['action'] == 'hot_add' for e in self.events()), 2)
+        self.assertEqual((self.lock / 'state').read_text(), 'active\n')
+
+    def test_sysfs_writer_emits_only_the_value(self):
+        target = self.root / 'writer-value'
+        result = subprocess.run(['/bin/sh', '-c', self.writer + '\nwrite_sysfs "$1" "$2"',
+                                 'fixture', str(target), 'lz4kd'], capture_output=True)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(target.read_bytes(), b'lz4kd')
+
+    def test_different_default_compressor_is_copied_without_newline(self):
+        result = self.run_trial(FIXTURE_DEFAULT_COMP='lzo-rle')
+        self.assertEqual(result.returncode, 0, self.report())
+        writes = [e for e in self.events() if e['action'] == 'sysfs-write'
+                  and Path(e['path']).name == 'comp_algorithm']
+        self.assertEqual(len(writes), 1)
+        self.assertEqual(writes[0]['value'], 'lz4kd')
+        self.assertEqual((self.root / 'sys/block/zram1/comp_algorithm').read_bytes(), b'lz4kd')
+
+    def old_lock(self, *, pid='999999', state='allocating', index='1', boot='fixture-current-boot'):
+        self.lock.mkdir(mode=0o700)
+        for field, value in {'bootid': boot, 'pid': pid, 'state': state, 'created_id': index}.items():
+            (self.lock / field).write_text(value + '\n')
+
+    def test_recovers_only_absent_device_abandoned_lock(self):
+        self.old_lock()
+        result = self.run_trial()
+        self.assertEqual(result.returncode, 0, result.stderr + self.report())
+        self.assertEqual(sum(e['action'] == 'hot_add' for e in self.events()), 1)
+        archives = list(self.lock.parent.glob(self.lock.name + '.previous-*'))
+        self.assertEqual(len(archives), 1)
+        self.assertEqual((archives[0] / 'metadata/state').read_text(), 'allocating\n')
+        self.assertEqual((self.lock / 'state').read_text(), 'active\n')
+        self.assertFalse(any(e['action'] == 'sysfs-write' and Path(e['path']).name == 'hot_remove'
+                             for e in self.events()))
+
+    def test_existing_apply_gate_is_preserved_without_allocation(self):
+        self.gate.mkdir(mode=0o700)
+        self.preexisting_gate = True
+        result = self.run_trial()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.events(), [])
+        self.assertTrue(self.gate.is_dir())
+        self.assertFalse(self.lock.exists())
+
+    def test_simultaneous_recovery_adds_only_one_device(self):
+        self.old_lock()
+        env = dict(os.environ, FIXTURE_ROOT=str(self.root), FIXTURE_FAIL='')
+        children = [subprocess.Popen(['/bin/sh', str(self.script), 'apply'], env=env,
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    for _ in range(2)]
+        output = [child.communicate(timeout=15) for child in children]
+        self.assertTrue(any(child.returncode == 0 for child in children), repr(output) + self.report())
+        self.assertEqual(sum(e['action'] == 'hot_add' for e in self.events()), 1)
+        self.assertEqual(self.snapshot_zero(), self.original_zero)
+        self.assertFalse(any(e['action'] == 'swapoff' for e in self.events()))
+        self.assertEqual((self.lock / 'state').read_text(), 'active\n')
+        self.assertFalse(self.gate.exists())
+
+    def test_present_inactive_device_prevents_lock_recovery(self):
+        self.old_lock()
+        self.put('sys/block/zram1/disksize', '0\n')
+        result = self.run_trial()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.events(), [])
+        self.assertTrue(self.lock.is_dir())
+        self.assertEqual((self.lock / 'state').read_text(), 'allocating\n')
+
+    def test_device_visible_only_in_virtual_sysfs_prevents_recovery(self):
+        self.old_lock()
+        self.put('sys/devices/virtual/block/zram1/disksize', '0\n')
+        result = self.run_trial()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.events(), [])
+        self.assertTrue(self.lock.is_dir())
+
+    def test_other_extra_zram_prevents_lock_recovery(self):
+        self.old_lock()
+        self.put('sys/block/zram2/disksize', '0\n')
+        result = self.run_trial()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.events(), [])
+        self.assertTrue(self.lock.is_dir())
+
+    def test_active_device_prevents_allocating_lock_recovery(self):
+        self.old_lock()
+        with (self.root / 'proc/swaps').open('a') as stream:
+            stream.write(f'{self.root}/dev/block/zram1 partition 1048572 0 32758\n')
+        result = self.run_trial()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.events(), [])
+        self.assertTrue(self.lock.is_dir())
+
+    def test_live_pid_prevents_lock_recovery(self):
+        self.old_lock(pid=str(os.getpid()))
+        (self.root / f'proc/{os.getpid()}').mkdir()
+        result = self.run_trial()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.events(), [])
+        self.assertTrue(self.lock.is_dir())
+
+    def test_invalid_metadata_prevents_lock_recovery(self):
+        for changes in [{'pid': '0'}, {'pid': '-1'}, {'pid': '01'}, {'index': '0'},
+                        {'index': '01'}, {'state': 'activating'}, {'boot': 'other-boot'}]:
+            with self.subTest(changes=changes):
+                if self.lock.exists():
+                    for entry in self.lock.iterdir():
+                        entry.unlink()
+                    self.lock.rmdir()
+                self.old_lock(**changes)
+                result = self.run_trial()
+                self.assertNotEqual(result.returncode, 0, self.report())
+                self.assertEqual(self.events(), [])
+                self.assertTrue(self.lock.is_dir())
+
+    def test_symlink_metadata_prevents_lock_recovery(self):
+        self.old_lock()
+        (self.lock / 'created_id').unlink()
+        target = self.put('external-created-id', '1\n')
+        (self.lock / 'created_id').symlink_to(target)
+        result = self.run_trial()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.events(), [])
+        self.assertTrue((self.lock / 'created_id').is_symlink())
+        self.assertEqual(target.read_bytes(), b'1\n')
 
     def test_status_is_read_only_even_when_trial_is_active(self):
         first = self.run_trial()

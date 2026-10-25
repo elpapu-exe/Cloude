@@ -12,12 +12,16 @@ HOT_ADD=/sys/class/zram-control/hot_add
 HOT_REMOVE=/sys/class/zram-control/hot_remove
 MODE=${1:-apply}
 OWN_LOCK=0
+OWN_GATE=0
 CREATED_ID=
 ALLOCATION_ATTEMPTED=0
 ERROR=
 RESULT=
 
 is_block_device() { [ -b "$1" ]; }
+# Android Toybox printf is unbuffered: a literal newline in the format can be
+# a separate sysfs store. Use one short string conversion, with no literal tail.
+write_sysfs() { printf '%s' "$2" > "$1"; }
 read_value() {
   if [ -r "$1" ]; then cat "$1" 2>/dev/null || printf 'NA\n'; else printf 'NA\n'; fi
 }
@@ -63,6 +67,51 @@ remove_lock_files() {
   rm -f "$LOCK/bootid" "$LOCK/pid" "$LOCK/state" "$LOCK/created_id"
   rmdir "$LOCK" 2>/dev/null
 }
+device_absent() {
+  [ ! -e "/sys/block/zram$1" ] && [ ! -L "/sys/block/zram$1" ] \
+    && [ ! -e "/sys/devices/virtual/block/zram$1" ] \
+    && [ ! -L "/sys/devices/virtual/block/zram$1" ]
+}
+only_base_zram() {
+  for candidate in /sys/block/zram*; do
+    [ -e "$candidate" ] || [ -L "$candidate" ] || continue
+    [ "$candidate" = /sys/block/zram0 ] || return 1
+  done
+  [ -d /sys/block/zram0 ]
+}
+only_base_swap() {
+  [ -r /proc/swaps ] || return 1
+  base_rows=0; base_header=0
+  while read -r path type size used priority rest; do
+    [ -n "$path" ] || continue
+    if [ "$path" = Filename ]; then base_header=1; continue; fi
+    case "$path" in /dev/block/zram0|/dev/zram0) ;; *) return 1;; esac
+    case "$size:$used" in *[!0-9:]*|:*|*:) return 1;; esac
+    base_rows=$((base_rows + 1))
+  done < /proc/swaps
+  [ "$base_header" -eq 1 ] && [ "$base_rows" -eq 1 ]
+}
+# Recover only a dead, same-boot allocation whose new device has disappeared.
+# Never adopt, reconfigure or remove a device from an earlier execution.
+recover_abandoned_lock() {
+  [ "$saved_boot" = "$BOOT_ID" ] && [ "$saved_state" = allocating ] \
+    && valid_id "$saved_id" || return 1
+  for field in bootid pid state created_id; do
+    [ -f "$LOCK/$field" ] && [ ! -L "$LOCK/$field" ] || return 1
+  done
+  saved_pid=$(cat "$LOCK/pid" 2>/dev/null)
+  case "$saved_pid" in ''|0|0*|*[!0-9]*) return 1;; esac
+  [ -d "/proc/$$" ] && [ ! -d "/proc/$saved_pid" ] || return 1
+  kill -0 "$saved_pid" 2>/dev/null && return 1
+  device_absent "$saved_id" && only_base_zram && only_base_swap || return 1
+  swap_activity "$saved_id"; [ "$?" -eq 1 ] || return 1
+  # Keep the old metadata for diagnosis instead of deleting it. A competing
+  # execution still must acquire the canonical lock with mkdir below.
+  archived_lock="$LOCK.previous-$$"
+  mkdir "$archived_lock" 2>/dev/null || return 1
+  mv "$LOCK" "$archived_lock/metadata" || return 1
+  printf 'Archived a dead allocation lock: its new device no longer exists.\n'
+}
 finish() {
   code=$?
   trap - 0 1 2 15
@@ -70,8 +119,9 @@ finish() {
     if valid_id "$CREATED_ID"; then
       swap_activity "$CREATED_ID"; activity=$?
       if [ "$activity" -eq 1 ]; then
-        if printf '%s\n' "$CREATED_ID" > "$HOT_REMOVE"; then
-          printf 'Removed only the newly created inactive zram%s.\n' "$CREATED_ID"
+        if device_absent "$CREATED_ID" \
+          || { write_sysfs "$HOT_REMOVE" "$CREATED_ID" && device_absent "$CREATED_ID"; }; then
+          printf 'Confirmed newly created inactive zram%s is absent.\n' "$CREATED_ID"
           CREATED_ID=; ALLOCATION_ATTEMPTED=0
         else
           printf 'New-device removal failed; retained state for inspection/restart.\n'
@@ -82,6 +132,8 @@ finish() {
     fi
     if [ "$ALLOCATION_ATTEMPTED" -eq 0 ]; then remove_lock_files; fi
   fi
+  if [ "$code" -ne 0 ]; then snapshot AFTER_FAILURE; fi
+  if [ "$OWN_GATE" -eq 1 ]; then rmdir "$GATE" 2>/dev/null; fi
   printf '\nReport finished. Exit status: %s\n' "$code"
   if [ "$code" -eq 0 ]; then
     printf '%s\nReport: %s\n' "$RESULT" "$REPORT" >&3
@@ -136,6 +188,7 @@ case "$MODE" in apply|status) ;; *) printf 'Usage: sh chatgpt-zram-try.sh [apply
 BOOT_ID=$(cat /proc/sys/kernel/random/boot_id 2>/dev/null)
 case "$BOOT_ID" in ''|*[!0-9a-zA-Z-]*) printf 'Cannot validate the current boot ID.\n' >&2; exit 1;; esac
 LOCK=/data/local/tmp/chatgpt-zram-try-$BOOT_ID.lock
+GATE="$LOCK.apply"
 [ ! -L "$LOCK" ] || { printf 'Diagnostic lock is a symlink; refusing to inspect it.\n' >&2; exit 1; }
 if [ -e "$LOCK" ]; then
   [ -d "$LOCK" ] && [ "$(stat -c '%u' "$LOCK" 2>/dev/null)" = 0 ] \
@@ -150,7 +203,14 @@ exec >> "$REPORT" 2>&1
 trap finish 0
 trap 'ERROR="Interrupted"; exit 130' 1 2 15
 printf 'Temporary +1 GiB logical zRAM experiment; no performance improvement is assumed.\n'
+printf 'Script revision: 2 (Android sysfs write fix).\n'
 printf 'Mode: %s\n' "$MODE"
+if [ "$MODE" = apply ]; then
+  # Serialize the entire apply, including archival of an older failed lock.
+  # A killed process may leave this empty gate behind: fail closed, never steal.
+  mkdir "$GATE" 2>/dev/null || die 'Another apply is running or left an incomplete operation; inspect status or restart.'
+  OWN_GATE=1
+fi
 snapshot BEFORE
 package_versions
 if [ "$MODE" = status ]; then RESULT='Read-only zRAM status captured.'; exit 0; fi
@@ -161,6 +221,9 @@ for applet in mkswap swapon; do
 done
 [ ! -L "$LOCK" ] || die 'Diagnostic lock is a symlink; refusing to continue.'
 if [ -e "$LOCK" ]; then
+  for field in bootid pid state created_id; do
+    [ ! -L "$LOCK/$field" ] || die 'Trial metadata contains a symlink; refusing to continue.'
+  done
   saved_boot=$(cat "$LOCK/bootid" 2>/dev/null)
   saved_state=$(cat "$LOCK/state" 2>/dev/null)
   saved_id=$(cat "$LOCK/created_id" 2>/dev/null)
@@ -170,7 +233,7 @@ if [ -e "$LOCK" ]; then
       exit 0
     fi
   fi
-  die 'An existing trial lock is active or ambiguous; inspect status or restart.'
+  recover_abandoned_lock || die 'An existing trial lock is active or ambiguous; inspect status or restart.'
 fi
 [ -r /proc/swaps ] || die 'Cannot inspect active swap.'
 rows=0; BASE_DEVICE=; PRIORITY=
@@ -212,9 +275,13 @@ printf '%s\n' "$CREATED_ID" > "$LOCK/created_id" || die 'Cannot record the newly
 NEW_SYS=/sys/block/zram$CREATED_ID
 NEW_DEVICE=/dev/block/zram$CREATED_ID
 [ -d "$NEW_SYS" ] || die 'New zRAM sysfs directory is missing.'
-printf '%s\n' "$COMPRESSOR" > "$NEW_SYS/comp_algorithm" || die 'Cannot select the copied compressor.'
+[ "$(cat "$NEW_SYS/disksize" 2>/dev/null)" = 0 ] || die 'New device was already initialized; refusing to configure it.'
+swap_activity "$CREATED_ID"; [ "$?" -eq 1 ] || die 'New device inactivity cannot be confirmed.'
+if [ "$(current_compressor "$NEW_SYS/comp_algorithm")" != "$COMPRESSOR" ]; then
+  write_sysfs "$NEW_SYS/comp_algorithm" "$COMPRESSOR" || die 'Cannot select the copied compressor.'
+fi
 [ "$(current_compressor "$NEW_SYS/comp_algorithm")" = "$COMPRESSOR" ] || die 'New compressor readback differs from zram0.'
-printf '1073741824\n' > "$NEW_SYS/disksize" || die 'Cannot set the new 1 GiB logical capacity.'
+write_sysfs "$NEW_SYS/disksize" 1073741824 || die 'Cannot set the new 1 GiB logical capacity.'
 [ "$(cat "$NEW_SYS/disksize" 2>/dev/null)" = 1073741824 ] || die 'New logical capacity readback is invalid.'
 waited=0
 while ! is_block_device "$NEW_DEVICE"; do
