@@ -43,6 +43,20 @@ Los contadores gráficos solo pueden compararse si coinciden PID y `Stats since`
 
 La versión 4 incluye los dispositivos zRAM adicionales y los valores concretos disponibles de LMKD, junto con versiones de Instagram/InstaEclipse. Para el ensayo temporal de capacidad adicional, consulta [la guía específica](zram-trial.md); el recolector por sí mismo sigue siendo de solo lectura.
 
+## Estado puntual de memoria y contexto OOM existente
+
+Si el informe completo contiene cierres OOM pero un extracto posterior queda vacío, descarga [chatgpt-memoria-estado.zip](../downloads/chatgpt-memoria-estado.zip), extrae `chatgpt-memory-status.sh` directamente en Descargas y ejecuta:
+
+```sh
+su -c '/system/bin/sh /sdcard/Download/chatgpt-memory-status.sh'
+```
+
+Comparte únicamente el `ChatGPTKernel-memoria-<fecha>-<id>.txt` que indica. Es una captura puntual: no repite la prueba de fluidez ni provoca un OOM. Siempre escribe un encabezado y el estado de los lectores; un archivo vacío obtenido con un filtro no permite concluir que el registro haya sido sobrescrito o que la lectura estuviera permitida.
+
+Incluye RAM/swap y zonas de memoria actuales, configuración VM y contadores. Lee `dmesg` en un directorio temporal privado y conserva solo los dos últimos bloques OOM, acotados, excluyendo la tabla de procesos. Informa del estado de salida, errores, cantidad de líneas y primer/último tiempo de kernel reconocido. Consulta además el búfer **kernel** de logcat con un límite de cinco segundos, con el mismo filtro; no recoge el logcat general de aplicaciones. Los datos crudos temporales se borran al salir. El informe queda en Descargas, y no se sube automáticamente.
+
+El estado actual no reconstruye la memoria disponible en el instante de un cierre anterior. Si los mensajes ya no existen en ninguna de las dos fuentes, este script no puede recuperarlos ni determinar retrospectivamente su causa. No modifica parámetros, módulos, procesos, zRAM ni archivos del sistema.
+
 Los archivos sysfs y proc solo se leen. El recolector escribe el informe y su directorio temporal de control; no modifica ajustes, detiene apps, limpia cachés/logs ni sube datos. No instala un servicio de arranque.
 
 El `.txt` contiene nombres de apps y datos de diagnóstico; puedes revisarlo antes de compartirlo. Se excluyen líneas de comando completas, mensajes generales de excepciones de otras apps y las secciones de bases de datos de `meminfo`. La batería y las zonas CPU/SoC son sensores distintos; las frecuencias leídas pueden ser solicitadas en lugar de medidas. Las muestras no equivalen a una medición de FPS ni certifican estabilidad.
