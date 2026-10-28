@@ -11,9 +11,10 @@ import re
 import subprocess
 import tempfile
 import unittest
+from source_path import SOURCE_ROOT
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "kernel-source/linux/mm/vmscan.c"
+SOURCE = SOURCE_ROOT / "mm/vmscan.c"
 
 
 def function(source, name):

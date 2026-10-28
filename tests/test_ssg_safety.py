@@ -5,6 +5,7 @@ import os
 import subprocess
 import tempfile
 import unittest
+from source_path import SOURCE_ROOT
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -93,8 +94,8 @@ static int kstrtoint(const char *page, unsigned int base, int *output) {
 class SsgSafetyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.cg = (ROOT / 'kernel-source/linux/block/ssg-cgroup.c').read_text()
-        cls.io = (ROOT / 'kernel-source/linux/block/ssg-iosched.c').read_text()
+        cls.cg = (SOURCE_ROOT / 'block/ssg-cgroup.c').read_text()
+        cls.io = (SOURCE_ROOT / 'block/ssg-iosched.c').read_text()
 
     def test_policy_result_copied_before_grace_period(self):
         run_c(POLICY_STUBS + function(self.cg, 'ssg_blkcg_shallow_depth') + r'''

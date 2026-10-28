@@ -10,9 +10,10 @@ import re
 import subprocess
 import tempfile
 import unittest
+from source_path import SOURCE_ROOT
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / 'kernel-source/linux/kernel/sched/cpufreq_schedhorizon.c'
+SOURCE = SOURCE_ROOT / 'kernel/sched/cpufreq_schedhorizon.c'
 FIXTURE = ROOT / 'tests/fixtures/schedhorizon-rc2-frequency.c'
 FUNCTIONS = ('sugov_should_update_freq', 'sugov_up_down_rate_limit',
              'sugov_update_next_freq', 'get_next_freq')

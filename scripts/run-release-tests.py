@@ -6,7 +6,9 @@ import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-FILES = ('test_backup.py', 'test_manual_boot_backup.py', 'test_source_acquisition.py',
+sys.path.insert(0, str(ROOT / 'tests'))
+from source_path import SOURCE_ROOT
+FILES = ('test_ci_resources.py', 'test_backup.py', 'test_manual_boot_backup.py', 'test_source_acquisition.py',
          'test_schedhorizon_tunables.py', 'test_schedhorizon_frequency.py',
          'test_mglru_accounting.py', 'test_ssg_safety.py',
          'test_ssg_request_capacity.py')
@@ -19,7 +21,7 @@ for name in FILES:
     assert counts[name] > 0, f'Empty required suite: {name}'
     suite.addTests(loaded)
 result = unittest.TextTestRunner(verbosity=2).run(suite)
-report = {'tests_run': result.testsRun, 'files': counts, 'failures': len(result.failures),
+report = {'source_root': str(SOURCE_ROOT), 'tests_run': result.testsRun, 'files': counts, 'failures': len(result.failures),
           'errors': len(result.errors), 'skips': len(result.skipped),
           'scope': 'host unit and regression checks; no device validation'}
 (ROOT / 'logs').mkdir(exist_ok=True)

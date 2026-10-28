@@ -3,6 +3,7 @@
 from pathlib import Path
 import unittest
 from test_ssg_safety import ROOT, function, run_c
+from source_path import SOURCE_ROOT
 
 STUBS = r'''
 #include <assert.h>
@@ -47,7 +48,7 @@ static void ssg_blkcg_depth_updated(struct blk_mq_hw_ctx *hctx) {}
 class SsgCapacityTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        source = (ROOT / 'kernel-source/linux/block/ssg-iosched.c').read_text()
+        source = (SOURCE_ROOT / 'block/ssg-iosched.c').read_text()
         cls.code = STUBS + ''.join(function(source, name) for name in (
             'ssg_rq_info', 'ssg_resize_rq_info', 'ssg_depth_updated',
             'ssg_tgroup_shallow_depth'))
