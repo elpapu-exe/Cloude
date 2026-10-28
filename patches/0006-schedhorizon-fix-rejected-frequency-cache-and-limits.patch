@@ -1,0 +1,129 @@
+Subject: [PATCH 6/9] schedhorizon: retry rejected demands and honor forced limits
+
+Use an explicit raw-frequency cache validity state. A rate rejection
+or vendor veto invalidates it so unchanged demand can be resolved and
+retried. Keep a pending force until a provider accepts it, consume
+equal-value updates according to CPUFREQ_NEED_UPDATE_LIMITS, and
+bypass directional waits for a forced limits update. Match the base
+schedutil limits publication barriers.
+
+Behavioral references (not literal cherry-picks):
+07458f6a5171d97511dfbdf6ce549ed2ca0280c7
+8e461a1cb43d69d2fc8a97e61916dce571e6bb31
+cfde542df7dd51d26cf667f4af497878ddffd85a
+79443a7e9da3c9f68290a8653837e23aba0fa89f
+
+New reconstruction from published rc1 and the recorded rc3 description;
+not a recovered historical rc3 source or binary.
+
+---
+diff --git a/kernel/sched/cpufreq_schedhorizon.c b/kernel/sched/cpufreq_schedhorizon.c
+--- a/kernel/sched/cpufreq_schedhorizon.c
++++ b/kernel/sched/cpufreq_schedhorizon.c
+@@ -41,6 +41,7 @@
+ 	s64			down_rate_delay_ns;
+ 	unsigned int		next_freq;
+ 	unsigned int		cached_raw_freq;
++	bool			cached_raw_freq_valid;
+ 	u64			first_hp_request_time;
+ 
+ 	/* The next fields are only needed if fast switch cannot be used: */
+@@ -141,11 +142,17 @@
+ 	if (!cpufreq_this_cpu_can_update(sg_policy->policy))
+ 		return false;
+ 
+-	if (unlikely(sg_policy->limits_changed)) {
+-		sg_policy->limits_changed = false;
++	if (unlikely(READ_ONCE(sg_policy->limits_changed))) {
++		WRITE_ONCE(sg_policy->limits_changed, false);
+ 		sg_policy->need_freq_update = true;
++		/* Pair with sugov_limits(): consume limits before resolving them. */
++		smp_mb();
+ 		return true;
+ 	}
++
++	/* A provider veto must not discard a pending forced update. */
++	if (sg_policy->need_freq_update)
++		return true;
+ 
+ 	/* No need to recalculate next freq for min_rate_limit_us
+ 	 * at least. However we might still decide to further rate
+@@ -180,15 +187,32 @@
+ {
+ 	bool should_update = true;
+ 
+-	if (!sg_policy->need_freq_update && sg_policy->next_freq == next_freq)
++	if (sg_policy->need_freq_update) {
++		/* Some drivers require a callback even if the resolved value is equal. */
++		if (sg_policy->next_freq == next_freq &&
++		    !cpufreq_driver_test_flags(CPUFREQ_NEED_UPDATE_LIMITS)) {
++			sg_policy->need_freq_update = false;
++			return false;
++		}
++	} else if (sg_policy->next_freq == next_freq) {
+ 		return false;
++	}
+ 
+ 	trace_android_rvh_set_sugov_update(sg_policy, next_freq, &should_update);
+-	if (!should_update)
++	if (!should_update) {
++		sg_policy->cached_raw_freq_valid = false;
+ 		return false;
+-
+-	if (sugov_up_down_rate_limit(sg_policy, time, next_freq))
++	}
++
++	/* Changed limits must not wait behind a directional rate limit. */
++	if (!sg_policy->need_freq_update &&
++	    sugov_up_down_rate_limit(sg_policy, time, next_freq)) {
++		sg_policy->cached_raw_freq_valid = false;
+ 		return false;
++	}
++
++	/* Consume the force only after a provider has accepted the update. */
++	sg_policy->need_freq_update = false;
+ 
+ 	sg_policy->next_freq = next_freq;
+ 	sg_policy->last_freq_update_time = time;
+@@ -245,10 +269,12 @@
+ 
+ 	do_freq_limit(sg_policy, &freq, time);
+ 
+-	if (freq == sg_policy->cached_raw_freq && !sg_policy->need_freq_update)
++	if (sg_policy->cached_raw_freq_valid &&
++	    freq == sg_policy->cached_raw_freq && !sg_policy->need_freq_update)
+ 		return sg_policy->next_freq;
+ 
+ 	sg_policy->cached_raw_freq = freq;
++	sg_policy->cached_raw_freq_valid = true;
+ 	l_freq = cpufreq_driver_resolve_freq(policy, freq);
+ 	idx = cpufreq_frequency_table_target(policy, freq, CPUFREQ_RELATION_H);
+ 	h_freq = policy->freq_table[idx].frequency;
+@@ -284,7 +310,7 @@
+ static inline void ignore_dl_rate_limit(struct sugov_cpu *sg_cpu)
+ {
+ 	if (cpu_bw_dl(cpu_rq(sg_cpu->cpu)) > sg_cpu->bw_dl)
+-		sg_cpu->sg_policy->limits_changed = true;
++		WRITE_ONCE(sg_cpu->sg_policy->limits_changed, true);
+ }
+ 
+ static inline bool sugov_update_single_common(struct sugov_cpu *sg_cpu,
+@@ -906,6 +932,7 @@
+ 	sg_policy->work_in_progress		= false;
+ 	sg_policy->limits_changed		= false;
+ 	sg_policy->cached_raw_freq		= 0;
++	sg_policy->cached_raw_freq_valid	= false;
+ 
+ 	sg_policy->need_freq_update = cpufreq_driver_test_flags(CPUFREQ_NEED_UPDATE_LIMITS);
+ 
+@@ -958,7 +985,9 @@
+ 		mutex_unlock(&sg_policy->work_lock);
+ 	}
+ 
+-	sg_policy->limits_changed = true;
++	/* Pair with the full barrier in sugov_should_update_freq(). */
++	smp_wmb();
++	WRITE_ONCE(sg_policy->limits_changed, true);
+ }
+ 
+ struct cpufreq_governor schedhorizon_gov = {
