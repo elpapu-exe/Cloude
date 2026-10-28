@@ -17,3 +17,7 @@ Retiene MGLRU activo, IKCONFIG real, correcciones KProfiles, de Horizon y de SSG
 SUSFS 2.3.0 sigue siendo un candidato de procedencia cronológica, sin identificación demostrada de la fuente exacta de R10. No se afirma resolver todos los problemas posibles de SSG (blkg retenidos o contabilidad multi-hctx), ni atribuir los ANR del usuario a estos defectos sin registros del dispositivo. Los avisos BTF efectivos quedan en `build.log` y `build-manifest.json`.
 
 Antes de instalar, guarda una copia verificada del boot funcional fuera del teléfono y lee `LEEME-instalacion.md`. La prueba de `docs/testing.md` conserva WhatsApp, módulos, protecciones térmicas y TikTok oficial.
+
+## Resultado de la entrega
+
+[Actions 40663572783](https://github.com/elpapu-exe/Cloude/actions/runs/40663572783) compiló y publicó rc4 desde `0640e8f41412eba3b66ce3b353735897dc322842`. Pasaron 71 pruebas sin omisiones y los 15.543 exports/CRC coinciden con R10. La auditoría final de fuentes comprobó 76.992 entradas, y los 34 archivos listados por SHA256SUMS se comprobaron antes y después de descargarlos de GitHub. [Entrega con 35 assets](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783). Los avisos BTF efectivos son `filp_close`, `should_failslab` y `vfs_getattr`. La validación en el teléfono sigue pendiente.

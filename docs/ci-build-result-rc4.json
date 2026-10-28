@@ -1,0 +1,322 @@
+{
+  "version": "0.1.0-rc4",
+  "source_commit": "0640e8f41412eba3b66ce3b353735897dc322842",
+  "run_id": 40663572783,
+  "run_url": "https://github.com/elpapu-exe/Cloude/actions/runs/40663572783",
+  "jobs": [
+    {
+      "name": "build",
+      "id": 122732342184,
+      "conclusion": "success",
+      "started_at": "2026-10-28T09:21:19Z",
+      "completed_at": "2026-10-28T11:03:20Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success",
+          "started_at": "2026-10-28T09:21:19Z",
+          "completed_at": "2026-10-28T09:21:21Z"
+        },
+        {
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "conclusion": "success",
+          "started_at": "2026-10-28T09:21:21Z",
+          "completed_at": "2026-10-28T09:21:23Z"
+        },
+        {
+          "name": "Read locked version",
+          "conclusion": "success",
+          "started_at": "2026-10-28T09:21:23Z",
+          "completed_at": "2026-10-28T09:21:23Z"
+        },
+        {
+          "name": "Check actual RAM, cgroup limits, swap and disk",
+          "conclusion": "success",
+          "started_at": "2026-10-28T09:21:23Z",
+          "completed_at": "2026-10-28T09:24:06Z"
+        },
+        {
+          "name": "Start the pinned build container",
+          "conclusion": "success",
+          "started_at": "2026-10-28T09:24:06Z",
+          "completed_at": "2026-10-28T09:24:09Z"
+        },
+        {
+          "name": "Acquire pinned inputs and configure protected kernel",
+          "conclusion": "success",
+          "started_at": "2026-10-28T09:24:09Z",
+          "completed_at": "2026-10-28T09:26:06Z"
+        },
+        {
+          "name": "Compile kernel objects and measure resources",
+          "conclusion": "success",
+          "started_at": "2026-10-28T09:26:06Z",
+          "completed_at": "2026-10-28T09:45:39Z"
+        },
+        {
+          "name": "Link Full LTO and build ARM64 Image",
+          "conclusion": "success",
+          "started_at": "2026-10-28T09:45:39Z",
+          "completed_at": "2026-10-28T11:01:50Z"
+        },
+        {
+          "name": "Verify ABI, run regressions and audit deliverables",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:01:50Z",
+          "completed_at": "2026-10-28T11:03:07Z"
+        },
+        {
+          "name": "Keep audited deliverables for 90 days",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:03:07Z",
+          "completed_at": "2026-10-28T11:03:11Z"
+        },
+        {
+          "name": "Keep diagnostics even when the build fails",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:03:11Z",
+          "completed_at": "2026-10-28T11:03:12Z"
+        },
+        {
+          "name": "Stop the temporary build container",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:03:12Z",
+          "completed_at": "2026-10-28T11:03:15Z"
+        },
+        {
+          "name": "Remove swap created for this run",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:03:15Z",
+          "completed_at": "2026-10-28T11:03:17Z"
+        },
+        {
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:03:17Z",
+          "completed_at": "2026-10-28T11:03:18Z"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:03:18Z",
+          "completed_at": "2026-10-28T11:03:18Z"
+        }
+      ]
+    },
+    {
+      "name": "publish",
+      "id": 122777668825,
+      "conclusion": "success",
+      "started_at": "2026-10-28T11:03:22Z",
+      "completed_at": "2026-10-28T11:03:51Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:03:23Z",
+          "completed_at": "2026-10-28T11:03:24Z"
+        },
+        {
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:03:24Z",
+          "completed_at": "2026-10-28T11:03:27Z"
+        },
+        {
+          "name": "Run actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:03:27Z",
+          "completed_at": "2026-10-28T11:03:33Z"
+        },
+        {
+          "name": "Upload draft, download and verify every asset, then publish prerelease",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:03:33Z",
+          "completed_at": "2026-10-28T11:03:49Z"
+        },
+        {
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:03:49Z",
+          "completed_at": "2026-10-28T11:03:49Z"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success",
+          "started_at": "2026-10-28T11:03:49Z",
+          "completed_at": "2026-10-28T11:03:49Z"
+        }
+      ]
+    }
+  ],
+  "release": {
+    "url": "https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783",
+    "tag": "chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783",
+    "draft": false,
+    "prerelease": true,
+    "asset_count": 35,
+    "essential_assets": [
+      {
+        "name": "build-manifest.json",
+        "bytes": 8713,
+        "sha256": "6cc421b2a2bd908fe464e65154ca03d28cf770cb5a22db7f8578a7caa0f335f3",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783/build-manifest.json"
+      },
+      {
+        "name": "ChatGPTKernel-0.1.0-rc4-sources.tar.zst",
+        "bytes": 195371053,
+        "sha256": "4438ea9297310b93e2021930e3165edc51a758a42b0cd2489a9fee64f5c855fb",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783/ChatGPTKernel-0.1.0-rc4-sources.tar.zst"
+      },
+      {
+        "name": "ChatGPTKernel-0.1.0-rc4-topaz-tapas-A13-KSU.zip",
+        "bytes": 25216352,
+        "sha256": "069f0fa1b59b39767597f40f78988f3a5aeaef70df468b2a8bc825c412f42265",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783/ChatGPTKernel-0.1.0-rc4-topaz-tapas-A13-KSU.zip"
+      },
+      {
+        "name": "ChatGPTKernel.config",
+        "bytes": 202113,
+        "sha256": "60b12e653667c93f5b19fdf152453e6c02322277d0fc2d8586f60e6ccd6e6f15",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783/ChatGPTKernel.config"
+      },
+      {
+        "name": "ci-dist-audit.json",
+        "bytes": 1184,
+        "sha256": "33e828d2c69364f668728bfeed6c2801f753f4da1b10116bb3e371481645c45d",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783/ci-dist-audit.json"
+      },
+      {
+        "name": "SHA256SUMS",
+        "bytes": 3026,
+        "sha256": "10b3b02474822567e122ce2b96d3da8a548f8d4f1c388211dc4cf078a53fbc18",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783/SHA256SUMS"
+      },
+      {
+        "name": "source-archive-audit.json",
+        "bytes": 435,
+        "sha256": "cc567b24e8ef43f8d09aebfa5e19755b9a87aeefb02800560d4119141051c050",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783/source-archive-audit.json"
+      }
+    ]
+  },
+  "image": {
+    "release": "5.15.216-ChatGPTKernel-0.1.0-rc4",
+    "image_bytes": 47454720,
+    "image_sha256": "923fba7a8c8740994f8a5d4c2981fdde2081b3b434d72ff9f888d7e24289a4a8"
+  },
+  "abi": {
+    "candidate_image_sha256": "923fba7a8c8740994f8a5d4c2981fdde2081b3b434d72ff9f888d7e24289a4a8",
+    "reference_exports": 15543,
+    "candidate_exports": 15543,
+    "matching_exports": 15543,
+    "missing_exports": [],
+    "changed_crcs": {},
+    "added_exports": [],
+    "decoder_cross_checked_with_vmlinux_symvers": true,
+    "hardware_tested": false,
+    "phone_vendor_modules_tested": false
+  },
+  "sources": {
+    "archive": "ChatGPTKernel-0.1.0-rc4-sources.tar.zst",
+    "sha256": "4438ea9297310b93e2021930e3165edc51a758a42b0cd2489a9fee64f5c855fb",
+    "entries": 76992,
+    "all_contents_types_modes_and_symlink_targets_match": true,
+    "component_entries": {
+      ".cache/linux": 76070,
+      ".cache/kernelsu": 765,
+      ".cache/baseband-guard": 22
+    },
+    "entries_manifest_sha256": "f2ec83a5fdd357b5530879c60af5176c2417f3d7870bbce94b304429c06e8c24"
+  },
+  "audit": {
+    "version": "0.1.0-rc4",
+    "source_archive": "ChatGPTKernel-0.1.0-rc4-sources.tar.zst",
+    "source_archive_sha256": "4438ea9297310b93e2021930e3165edc51a758a42b0cd2489a9fee64f5c855fb",
+    "zip": "ChatGPTKernel-0.1.0-rc4-topaz-tapas-A13-KSU.zip",
+    "zip_sha256": "069f0fa1b59b39767597f40f78988f3a5aeaef70df468b2a8bc825c412f42265",
+    "release_tests": {
+      "source_root": "/work/.cache/linux",
+      "tests_run": 71,
+      "files": {
+        "test_ci_resources.py": 8,
+        "test_backup.py": 4,
+        "test_manual_boot_backup.py": 6,
+        "test_source_acquisition.py": 5,
+        "test_schedhorizon_tunables.py": 5,
+        "test_schedhorizon_frequency.py": 12,
+        "test_mglru_accounting.py": 4,
+        "test_ssg_safety.py": 3,
+        "test_ssg_request_capacity.py": 3,
+        "test_mglru_reclaim.py": 6,
+        "test_binder_async_quota.py": 5,
+        "test_cpufreq_start_serialization.py": 4,
+        "test_f2fs_range_safety.py": 6
+      },
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "scope": "host unit and regression checks; no device validation"
+    },
+    "source_audit_sha256": "cc567b24e8ef43f8d09aebfa5e19755b9a87aeefb02800560d4119141051c050",
+    "all_required_checks_passed": true
+  },
+  "compiled_watermark_scale_factor": 10,
+  "actual_ikconfig_matches_effective_config": true,
+  "effective_config_sha256": "60b12e653667c93f5b19fdf152453e6c02322277d0fc2d8586f60e6ccd6e6f15",
+  "btf_warnings": [
+    "filp_close",
+    "should_failslab",
+    "vfs_getattr"
+  ],
+  "resource_plan": {
+    "extra_swap_gib": 28,
+    "extra_swap_bytes": 30064771072,
+    "workspace_free_after_swap_bytes": 19439542272,
+    "docker_free_after_swap_bytes": 19439538176,
+    "minimum_workspace_free_bytes": 16106127360,
+    "minimum_memory_swap_bytes": 38654705664,
+    "planned_memory_swap_bytes_including_startup": 39728447488,
+    "interpretation": "Capacity plan for a monitored attempt; no guarantee of successful linking."
+  },
+  "build_container_resources": {
+    "observed_at_epoch": 1793179467,
+    "cpu_count": 2,
+    "host_mem_total_bytes": 8323964928,
+    "host_swap_total_bytes": 33285988352,
+    "available_ram_bytes": 7095717888,
+    "available_swap_bytes": 33285988352,
+    "available_swap_capacity_limit_bytes": null,
+    "available_memory_swap_bytes": 40381706240,
+    "workspace_free_bytes": 18882265088,
+    "cgroup_limits": [],
+    "minimum_memory_swap_bytes": 38654705664,
+    "minimum_workspace_free_bytes": 16106127360,
+    "interpretation": "Capacity preflight only; swap can be slow and successful linking is not guaranteed."
+  },
+  "full_lto_link": {
+    "elapsed": "1:16:10",
+    "maximum_resident_set_kbytes": 7237892,
+    "major_page_faults": 7911819,
+    "file_system_inputs": 183148400,
+    "file_system_outputs": 5029656,
+    "interpretation": "GNU time reports peak resident physical memory, not peak virtual memory or total RAM+swap consumption. The run completed with substantial paging and I/O."
+  },
+  "download_verification": {
+    "workflow": "scripts/ci-publish.sh at source_commit",
+    "checksum_listed_files": 34,
+    "checksum_ok_events": 68,
+    "every_listed_file_checked_twice": true,
+    "phases": [
+      "initial dist check",
+      "download all draft release assets and check again; compare SHA256SUMS before publication"
+    ],
+    "all_release_digests_match_core_ci_audits": true
+  },
+  "hardware_validation": {
+    "boot": false,
+    "phone_vendor_modules": false,
+    "performance": false,
+    "temperature": false
+  }
+}

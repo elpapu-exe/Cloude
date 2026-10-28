@@ -1,6 +1,6 @@
 # Instalación y recuperación
 
-**ChatGPT Kernel 0.1.0-rc4** es una candidata experimental para Redmi Note 12 **4G TAPAS/topaz y Android 13**, con la LineageOS 20 del usuario como referencia. **Su compilación y publicación están pendientes:** estas instrucciones se aplican cuando se entregue un ZIP rc4 verificado. Todavía no se ha probado en el teléfono. No corresponde al Redmi Note 12 5G. Compilar y comprobar exports/CRC no certifica arranque, módulos del vendor o estabilidad.
+**ChatGPT Kernel 0.1.0-rc4** es una candidata experimental para Redmi Note 12 **4G TAPAS/topaz y Android 13**, con la LineageOS 20 del usuario como referencia. **Compilada y publicada:** [ZIP y hashes verificados](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783). Todavía no se ha probado en el teléfono. No corresponde al Redmi Note 12 5G. Compilar y comprobar exports/CRC no certifica arranque, módulos del vendor o estabilidad.
 
 La [publicación anterior rc3-rebuild1](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058) permanece disponible con sus propios hashes e instrucciones. Es una reconstrucción distinta del rc3 histórico inaccesible; su ZIP no debe identificarse como rc4. Para otras ROM A13, la compatibilidad del dispositivo, ramdisk y módulos requiere comprobación real.
 

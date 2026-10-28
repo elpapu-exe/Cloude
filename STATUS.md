@@ -1,12 +1,14 @@
 # Estado y continuación
 
-Candidata actual: **0.1.0-rc4, pendiente de compilación completa y publicación en GitHub Actions**.
+Candidata actual: **0.1.0-rc4, compilada y publicada mediante GitHub Actions**.
 
 ## Trabajo de rc4
 
 Se añaden seis correcciones comprobadas como ausentes: dos de MGLRU (contador de escaneo y VMA especiales), una de cuota Binder, una de serialización al iniciar schedutil/Horizon y dos de manejo de rangos/errores F2FS. La [revisión internacional](docs/community-review-rc4.md) enlaza los commits primarios, la adaptación y los descartes. El parche 0016 restaura `watermark_scale_factor=10`, retirando el experimento 64 para una candidata de alcance TAPAS/A13 general.
 
-Las pruebas locales nuevas compilan funciones C reales con ASan/UBSan y controles negativos: memoria/Binder, arranque de los gobernadores y rangos F2FS. Son modelos de regresión del host. La compilación ARM64, exports/CRC, configuración embebida, BTF, imagen, archivo final de fuentes y descarga de rc4 deben pasar en su propia ejecución. No se considera completado ese trabajo por los resultados de rc3-rebuild1.
+Las pruebas locales nuevas compilan funciones C reales con ASan/UBSan y controles negativos: memoria/Binder, arranque de los gobernadores y rangos F2FS. Son modelos de regresión del host. Su [ejecución propia](https://github.com/elpapu-exe/Cloude/actions/runs/40663572783) terminó con build y publicación SUCCESS: 71 pruebas sin fallos ni omisiones; 15.543 exports/CRC idénticos a R10; IKCONFIG real, inicializador ELF watermark=10 y archivo final de fuentes auditado. La descarga verificó dos veces los 34 archivos de SHA256SUMS, antes y después de subirlos, y publicó 35 assets. [Resultado rc4](docs/ci-build-result-rc4.json).
+
+[Entrega rc4](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783), commit compilado `0640e8f41412eba3b66ce3b353735897dc322842`. ZIP: 25.216.352 bytes; SHA256 `069f0fa1b59b39767597f40f78988f3a5aeaef70df468b2a8bc825c412f42265`. Fuentes tar.zst: 195.371.053 bytes; SHA256 `4438ea9297310b93e2021930e3165edc51a758a42b0cd2489a9fee64f5c855fb`. Avisos BTF: `filp_close`, `should_failslab`, `vfs_getattr`.
 
 Se mantienen la ROM y los módulos necesarios, root histórico, MGLRU activo, CFI, Full LTO/O2, SCS, BTF, MODVERSIONS y térmicas. No se introducen cambios de zRAM, LMKD, swappiness, frecuencias o voltajes. La restauración del watermark afecta su inicializador compilado; la ROM conserva la posibilidad de sobrescribirlo.
 
@@ -26,4 +28,4 @@ rc3-rebuild1 fue una reconstrucción nueva a partir de rc1 y del resumen registr
 
 ## Pendiente
 
-Terminar las comprobaciones globales y CI de rc4, publicar sus artefactos y verificar sus descargas. Después comprobar arranque, funciones básicas, root/módulos, notificaciones de WhatsApp y la [prueba de cinco minutos](docs/testing.md). Ni rc4 ni rc3-rebuild1 tienen una prueba de arranque confirmada en este teléfono. La experiencia favorable histórica corresponde a una versión anterior.
+Comprobar arranque, funciones básicas, root/módulos, notificaciones de WhatsApp y la [prueba de cinco minutos](docs/testing.md). Ni rc4 ni rc3-rebuild1 tienen una prueba de arranque confirmada en este teléfono. La experiencia favorable histórica corresponde a una versión anterior.
