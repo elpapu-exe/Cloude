@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "project": "ChatGPT Kernel",
+  "version": "0.1.0-rc3-rebuild1",
+  "completed": true,
+  "target": "descend",
+  "command": "source scripts/build-env.sh; make \"${CHATGPT_MAKE_ARGS[@]}\" -j2 descend",
+  "exit_code": 0,
+  "duration_seconds": 883,
+  "parallel_jobs": 2,
+  "host_cpu_count": 3,
+  "started_at_utc": "2026-10-28T04:20:17+00:00",
+  "finished_at_utc": "2026-10-28T04:35:00+00:00",
+  "configuration_sha256": "959f9931856597bc5219a68392c77334887315c8e53e30a039f52b82dfaa3cc7",
+  "input_hashes": {
+    "out/.config": "959f9931856597bc5219a68392c77334887315c8e53e30a039f52b82dfaa3cc7",
+    "config/sources.lock.json": "a92067d83a66b1dbf54581593916cb6dbecf2e2b2f7125e5f4c58118f477b53d",
+    "config/host-tools.lock.json": "2bf436c387b072d809096e38d66ec6599a51e52c841039fe8c0bb7b976a71ade",
+    ".cache/prepared.json": "fed00b881379a1beea2d06e97419a4bba9921f2a856c9f43097a54ef735dcee1",
+    "patches": {
+      "0001-susfs-v2.3.0-r10-context.patch": "7e4612109ff9ad6f4a4a4a50ddc5921024f2192eea8e0953d0b315fe02467beb",
+      "0002-integrate-pinned-root-and-real-config.patch": "a67273fffc369753ce4cd37703c388ad8ed1867b280a9e29a09912a55ecc226c",
+      "0003-kprofiles-fix-context-and-input.patch": "ecdb0e40e137047b6a6b7d4e191e10db882334090ed64dc0d619156527db9ac7",
+      "0004-mm-increase-reclaim-headroom.patch": "092da7c19c42494b003581f2f48caba3ff8ffcfc1e93782c579a13e54bd9b265",
+      "0005-schedhorizon-protect-dynamic-tunables.patch": "fe30c50f77599153a32d2210f0fb46783fc06faa1096ef7b072e324db7b36dce",
+      "0006-schedhorizon-fix-rejected-frequency-cache-and-limits.patch": "c1cb1fe75f99d8aa2a088746aa56e22cda29e96cfcad77d3d258c171d0d6cad8",
+      "0007-mglru-preserve-page-type-accounting.patch": "0d6d55e2a5f83bdad670edcd31955ddb63fdd941e8843a396e20d65dae930ee7",
+      "0008-ssg-fix-lookup-lifetime-and-sysfs-input.patch": "2aff5b33fd2a8f017ea53580270a34e2c766cd9a08d49ec58713c81bf91babb7",
+      "0009-ssg-bound-request-metadata-by-allocation.patch": "638c7a56c180ab8d2520f5407f074e29d40cf6a6ddffe634e7852bcd35173e8b"
+    },
+    "target": "descend",
+    "linker_script_sha256": "80d230279ecaf706d72f22bb8ef23c308155d959334b46618833f473ce314982"
+  },
+  "object_files": {
+    "count": 2985,
+    "apparent_bytes": 845149760,
+    "types": {
+      "llvm_ir_bitcode": 2795,
+      "aarch64_elf": 117,
+      "x86_64_host_elf": 71,
+      "other_elf": 2
+    },
+    "bytes_by_type": {
+      "llvm_ir_bitcode": 819396848,
+      "aarch64_elf": 21050904,
+      "x86_64_host_elf": 4677104,
+      "other_elf": 24904
+    }
+  },
+  "archives": {
+    "count": 734,
+    "types": {
+      "thin": 732,
+      "regular": 2
+    },
+    "apparent_bytes": 2274614
+  },
+  "disk": {
+    "initial_out_allocated_bytes": 28545024,
+    "final_out_allocated_bytes": 1151901696,
+    "observed_peak_out_allocated_bytes": 1151901696,
+    "source_and_tool_cache_allocated_bytes": 2143612928,
+    "initial_workspace_free_bytes": 29850927104,
+    "minimum_sampled_workspace_free_bytes": 28727214080
+  },
+  "memory": {
+    "cgroup_memory_max_bytes": 8589934592,
+    "maximum_sampled_cgroup_memory_current_bytes": 4111265792,
+    "sample_period_seconds": 10,
+    "sample_count": 89,
+    "includes_other_processes_and_page_cache": true,
+    "process_peak_rss_measured": false,
+    "full_lto_peak_measured": false
+  },
+  "security_configuration": {
+    "CONFIG_LTO_CLANG_FULL": true,
+    "CONFIG_CFI_CLANG": true,
+    "CONFIG_SHADOW_CALL_STACK": true,
+    "CONFIG_DEBUG_INFO_BTF": true,
+    "CONFIG_MODVERSIONS": true
+  },
+  "prospective_hosted_attempt": {
+    "minimum_free_workspace_after_swap_bytes": 16106127360,
+    "measured_cache_bytes": 2143612928,
+    "measured_object_stage_out_bytes": 1151901696,
+    "unmeasured_allowances": {
+      "docker_and_bootstrap_estimate_bytes": 2147483648,
+      "compressed_sources_zip_logs_estimate_bytes": 1073741824,
+      "stripped_kallsyms_and_maps_estimate_bytes": 536870912,
+      "disk_guard_unused_reserve_bytes": 2147483648
+    },
+    "remaining_budget_for_three_dwarf_elf_outputs_bytes": 6905032704,
+    "dwarf_elf_names": [
+      "vmlinux.o",
+      ".tmp_vmlinux.btf",
+      "vmlinux"
+    ],
+    "dwarf_elf_sizes_measured": false,
+    "swap_plan_free_memory_target_gib": 37,
+    "memory_gate_free_ram_plus_swap_gib": 36,
+    "link_success_guaranteed": false
+  },
+  "limits": [
+    "Object target reused an existing configured out directory and any up-to-date objects; this was not a clean rebuild.",
+    "No global Full LTO link, BTF generation, Image packaging, ABI comparison or hardware validation was performed by this measurement.",
+    "10-second sampling can miss transient peaks; cgroup memory includes page cache and other work in the shared environment.",
+    "Docker/bootstrap, source package and ELF space allowances are budgets for a monitored attempt, not measured upper bounds."
+  ],
+  "evidence_log_hashes": {
+    "objects-baseline.json": "8b4d8fd32f7d12f9787d15276685cd9e263337c50b2f443d6ded2e91e59cc285",
+    "objects-build.log": "a43ae4f680e8dd7fe951eb54ea1bacd08305c7778b751ae6cbe173ff458b9ede",
+    "objects-resources.jsonl": "d34650cb3d94631b9bc6ac7d764fe08d6ed78a0522c592d8a2b5a0796e779a1d",
+    "objects-summary.json": "a97a5d257257da64cc65a1a72b246f9a8870aee8a1ad9b66ef85867e37d6d9a2",
+    "objects-inputs.json": "491682519a95b9367258da1557e9b370c48b13e75a67d2fea0f64c9936acd2e4"
+  }
+}

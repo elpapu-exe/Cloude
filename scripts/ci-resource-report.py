@@ -30,6 +30,7 @@ def resource_report():
     available_ram = memory['MemAvailable']
     available_swap = memory['SwapFree']
     cgroup_records = []
+    swap_capacity_limit = None
     unified = next((line[3:] for line in Path('/proc/self/cgroup').read_text().splitlines()
                     if line.startswith('0::')), None)
     if unified is not None:
@@ -47,6 +48,7 @@ def resource_report():
                 available_ram = min(available_ram, ram)
             if swap is not None:
                 available_swap = min(available_swap, swap)
+                swap_capacity_limit = swap if swap_capacity_limit is None else min(swap_capacity_limit, swap)
             if ram is not None or swap is not None:
                 cgroup_records.append({'path': str(ancestor), 'available_ram_bytes': ram,
                                        'available_swap_bytes': swap})
@@ -78,10 +80,12 @@ def resource_report():
         'observed_at_epoch': int(time.time()), 'cpu_count': os.cpu_count(),
         'host_mem_total_bytes': memory['MemTotal'], 'host_swap_total_bytes': memory['SwapTotal'],
         'available_ram_bytes': available_ram, 'available_swap_bytes': available_swap,
+        'available_swap_capacity_limit_bytes': swap_capacity_limit,
         'available_memory_swap_bytes': available_ram + available_swap,
         'workspace_free_bytes': shutil.disk_usage(ROOT).free,
         'cgroup_limits': cgroup_records,
-        'minimum_memory_swap_bytes': 36 * GIB, 'minimum_workspace_free_bytes': 45 * GIB,
+        'minimum_memory_swap_bytes': 36 * GIB,
+        'minimum_workspace_free_bytes': int(float(os.environ.get('CHATGPT_CI_MIN_FREE_GIB', '45')) * GIB),
         'interpretation': 'Capacity preflight only; swap can be slow and successful linking is not guaranteed.',
     }
 
@@ -99,6 +103,6 @@ if __name__ == '__main__':
     print(text, end='')
     if options.enforce:
         if report['available_memory_swap_bytes'] < report['minimum_memory_swap_bytes']:
-            raise SystemExit('Full LTO requires at least 36 GiB available RAM + usable swap; choose a larger runner or provision swap.')
+            raise SystemExit('Configured memory preflight needs 36 GiB available RAM + usable swap; current capacity is insufficient.')
         if report['workspace_free_bytes'] < report['minimum_workspace_free_bytes']:
-            raise SystemExit('Full LTO requires at least 45 GiB workspace space after provisioning swap; choose a larger runner.')
+            raise SystemExit('Free workspace after swap is below the configured build reserve; see recorded measurements.')

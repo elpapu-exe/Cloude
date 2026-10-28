@@ -8,9 +8,9 @@ on:
         required: true
         default: '"ubuntu-24.04"'
       swap_gib:
-        description: 'Extra swap GiB, disposable GitHub-hosted runners only (0 disables)'
+        description: 'Extra swap GiB or auto to cover the measured memory deficit; hosted runners only'
         required: true
-        default: '32'
+        default: 'auto'
       publish:
         description: 'Publish an experimental GitHub prerelease after all audits'
         type: boolean
@@ -33,9 +33,10 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     env:
-      CHATGPT_CI_SWAP_GIB: ${{ inputs.swap_gib || vars.KERNEL_SWAP_GIB || '32' }}
+      CHATGPT_CI_SWAP_GIB: ${{ inputs.swap_gib || vars.KERNEL_SWAP_GIB || 'auto' }}
       CHATGPT_CI_CLEAN_SDKS: 'true'
-      CHATGPT_JOBS: '5'
+      CHATGPT_JOBS: ${{ vars.KERNEL_JOBS || '2' }}
+      CHATGPT_BUILD_CONTAINER: chatgpt-kernel-${{ github.run_id }}-${{ github.run_attempt }}
       # amd64 Debian 13-slim manifest verified with docker manifest inspect.
       CHATGPT_BUILD_IMAGE: debian:13-slim@sha256:1e1a22175fbf1b32157ddaf0219e1db4e5401fab2b94ed285add64d18587cd2d
     steps:
@@ -43,11 +44,25 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            /.github/
+            /config/
+            /docs/
+            /installer/
+            /patches/
+            /scripts/
+            /tests/
+            /README.md
+            /STATUS.md
+            /.gitattributes
+            /.gitignore
+          sparse-checkout-cone-mode: false
       - name: Read locked version
         id: version
         shell: bash
         run: |
-          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          /usr/bin/python3 - <<'PY' >> "$GITHUB_OUTPUT"
           import json,re
           version=json.load(open('config/sources.lock.json'))['version']
           assert re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]+', version)
@@ -56,20 +71,42 @@ jobs:
       - name: Check actual RAM, cgroup limits, swap and disk
         shell: bash
         run: bash scripts/ci-preflight.sh 2>&1 | tee logs-preflight.txt
-      - name: Build, validate and audit corresponding sources
+      - name: Start the pinned build container
         shell: bash
         run: |
           mkdir -p logs
           cp logs-preflight.txt logs/preflight.log
           printf '%s\n' "$CHATGPT_BUILD_IMAGE" > logs/container-image.txt
-          python3 scripts/ci-monitor.py > logs/resource-samples.jsonl &
+          docker run --rm --detach --init --name "$CHATGPT_BUILD_CONTAINER" \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/work" \
+            --workdir /work --env CHATGPT_JOBS --env CHATGPT_CI_MIN_FREE_GIB \
+            "$CHATGPT_BUILD_IMAGE" sleep infinity
+      - name: Acquire pinned inputs and configure protected kernel
+        shell: bash
+        run: |
+          docker exec "$CHATGPT_BUILD_CONTAINER" \
+            bash scripts/ci-build-in-container.sh setup 2>&1 | tee logs/ci-setup.log
+      - name: Compile kernel objects and measure resources
+        shell: bash
+        run: |
+          /usr/bin/python3 scripts/ci-monitor.py > logs/resource-samples-objects.jsonl &
           CHATGPT_MONITOR_PID=$!
           trap 'kill "$CHATGPT_MONITOR_PID" 2>/dev/null || true; wait "$CHATGPT_MONITOR_PID" 2>/dev/null || true' EXIT
-          docker run --rm --init \
-            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/work" \
-            --workdir /work --env CHATGPT_JOBS \
-            "$CHATGPT_BUILD_IMAGE" bash scripts/ci-build-in-container.sh \
-            2>&1 | tee logs/ci-build.log
+          docker exec "$CHATGPT_BUILD_CONTAINER" \
+            bash scripts/ci-build-in-container.sh objects 2>&1 | tee logs/ci-objects.log
+      - name: Link Full LTO and build ARM64 Image
+        shell: bash
+        run: |
+          /usr/bin/python3 scripts/ci-monitor.py > logs/resource-samples-link.jsonl &
+          CHATGPT_MONITOR_PID=$!
+          trap 'kill "$CHATGPT_MONITOR_PID" 2>/dev/null || true; wait "$CHATGPT_MONITOR_PID" 2>/dev/null || true' EXIT
+          docker exec "$CHATGPT_BUILD_CONTAINER" \
+            bash scripts/ci-build-in-container.sh link 2>&1 | tee logs/ci-link.log
+      - name: Verify ABI, run regressions and audit deliverables
+        shell: bash
+        run: |
+          docker exec "$CHATGPT_BUILD_CONTAINER" \
+            bash scripts/ci-build-in-container.sh audit 2>&1 | tee logs/ci-audit.log
       - name: Keep audited deliverables for 90 days
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -90,12 +127,28 @@ jobs:
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 90
+      - name: Stop the temporary build container
+        if: always()
+        shell: bash
+        run: |
+          if docker container inspect "$CHATGPT_BUILD_CONTAINER" >/dev/null 2>&1; then
+            docker rm --force "$CHATGPT_BUILD_CONTAINER"
+          fi
       - name: Remove swap created for this run
         if: always() && env.CHATGPT_CREATED_SWAP != ''
         shell: bash
         run: |
-          sudo swapoff "$CHATGPT_CREATED_SWAP"
-          sudo rm -f "$CHATGPT_CREATED_SWAP"
+          if [[ -f "$CHATGPT_CREATED_SWAP" ]]; then
+            if /usr/bin/python3 - "$CHATGPT_CREATED_SWAP" <<'PYCODE'
+          import sys
+          paths={line.split()[0] for line in open('/proc/swaps').read().splitlines()[1:]}
+          raise SystemExit(0 if sys.argv[1] in paths else 1)
+          PYCODE
+            then
+              sudo swapoff "$CHATGPT_CREATED_SWAP"
+            fi
+            sudo rm -f -- "$CHATGPT_CREATED_SWAP"
+          fi
 
   publish:
     needs: build
@@ -110,6 +163,7 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
+          filter: blob:none
           sparse-checkout: |
             scripts/ci-publish.sh
             docs/release-notes.md

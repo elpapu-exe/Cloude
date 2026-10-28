@@ -6,9 +6,11 @@ El workflow `.github/workflows/kernel.yml` se puede iniciar en Actions mediante 
 
 ## Recursos
 
-El enlace anterior necesitó alrededor de 32 GiB temporales. El ZIP final ronda 25 MB: son magnitudes diferentes. El preflight registra memoria física disponible, límites de cgroup, swap realmente utilizable y espacio libre. Exige 36 GiB combinados y 45 GiB de disco después de crear swap; no garantiza que esas condiciones basten para cualquier runner.
+El enlace anterior registró alrededor de 32 GiB temporales; no es el tamaño del ZIP. Se conserva Full LTO y su configuración de seguridad. La nueva medición de objetos (`descend -j2`, sin enlace) terminó con 2.985 `.o`, `out/` de 1,073 GiB y entradas de 1,996 GiB. Los ELF finales aún no se han medido: [presupuesto detallado](ci-object-measurement.md).
 
-Se prefiere un runner con al menos 40 GiB de RAM física. El campo `runner` acepta JSON con las etiquetas de un runner que exista en la cuenta; no crea ni contrata uno. El estándar `"ubuntu-24.04"` puede usar swap en su máquina desechable y fallará antes de construir si no hay capacidad. En self-hosted no se eliminan SDKs ni se crea swap: su operador debe disponer los recursos. No se desactivan protecciones para eludir falta de memoria.
+El perfil compacto para runners desechables de GitHub es un ensayo vigilado: recupera SDKs ajenos al build, evita fuentes duplicadas, calcula swap para 37 GiB combinados disponibles con margen de arranque y exige 36 GiB utilizables y 15 GiB libres de trabajo tras provisionarla. Conserva una vigilancia de 2 GiB de disco durante objetos/enlace. Esos umbrales son un presupuesto elegido con mediciones parciales y no garantizan que termine. El margen anterior de 45 GiB era conservador, no un requisito medido del kernel.
+
+En self-hosted se mantiene el margen de disco de 45 GiB, sin limpiar SDKs ni crear swap. Se prefiere mayor RAM física cuando exista un runner adecuado, pero no se presupone su disponibilidad ni se contrata uno. [Uso y fases de Actions](build-actions.md).
 
 ## Receta
 
@@ -32,7 +34,7 @@ Para reproducir fuera de CI se necesita Bash con `set -o pipefail`, los recursos
 
 - Configuración de seguridad y compatibilidad, ARM64/ELF AArch64, versión/root, IKCONFIG idéntica a `.config` e inicializador `watermark_scale_factor=64` en ELF.
 - Decoder de exports contrastado contra `vmlinux.symvers`, igualdad completa de símbolos y CRC con el R10 de referencia.
-- Ocho suites (incluida la copia manual previa) de regresión obligatorias: ausencia, fallo u omisión bloquean el empaquetado.
+- Nueve suites (incluidos respaldo manual y controles de recursos CI) de regresión obligatorias: ausencia, fallo u omisión bloquean el empaquetado.
 - Reaplicación de todos los parches y auditoría del archivo `.tar.zst` **final**, comparando cada contenido, tipo, modo y destino literal de symlink. Se excluyen `.git`, herramientas y objetos compilados.
 - CRC e imagen/config del ZIP y listado cerrado SHA256SUMS.
 

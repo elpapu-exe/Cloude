@@ -29,8 +29,8 @@ def capacity(work=43, ram=6.5, swap=3, cap=None):
 class ResourceTests(unittest.TestCase):
     def test_auto_swap_rounds_deficit_and_preserves_workspace(self):
         result = PLAN(capacity(), minimum_disk_gib=15)
-        self.assertEqual(result['extra_swap_gib'], 27)
-        self.assertEqual(result['workspace_free_after_swap_bytes'], 16 * GIB)
+        self.assertEqual(result['extra_swap_gib'], 28)
+        self.assertEqual(result['workspace_free_after_swap_bytes'], 15 * GIB)
 
     def test_fixed_swap_cannot_consume_build_reserve(self):
         with self.assertRaises(ValueError):

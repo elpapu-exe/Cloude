@@ -10,9 +10,13 @@ GIB = 1024 ** 3
 
 def plan_resources(report, *, requested_swap='auto', minimum_disk_gib=45,
                    swap_free_bytes=None, docker_free_bytes=None,
-                   swap_shares_workspace=True, swap_shares_docker=True):
+                   swap_shares_workspace=True, swap_shares_docker=True,
+                   startup_memory_gib=1):
+    if minimum_disk_gib < 2 or startup_memory_gib < 0:
+        raise ValueError('Disk reserve must be at least 2 GiB and startup margin non-negative')
     minimum_memory = report['minimum_memory_swap_bytes']
-    deficit = max(0, minimum_memory - report['available_memory_swap_bytes'])
+    target_memory = minimum_memory + int(startup_memory_gib * GIB)
+    deficit = max(0, target_memory - report['available_memory_swap_bytes'])
     needed = (deficit + GIB - 1) // GIB
     amount = needed if requested_swap == 'auto' else int(requested_swap)
     if amount < 0 or amount < needed:
@@ -22,7 +26,7 @@ def plan_resources(report, *, requested_swap='auto', minimum_disk_gib=45,
     usable_after = report['available_swap_bytes'] + extra
     if cap is not None:
         usable_after = min(usable_after, cap)
-    if report['available_ram_bytes'] + usable_after < minimum_memory:
+    if report['available_ram_bytes'] + usable_after < target_memory:
         raise ValueError('The cgroup swap cap prevents meeting the memory headroom')
     disk_minimum = int(minimum_disk_gib * GIB)
     work = report['workspace_free_bytes']
@@ -39,6 +43,7 @@ def plan_resources(report, *, requested_swap='auto', minimum_disk_gib=45,
             'docker_free_after_swap_bytes': docker_after,
             'minimum_workspace_free_bytes': disk_minimum,
             'minimum_memory_swap_bytes': minimum_memory,
+            'planned_memory_swap_bytes_including_startup': target_memory,
             'interpretation': 'Capacity plan for a monitored attempt; no guarantee of successful linking.'}
 
 if __name__ == '__main__':
@@ -46,6 +51,7 @@ if __name__ == '__main__':
     p.add_argument('--report', type=Path, required=True)
     p.add_argument('--requested-swap', default='auto')
     p.add_argument('--minimum-disk-gib', type=float, default=45)
+    p.add_argument('--startup-memory-gib', type=float, default=1)
     p.add_argument('--swap-free-bytes', type=int)
     p.add_argument('--docker-free-bytes', type=int)
     p.add_argument('--swap-separate-workspace', action='store_true')
@@ -58,7 +64,8 @@ if __name__ == '__main__':
                                 swap_free_bytes=args.swap_free_bytes,
                                 docker_free_bytes=args.docker_free_bytes,
                                 swap_shares_workspace=not args.swap_separate_workspace,
-                                swap_shares_docker=not args.swap_separate_docker)
+                                swap_shares_docker=not args.swap_separate_docker,
+                                startup_memory_gib=args.startup_memory_gib)
     except (ValueError, KeyError) as error:
         print(str(error), file=sys.stderr)
         sys.exit(1)

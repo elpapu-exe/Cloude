@@ -35,8 +35,10 @@
     "0009-ssg-bound-request-metadata-by-allocation.patch": "638c7a56c180ab8d2520f5407f074e29d40cf6a6ddffe634e7852bcd35173e8b"
   },
   "required_tests": {
-    "tests_run": 42,
+    "source_root": "/workspace/Cloude/.cache/linux",
+    "tests_run": 50,
     "files": {
+      "test_ci_resources.py": 8,
       "test_backup.py": 4,
       "test_manual_boot_backup.py": 6,
       "test_source_acquisition.py": 5,
@@ -51,5 +53,12 @@
     "skips": 0,
     "scope": "host unit and regression checks; no device validation"
   },
-  "collector_tests_passed": 4
+  "collector_tests_passed": 4,
+  "arm64_object_phase": {
+    "target": "descend",
+    "completed": true,
+    "object_count": 2985,
+    "out_bytes": 1151901696,
+    "full_lto_link_attempted": false
+  }
 }

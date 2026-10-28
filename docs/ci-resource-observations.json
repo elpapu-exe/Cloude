@@ -19,7 +19,7 @@
   "capacity_inventory_run": "https://github.com/elpapu-exe/Cloude/actions/runs/40629147342",
   "new_installable_zip_available": false,
   "historical_rc3_recovered": false,
-  "further_actions": "Configure an Actions runner with sufficient physical RAM (40 GiB recommended) and at least the conservative 45 GiB free workspace margin; run the prepared workflow. Standard runner cannot fit the configured swap and disk gates.",
+  "further_actions": "Run the compact monitored profile and retain actual link metrics; a larger runner remains an alternative if this attempt fails.",
   "capacity_inventory_result": "success",
   "capacity_inventory": {
     "root_volume_total_gib": 71.6,
@@ -28,5 +28,7 @@
     "extra_build_disk_present": false,
     "sdk_cache_total_measured_approximately_gib": 31.9,
     "all_measured_directories_safe_to_remove_verified": false
-  }
+  },
+  "subsequent_object_measurement": "ci-object-measurement.json",
+  "subsequent_profile": "ci-resources.json: hosted_compact; monitored attempt with measured objects, sparse sources, broader hosted-only SDK cleanup, dynamic swap and 15 GiB reserve"
 }

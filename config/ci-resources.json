@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "available_memory_swap_gate_gib": 36,
+  "startup_memory_margin_gib": 1,
+  "object_measurement": {
+    "completed": true,
+    "target": "descend",
+    "jobs": 2,
+    "seconds": 883,
+    "objects": 2985,
+    "out_bytes": 1151901696,
+    "cache_bytes": 2143612928,
+    "sampled_cgroup_memory_peak_bytes": 4111265792,
+    "effective_config_sha256": "959f9931856597bc5219a68392c77334887315c8e53e30a039f52b82dfaa3cc7",
+    "source_pins_sha256": "a92067d83a66b1dbf54581593916cb6dbecf2e2b2f7125e5f4c58118f477b53d",
+    "full_lto_link_measured": false
+  },
+  "profiles": {
+    "hosted_compact": {
+      "minimum_free_workspace_gib": 15,
+      "build_disk_abort_reserve_gib": 2,
+      "status": "monitored experimental attempt; complete linking capacity is not yet established",
+      "basis": "Measured inputs ~2.0 GiB and object phase ~1.07 GiB; reserve also covers container/bootstrap, final source archive and still-unmeasured DWARF ELF temporaries. Abort if actual reserve runs low."
+    },
+    "conservative": {
+      "minimum_free_workspace_gib": 45,
+      "build_disk_abort_reserve_gib": 2,
+      "status": "conservative workspace margin; not a measured minimum of Full LTO"
+    }
+  },
+  "kernel_security_configuration_changed": false,
+  "explanation": "The old 45 GiB gate was a conservative policy, not a measured disk requirement. This profile is an instrumented attempt, not a claim that the standard runner suffices."
+}

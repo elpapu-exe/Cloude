@@ -10,7 +10,7 @@ El commit local rc2 `b6107b63…`, rc3 sin commit, `dist/`, `logs/rc3-checkpoint
 
 ## Reconstrucción
 
-Serie nueva de nueve parches reaplicada sin fuzz: 35 archivos modificados comprobados. Árboles completos idénticos por contenido/tipo/symlink: Linux 76.069, KSU 764 y BBG 21 entradas. Compilaron localmente los cinco objetos ARM64 modificados; la configuración efectiva solo cambia LOCALVERSION respecto a rc1.
+Serie nueva de nueve parches reaplicada sin fuzz: 35 archivos modificados comprobados. Árboles completos idénticos por contenido/tipo/symlink: Linux 76.069, KSU 764 y BBG 21 entradas. Compilaron localmente los cinco objetos ARM64 modificados y después terminó la fase `descend` con 2.985 objetos; la configuración efectiva solo cambia LOCALVERSION respecto a rc1.
 
 Regresiones de adquisición de fuentes, copias de arranque, tunables/frecuencia Horizon, contabilidad MGLRU y seguridad/capacidad SSG. Los cambios están reconstruidos y revisados de nuevo; no equivalen a recuperar exactamente las modificaciones anteriores.
 
@@ -18,21 +18,15 @@ La adquisición usa commits Git originales y archivos codeload inmutables con SH
 
 ## Compilación y entrega
 
-La compilación ARM64 completa de esta reconstrucción quedó bloqueada en el preflight de Actions; no se llegó al enlace ni se generó un ZIP nuevo. La validación anterior de rc3 no se hereda: cabeceras, configuración embebida, inicializador ELF, exports/CRC y archivo final de fuentes deben pasar en esta ejecución.
+La primera ejecución de la serie completa [40628797721](https://github.com/elpapu-exe/Cloude/actions/runs/40628797721) falló en el preflight; no compiló ni publicó kernel. El [inventario](https://github.com/elpapu-exe/Cloude/actions/runs/40629147342) confirmó un único volumen de 71,6 GiB y 7,75 GiB de RAM en el runner privado. El contrato de 32 GiB extra de swap más 45 GiB libres no cabía; 45 GiB era un margen conservador, no el pico medido del proyecto.
 
-El ejecutor local tiene límite cgroup de RAM de 8 GiB, sin swap y unos 30 GiB libres al inicio: no sirve para el enlace Full LTO histórico de aproximadamente 32 GiB. CI mide RAM/cgroup/swap y disco antes de construir; requiere al menos 36 GiB disponibles combinados y 45 GiB libres después de provisionar swap. Un runner estándar puede fallar esa condición. Se admiten runners de más capacidad sin relajar protecciones.
+Se continuó midiendo el trabajo real, en vez de exigir al usuario que configure un servidor: `descend -j2` terminó con código 0 en 883 segundos, con 2.985 objetos y `out/` de 1,073 GiB; entradas de 1,996 GiB. [Medición y límites](docs/ci-object-measurement.md). El enlace Full LTO todavía no se intentó en esa medición.
 
-No se añaden tarballs grandes a Git. La publicación solo ocurre tras compilación, comprobaciones, archivo fuente auditado y descarga verificada de todos sus assets. Los errores conservan registros de Actions.
+La receta permite ahora un ensayo compacto en el runner estándar: checkout parcial, pruebas sobre la fuente realmente compilada, limpieza acotada a SDKs innecesarios del runner desechable y swap automática. El plan apunta a 37 GiB combinados incluyendo arranque, exige 36 GiB utilizables y reserva 15 GiB de trabajo tras swap. Vigila una reserva de 2 GiB durante objetos/enlace. Los ELF con DWARF no están medidos; no se garantiza éxito. Los runners propios no reciben limpieza/swap y conservan el margen de 45 GiB. No hay cambios de configuración de seguridad del kernel.
 
-## Bloqueo comprobado en Actions
+Se publicaron las 50 pruebas obligatorias, incluidas ocho de planificación/guardas; cuatro pruebas del recolector también pasan. Solo una compilación completa que verifique ARM64, configuración real, inicializador ELF, ABI, tar final y SHA256SUMS podrá publicar el ZIP. La publicación vuelve a descargar todos los assets para comprobarlos. Fuentes grandes y logs van a artefactos/Release, fuera del Git normal.
 
-La ejecución de la serie completa `5c0bb03fda8ed7940427635cee32379739752cf3` falló antes de compilar por capacidad: [run 40628797721](https://github.com/elpapu-exe/Cloude/actions/runs/40628797721). Runner de 2 CPU, 7,75 GiB RAM total, 3 GiB swap; tras limpiar SDKs quedaron 28,32 GiB libres. Los logs se conservaron como artefacto. Build y publicación fueron omitidos.
-
-Un [diagnóstico separado de solo lectura](https://github.com/elpapu-exe/Cloude/actions/runs/40629147342) confirmó un único volumen raíz de 71,6 GiB; `/mnt` y el directorio temporal comparten ese volumen. No hay disco adicional. El margen de disco de 45 GiB es conservador, no un pico medido de esta compilación. Reducirlo arbitrariamente no acredita que el espacio restante tras provisionar swap permita terminar. Más datos en `docs/ci-resource-observations.json`.
-
-Para continuar falta configurar o seleccionar un runner de más capacidad (se recomiendan 40 GiB de RAM física y al menos 45 GiB libres de trabajo). El workflow admite sus etiquetas por entrada JSON/variable `KERNEL_RUNNER_JSON`. No se presupone que exista en la cuenta ni se inició un runner de pago. GitHub acepta los pushes; no hay un bloqueo de reconexión.
-
-Terminados: reconstrucción, revisión, 42 pruebas de release + cuatro del recolector, compilación de los cinco objetos ARM64 cambiados, auditoría de la serie y árboles, workflow, respaldo y guías. Pendientes: compilación completa, comprobaciones de imagen/ABI, tar final auditado, Release y descarga del ZIP nuevo. El tar de 430 MB del entorno anterior no se recuperó ni se añadió al historial Git.
+Terminados: reconstrucción y revisión, serie/árboles comprobados, fase de objetos, pruebas, receta, respaldo y guías. Pendientes: enlace completo, verificaciones de imagen/ABI, tar final auditado, Release y descarga nueva. El rc3 histórico y su tar no se recuperaron.
 
 ## Teléfono
 

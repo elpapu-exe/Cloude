@@ -23,7 +23,8 @@ for CHATGPT_PATH in \
   /usr/local/lib/android /opt/ghc /usr/share/dotnet /opt/hostedtoolcache \
   /usr/local/swift /usr/share/swift /usr/local/go /opt/az \
   /usr/local/share/powershell /home/runner/.rustup /home/runner/.cache \
-  /var/lib/docker /opt/microsoft /home/runner/work /mnt; do
+  /var/lib/docker /opt/microsoft /usr/lib/jvm /usr/local/share/boost \
+  /usr/local/share/chromium /opt/google/chrome /home/runner/work /mnt; do
   if [[ -e "$CHATGPT_PATH" ]]; then
     "${CHATGPT_PRIVILEGE[@]}" du -xsh -- "$CHATGPT_PATH" 2>&1 || true
   fi

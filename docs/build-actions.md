@@ -1,31 +1,33 @@
 # Compilar y entregar con GitHub Actions
 
-El workflow `Build and deliver ChatGPT Kernel` compila y conserva el ZIP, su configuración efectiva, los hashes, los registros, la comparación de exports y las fuentes correspondientes. La compilación y las verificaciones se ejecutan en Debian 13 fijado por digest, con Clang y dependencias fijadas por SHA-256. Conserva Full LTO, CFI, Shadow Call Stack, BTF y MODVERSIONS; no rebaja protecciones para superar un fallo de recursos.
+El workflow `Build and deliver ChatGPT Kernel` conserva ZIP, configuración efectiva, hashes, registros por fase, comparación de exports y fuentes correspondientes. Usa Debian 13 fijado por digest, Clang y entradas fijadas por SHA-256. Full LTO, CFI, Shadow Call Stack, BTF, MODVERSIONS y térmicas siguen siendo obligatorios.
 
-## Iniciar una compilación
+## Uso
 
-En GitHub, abre **Actions → Build and deliver ChatGPT Kernel → Run workflow** y selecciona `chatgpt-kernel-download`. El campo `runner` acepta JSON: `"ubuntu-24.04"` para probar el runner estándar o `["self-hosted","linux","x64","kernel-40g"]` si existe un runner propio con esas etiquetas. No se presupone que ese runner esté registrado. Se recomienda disponer de al menos 40 GiB de RAM física y espacio de disco suficiente.
+En Actions, **Run workflow** sobre `chatgpt-kernel-download` permite seleccionar el runner y la swap. Un cambio en `.github/build-request.json` de esa rama también inicia el trabajo. Valores predeterminados: runner `"ubuntu-24.04"`, swap `auto`, dos trabajos de compilación. Se pueden configurar `KERNEL_RUNNER_JSON`, `KERNEL_SWAP_GIB` y `KERNEL_JOBS`.
 
-Un cambio en `.github/build-request.json` dentro de `chatgpt-kernel-download` también inicia una compilación y entrega. Para ese disparo se usan las variables del repositorio `KERNEL_RUNNER_JSON` y `KERNEL_SWAP_GIB`; si no están definidas, usa `"ubuntu-24.04"` y `32`, respectivamente. Los demás cambios no disparan automáticamente una compilación completa.
+El usuario no necesita compilar en Windows. El perfil del runner estándar es un **ensayo instrumentado**, no una certificación anticipada de capacidad. La alternativa de un runner propio sigue admitida por sus etiquetas JSON, si realmente existe; los runners mayores de GitHub tienen restricciones de plan y organización y no aparecen por cambiar una etiqueta.
 
-## Recursos observados
+## Recursos y fases
 
-El preflight registra RAM disponible, límites y consumo de cgroup, swap utilizable y espacio real. Exige **36 GiB de RAM disponible + swap utilizable** y **45 GiB libres después de crear swap**. Es un margen basado en el enlace histórico cercano a 32 GiB; no garantiza que una nueva compilación termine. Los recursos y PSI se muestrean cada 15 segundos durante la compilación.
+La primera receta falló antes de compilar con 32 GiB de swap adicional y un margen conservador de 45 GiB de disco. El runner privado observado tenía 7,75 GiB de RAM y un solo volumen raíz de 71,6 GiB, compartido con `/mnt`. Aquel margen de 45 GiB no procedía de un pico de disco medido del kernel.
 
-Solo en runners desechables administrados por GitHub se eliminan SDKs Android, .NET y GHC que esta receta no usa. Si hace falta y cabe sin consumir el margen de disco, se crea un archivo adicional de swap de hasta los GiB solicitados, conservando la swap existente. El archivo se desactiva y elimina al terminar. Los runners propios deben tener su swap ya configurada; el workflow no elimina sus SDKs ni modifica su swap.
+Se midió posteriormente la fase completa de objetos ARM64: 2.985 objetos, `out/` de 1,073 GiB y entradas de 1,996 GiB, sin enlace global. [Medición, presupuesto y límites](ci-object-measurement.md). El perfil `hosted_compact` de `config/ci-resources.json` permite probar con 15 GiB libres después de swap, manteniendo 2 GiB de reserva vigilada. Los tres ELF grandes del enlace aún no se han medido; el ensayo puede detenerse por espacio, memoria o tiempo.
 
-Un runner estándar puede fallar este preflight o superar las seis horas disponibles. La swap puede hacer mucho más lento Full LTO. En ese caso se conservan los registros y debe seleccionarse un runner con más recursos. Un fallo de memoria, disco, compilación o auditoría impide publicar el kernel.
+Solo en runners Linux desechables de GitHub se eliminan rutas concretas de SDKs que este build C dentro del contenedor no utiliza. El inventario antes/después registra el espacio realmente recuperado. Se utiliza `/usr/bin/python3`; no se eliminan los runtimes internos del runner. Se podan únicamente imágenes Docker sin contenedores antes de obtener la imagen fijada. No se borran volúmenes Docker.
 
-## Artefactos y publicación
+El checkout parcial evita duplicar las fuentes, que se adquieren y verifican en `.cache/`. Las pruebas de helpers se ejecutan contra ese mismo árbol compilado mediante `CHATGPT_TEST_SOURCE_ROOT`.
 
-Los artefactos de Actions se conservan 90 días y requieren acceso al repositorio privado. También se conservan registros cuando falla una compilación. La publicación usa un job separado con permiso `contents: write`; el contenedor de compilación no recibe un token de GitHub.
+La swap `auto` cubre el déficit calculado hasta 37 GiB disponibles combinados, incluido 1 GiB de arranque; se exigen 36 GiB utilizables al comprobar la capacidad real. El plan comprueba los sistemas de archivos de trabajo, swap y Docker, y vuelve a medir tras activar swap, incluyendo límites de cgroup. Los runners propios no reciben limpiezas ni swap nueva y conservan el margen de disco de 45 GiB.
 
-Cuando `publish` está activado, la entrega se carga como borrador de una prerelease experimental con una etiqueta nueva que incluye versión, commit y número de ejecución. Antes de publicarla, el workflow descarga **todos** los archivos desde GitHub, comprueba sus SHA-256 y compara el listado con el original. No reemplaza assets de otra entrega. Las fuentes comprimidas se almacenan como asset de la publicación y como artefacto de Actions, fuera del historial Git normal.
+Las fases visibles son preparación, compilación de objetos, enlace Full LTO/Image y auditorías. Se registran recursos/PSI cada 15 segundos y espacio/tamaños de salidas cada dos segundos en objetos/enlace. Si la reserva de disco baja de 2 GiB, se detiene el grupo de procesos de la fase. La swap puede ser lenta; el job conserva el límite de seis horas. Todo fallo bloquea la publicación.
 
-La compilación `0.1.0-rc3-rebuild1` es una reconstrucción nueva. El resultado no se identifica con el binario rc3 que quedó inaccesible. Una compilación y sus auditorías no certifican arranque, rendimiento, temperatura ni estabilidad en el teléfono.
+## Entrega
 
-## Resultado observado en esta sesión
+Los artefactos y logs de Actions se conservan 90 días, incluso cuando falla la construcción. La publicación usa un job separado con `contents: write`; el contenedor de compilación no recibe un token de GitHub.
 
-El [build de la serie completa](https://github.com/elpapu-exe/Cloude/actions/runs/40628797721) falló en el preflight de capacidad, antes de compilar. El [inventario independiente](https://github.com/elpapu-exe/Cloude/actions/runs/40629147342) comprobó que el runner estándar tiene un único volumen raíz de 71,6 GiB, sin disco adicional en `/mnt`. Tras la limpieza inicial quedaron 28,32 GiB libres; no caben la swap necesaria y un espacio de construcción suficiente. El margen de 45 GiB es conservador y no representa un pico medido de la candidata.
+Después de verificar imagen/configuración/ABI, se ejecutan las 50 regresiones obligatorias sin omisiones y se audita el archivo final de fuentes por contenido, tipo, modo y destino literal de symlink. Un listado cerrado SHA256SUMS cubre todos los assets.
 
-La siguiente ejecución requiere un runner de mayor capacidad registrado/disponible en la cuenta. No hace falta reconectar GitHub. No se generó ni publicó un kernel en esos intentos.
+La prerelease se crea como borrador con tag único. Se vuelven a descargar todos sus archivos, se comprueban sus hashes y solo entonces se publica. El tar de fuentes se conserva como asset y artefacto, fuera del historial Git normal. Las fuentes comprimidas excluyen `.git`; la receta obtiene las historias originales fijadas necesarias para reconstruir, especialmente la de KSU.
+
+`0.1.0-rc3-rebuild1` es una reconstrucción nueva. Una compilación y sus auditorías no certifican arranque, estabilidad, temperatura ni fluidez en TAPAS.
