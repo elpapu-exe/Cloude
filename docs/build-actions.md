@@ -31,3 +31,7 @@ Después de verificar imagen/configuración/ABI, se ejecutan las 50 regresiones 
 La prerelease se crea como borrador con tag único. Se vuelven a descargar todos sus archivos, se comprueban sus hashes y solo entonces se publica. El tar de fuentes se conserva como asset y artefacto, fuera del historial Git normal. Las fuentes comprimidas excluyen `.git`; la receta obtiene las historias originales fijadas necesarias para reconstruir, especialmente la de KSU.
 
 `0.1.0-rc3-rebuild1` es una reconstrucción nueva. Una compilación y sus auditorías no certifican arranque, estabilidad, temperatura ni fluidez en TAPAS.
+
+## Ejecución completada
+
+El perfil compacto terminó correctamente en el [run 40633724058](https://github.com/elpapu-exe/Cloude/actions/runs/40633724058), desde a01d67ebe63f98a705c068ea735f9ae87848b35c. Se crearon 28 GiB de swap adicional y quedaron 19.439.857.664 bytes de trabajo tras provisionarla. La fase de objetos duró 27 min 40 s y Full LTO/Image 44 min. Se completaron las auditorías y la publicación con descarga verificada. Los [resultados](ci-build-result.json) registran los recursos observados; el éxito de esta carga no garantiza otras configuraciones ni elimina la validación del teléfono.

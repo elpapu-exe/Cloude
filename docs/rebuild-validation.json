@@ -20,8 +20,8 @@
     "block/ssg-cgroup.o",
     "block/ssg-iosched.o"
   ],
-  "full_arm64_build": false,
-  "final_source_archive_audit": false,
+  "full_arm64_build": true,
+  "final_source_archive_audit": true,
   "hardware_tested": false,
   "patch_sha256": {
     "0001-susfs-v2.3.0-r10-context.patch": "7e4612109ff9ad6f4a4a4a50ddc5921024f2192eea8e0953d0b315fe02467beb",
@@ -60,5 +60,12 @@
     "object_count": 2985,
     "out_bytes": 1151901696,
     "full_lto_link_attempted": false
-  }
+  },
+  "compiled_commit": "a01d67ebe63f98a705c068ea735f9ae87848b35c",
+  "run_url": "https://github.com/elpapu-exe/Cloude/actions/runs/40633724058",
+  "release_url": "https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058",
+  "zip_sha256": "4ecb0febfb9a284c3b624bab7e404ccc205941c69bf3a275312407d1267c2d55",
+  "source_archive_sha256": "b967e8a4b2d1936e68f35821c2a59ebb0501992e070046decb42dfafdc3b544d",
+  "image_sha256": "861973441ccc44bc59201b08eff5cdb03b0f56d379f43e758b0cf6af64c9d0bb",
+  "published_assets_redownloaded_and_checked": true
 }

@@ -11,3 +11,7 @@ El SUSFS 2.3.0 fijado es un candidato cronológico, sin identificación demostra
 Las compilaciones históricas registraron avisos BTF para `filp_close`, `should_fail_alloc_page` y `vfs_getattr`. Los avisos efectivos de esta compilación se conservan en `build.log` y `build-manifest.json`; los anteriores no sustituyen una auditoría del nuevo resultado.
 
 Antes de instalar: copia verificada del boot funcional fuera del teléfono, recovery/fastboot disponible y lectura de `LEEME-instalacion.md`. Conservar WhatsApp y módulos necesarios, térmicas activas y TikTok oficial. La comparación corta usa el recolector de solo lectura de `docs/testing.md`.
+
+## Resultado publicado de esta reconstrucción
+
+Actions 40633724058 completó la compilación y las auditorías desde a01d67ebe63f98a705c068ea735f9ae87848b35c. Pasaron 50 regresiones sin omisiones; 15.543 exports y CRC idénticos a R10; archivo final de fuentes auditado y todos los assets descargados y verificados antes de publicar. Los avisos BTF efectivos son `filp_close`, `should_failslab` y `vfs_getattr`: la lista histórica no identifica los avisos actuales. La validación en hardware sigue pendiente.

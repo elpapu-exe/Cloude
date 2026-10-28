@@ -4,13 +4,19 @@ Kernel experimental para **Redmi Note 12 4G TAPAS/topaz**, con la LineageOS 20 A
 
 Esta es una **nueva reconstrucción** desde el commit publicado `4fc1ad554ac54ffce0a6792ca6d85f67435e8a86` y los cambios descritos en el resumen del desarrollo anterior. No se recuperaron el commit local rc2, los cambios sin commit rc3 ni sus binarios. Los hashes históricos de rc3 no identifican esta reconstrucción.
 
-**Estado:** reconstrucción nueva en preparación, sin ZIP nuevo publicado. Pasaron 50 pruebas obligatorias y cuatro del recolector; terminó la fase ARM64 de 2.985 objetos sin enlazar. Ocupó 1,07 GiB en `out/`, con entradas locales de ~2,0 GiB. La receta de Actions ahora retira SDKs ajenos al build en el runner desechable, evita duplicar fuentes y calcula swap desde la capacidad real.
+**Compilado y publicado mediante GitHub Actions.** [Descargar ZIP instalable — 25,2 MB](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058/ChatGPTKernel-0.1.0-rc3-rebuild1-topaz-tapas-A13-KSU.zip) · [SHA256SUMS](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058/SHA256SUMS) · [Publicación y todos sus archivos](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058). El repositorio es privado: usa la cuenta de GitHub con acceso.
 
-El margen anterior de 45 GiB era conservador, no un pico de disco medido del kernel. El perfil compacto permite un intento vigilado con 15 GiB libres tras swap y detención por disco bajo. Conserva Full LTO/CFI/SCS/BTF/térmicas; todavía no se ha demostrado que complete el enlace. [Medición y límites](docs/ci-object-measurement.md). No se afirma arranque, estabilidad ni mejora medida en el teléfono. La percepción favorable comunicada por el usuario corresponde a una versión anterior.
+**Experimental: esta reconstrucción todavía no se ha probado en el teléfono.** Compilar y conservar los CRC no certifica arranque, estabilidad ni mejora de fluidez. Antes de instalar, guarda un boot verificado fuera del teléfono y lee la [guía de recuperación](docs/installation.md).
+
+El run [40633724058](https://github.com/elpapu-exe/Cloude/actions/runs/40633724058) aprobó ARM64, Full LTO/O2, configuración real embebida, inicializador ELF de watermark=64, los 15.543 exports/CRC idénticos a R10, 50 pruebas sin omisiones y el archivo final de fuentes. Se descargaron y verificaron por SHA256 los 34 archivos listados y el propio listado antes de publicar los 35 assets. Conserva CFI, Shadow Call Stack, BTF, MODVERSIONS y térmicas. Hay tres avisos BTF documentados: `filp_close`, `should_failslab` y `vfs_getattr`.
+
+SHA256 del ZIP: `4ecb0febfb9a284c3b624bab7e404ccc205941c69bf3a275312407d1267c2d55`.
+
+[Fuentes correspondientes — archivo auditado](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058/ChatGPTKernel-0.1.0-rc3-rebuild1-sources.tar.zst) · [Resultados de CI](docs/ci-build-result.json) · [Medición y límites del runner](docs/ci-object-measurement.md). El kernel se construyó desde `a01d67ebe63f98a705c068ea735f9ae87848b35c`; cambios posteriores de documentación no cambian ese binario.
 
 [Compilaciones de Actions](https://github.com/elpapu-exe/Cloude/actions) · [Publicaciones](https://github.com/elpapu-exe/Cloude/releases) · [Instalación y recuperación](docs/installation.md) · [Comparación de cinco minutos](docs/testing.md)
 
-No hay un enlace directo nuevo hasta que Actions compile, audite, publique y compruebe la descarga. `downloads/` conserva el **binario histórico rc1** y sus metadatos; no se deben confundir con la reconstrucción. El recolector canónico actual está en `downloads/chatgpt-kernel-logs.sh`.
+La entrega nueva está en la publicación enlazada arriba. `downloads/` conserva el **binario histórico rc1** y sus metadatos; no se deben confundir con la reconstrucción. El recolector canónico actual está en `downloads/chatgpt-kernel-logs.sh`.
 
 ## Cambios de la candidata
 

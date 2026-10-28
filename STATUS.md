@@ -1,6 +1,6 @@
 # Estado y continuación
 
-Actualización: 2026-10-27 (America/La_Paz). Candidata **0.1.0-rc3-rebuild1**.
+Actualización: 2026-10-28 (America/La_Paz). Candidata **0.1.0-rc3-rebuild1**.
 
 ## Recuperación comprobada
 
@@ -16,17 +16,21 @@ Regresiones de adquisición de fuentes, copias de arranque, tunables/frecuencia 
 
 La adquisición usa commits Git originales y archivos codeload inmutables con SHA256 y recibos de procedencia. KSU requiere su historia real completa para obtener versión 35142; si solo se dispone de su archive, la preparación aborta sin fabricar historia Git.
 
-## Compilación y entrega
+## Compilación y entrega terminadas
 
-La primera ejecución de la serie completa [40628797721](https://github.com/elpapu-exe/Cloude/actions/runs/40628797721) falló en el preflight; no compiló ni publicó kernel. El [inventario](https://github.com/elpapu-exe/Cloude/actions/runs/40629147342) confirmó un único volumen de 71,6 GiB y 7,75 GiB de RAM en el runner privado. El contrato de 32 GiB extra de swap más 45 GiB libres no cabía; 45 GiB era un margen conservador, no el pico medido del proyecto.
+[Run 40633724058](https://github.com/elpapu-exe/Cloude/actions/runs/40633724058): build y publicación **SUCCESS**. Commit compilado `a01d67ebe63f98a705c068ea735f9ae87848b35c`. [Release experimental](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058). ZIP instalable: 25,215,885 bytes; SHA256 `4ecb0febfb9a284c3b624bab7e404ccc205941c69bf3a275312407d1267c2d55`.
 
-Se continuó midiendo el trabajo real, en vez de exigir al usuario que configure un servidor: `descend -j2` terminó con código 0 en 883 segundos, con 2.985 objetos y `out/` de 1,073 GiB; entradas de 1,996 GiB. [Medición y límites](docs/ci-object-measurement.md). El enlace Full LTO todavía no se intentó en esa medición.
+La imagen ARM64 tiene 47.454.720 bytes, SHA256 `861973441ccc44bc59201b08eff5cdb03b0f56d379f43e758b0cf6af64c9d0bb`. La configuración efectiva y la embebida coinciden con SHA256 `959f9931856597bc5219a68392c77334887315c8e53e30a039f52b82dfaa3cc7`. Inicializador watermark=64 verificado en ELF. Conserva O2/Full LTO, CFI, SCS, BTF, MODVERSIONS y protecciones térmicas.
 
-La receta permite ahora un ensayo compacto en el runner estándar: checkout parcial, pruebas sobre la fuente realmente compilada, limpieza acotada a SDKs innecesarios del runner desechable y swap automática. El plan apunta a 37 GiB combinados incluyendo arranque, exige 36 GiB utilizables y reserva 15 GiB de trabajo tras swap. Vigila una reserva de 2 GiB durante objetos/enlace. Los ELF con DWARF no están medidos; no se garantiza éxito. Los runners propios no reciben limpieza/swap y conservan el margen de 45 GiB. No hay cambios de configuración de seguridad del kernel.
+Los 15.543 exports y todos sus CRC coinciden con R10; no hay añadidos ni ausentes. Pasaron 50 pruebas obligatorias, sin fallos ni omisiones. El tar final de fuentes auditó 76.972 entradas por contenido, tipo, modo y destino literal de symlink; las cuentas de componentes incluyen su directorio raíz. Fuentes: 195.312.956 bytes, SHA256 `b967e8a4b2d1936e68f35821c2a59ebb0501992e070046decb42dfafdc3b544d`. No se añadieron a Git normal.
 
-Se publicaron las 50 pruebas obligatorias, incluidas ocho de planificación/guardas; cuatro pruebas del recolector también pasan. Solo una compilación completa que verifique ARM64, configuración real, inicializador ELF, ABI, tar final y SHA256SUMS podrá publicar el ZIP. La publicación vuelve a descargar todos los assets para comprobarlos. Fuentes grandes y logs van a artefactos/Release, fuera del Git normal.
+La publicación cargó 35 assets como borrador, los volvió a descargar, verificó los 34 archivos de SHA256SUMS y comparó el propio listado antes de hacer visible la prerelease. No hay un enlace inventado ni un binario recuperado del entorno anterior.
 
-Terminados: reconstrucción y revisión, serie/árboles comprobados, fase de objetos, pruebas, receta, respaldo y guías. Pendientes: enlace completo, verificaciones de imagen/ABI, tar final auditado, Release y descarga nueva. El rc3 histórico y su tar no se recuperaron.
+Avisos BTF reales: `filp_close`, `should_failslab`, `vfs_getattr`. La reconstrucción cambia el aviso histórico `should_fail_alloc_page` por `should_failslab`; no se afirma que todas las funciones tengan BTF resuelto. Más evidencia y recursos observados en [ci-build-result.json](docs/ci-build-result.json).
+
+El bloqueo inicial de disco se resolvió midiendo la fase de objetos y usando limpieza acotada a SDKs del runner desechable, checkout parcial y swap automática. La receta estándar funcionó en esta ejecución sin relajar la configuración del kernel. Los límites y el margen de 15 GiB son propios de esta carga medida; no garantizan cualquier otra compilación.
+
+Terminados: reconstrucción, revisión, serie/árboles comprobados, compilación completa, pruebas, imagen/ABI, tar auditado, publicación y descarga comprobada, receta de Actions, respaldo y guías. Pendiente: prueba real de arranque, funciones básicas, fluidez, ANR y temperatura en TAPAS. El rc3 histórico no se recuperó; este resultado es una reconstrucción nueva.
 
 ## Teléfono
 
