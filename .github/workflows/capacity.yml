@@ -1,0 +1,37 @@
+name: Inspect kernel runner capacity
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chatgpt-kernel-download]
+    paths: [.github/capacity-request.json]
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            scripts/ci-capacity-probe.sh
+            scripts/ci-resource-report.py
+          sparse-checkout-cone-mode: false
+      - name: Record RAM, disks, mounts and installed SDK sizes without modifying them
+        shell: bash
+        run: |
+          mkdir -p logs
+          bash scripts/ci-capacity-probe.sh 2>&1 | tee logs/capacity-inventory.log
+      - name: Preserve read-only capacity inventory
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: kernel-capacity-${{ github.run_id }}
+          path: logs/
+          if-no-files-found: error
+          retention-days: 90

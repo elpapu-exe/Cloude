@@ -1,0 +1,4 @@
+{
+  "request": "inspect-hosted-capacity-20261028-1",
+  "purpose": "Read-only inventory after the first Full LTO preflight observed insufficient disk; do not compile or remove additional SDKs."
+}

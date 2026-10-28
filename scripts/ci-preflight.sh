@@ -4,10 +4,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p logs
 python3 scripts/ci-resource-report.py --output logs/runner-before.json
+bash scripts/ci-capacity-probe.sh | tee logs/runner-disk-before.log
 if [[ "${RUNNER_ENVIRONMENT:-}" == github-hosted && "${CHATGPT_CI_CLEAN_SDKS:-true}" == true ]]; then
   # Disposable hosted runner only. These SDKs are unrelated to the C/ARM64 build.
   sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
 fi
+bash scripts/ci-capacity-probe.sh | tee logs/runner-disk-after.log
 CHATGPT_SWAP_GIB="${CHATGPT_CI_SWAP_GIB:-32}"
 [[ "$CHATGPT_SWAP_GIB" =~ ^[0-9]+$ ]] || { echo 'Invalid swap GiB' >&2; exit 1; }
 if [[ "$CHATGPT_SWAP_GIB" -gt 0 && "${RUNNER_ENVIRONMENT:-}" == github-hosted ]]; then
