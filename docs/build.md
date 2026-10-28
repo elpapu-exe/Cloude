@@ -1,6 +1,6 @@
 # Compilar y entregar con GitHub Actions
 
-La candidata actual es **0.1.0-rc3-rebuild1**, una reconstrucción nueva. No corresponde al ZIP rc3 histórico con SHA `6c1cb3d1…`. Se conserva Full LTO, O2, CFI, Shadow Call Stack, BTF y MODVERSIONS. No hace falta compilar en Windows.
+La candidata actual es **0.1.0-rc4**, sucesora de la reconstrucción publicada rc3-rebuild1. No corresponde al ZIP rc3 histórico con SHA `6c1cb3d1…`. Se conserva Full LTO, O2, CFI, Shadow Call Stack, BTF y MODVERSIONS. No hace falta compilar en Windows.
 
 El workflow `.github/workflows/kernel.yml` se puede iniciar en Actions mediante **Run workflow** en `chatgpt-kernel-download`. También se ejecuta al cambiar `.github/build-request.json` en esa rama, para permitir entregas trazables desde Git.
 
@@ -14,7 +14,7 @@ En self-hosted se mantiene el margen de disco de 45 GiB, sin limpiar SDKs ni cre
 
 ## Receta
 
-CI usa una imagen Debian 13 fijada por digest y las herramientas registradas. Descarga entradas verificadas, comprueba la historia original de KSU y reaplica los nueve parches sin fuzz. Los recibos distinguen Git real de archivos codeload; SUSFS continúa siendo un candidato de procedencia expresamente limitada.
+CI usa una imagen Debian 13 fijada por digest y las herramientas registradas. Descarga entradas verificadas, comprueba la historia original de KSU y reaplica los dieciséis parches sin fuzz. Los recibos distinguen Git real de archivos codeload; SUSFS continúa siendo un candidato de procedencia expresamente limitada.
 
 ```sh
 python3 scripts/fetch_host_tools.py
@@ -32,7 +32,7 @@ Para reproducir fuera de CI se necesita Bash con `set -o pipefail`, los recursos
 
 ## Comprobaciones obligatorias
 
-- Configuración de seguridad y compatibilidad, ARM64/ELF AArch64, versión/root, IKCONFIG idéntica a `.config` e inicializador `watermark_scale_factor=64` en ELF.
+- Configuración de seguridad y compatibilidad, ARM64/ELF AArch64, versión/root, IKCONFIG idéntica a `.config` e inicializador `watermark_scale_factor=10` en ELF.
 - Decoder de exports contrastado contra `vmlinux.symvers`, igualdad completa de símbolos y CRC con el R10 de referencia.
 - Nueve suites (incluidos respaldo manual y controles de recursos CI) de regresión obligatorias: ausencia, fallo u omisión bloquean el empaquetado.
 - Reaplicación de todos los parches y auditoría del archivo `.tar.zst` **final**, comparando cada contenido, tipo, modo y destino literal de symlink. Se excluyen `.git`, herramientas y objetos compilados.

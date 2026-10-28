@@ -757,7 +757,10 @@ static int sugov_start(struct cpufreq_policy *policy)
 	void (*uu)(struct update_util_data *data, u64 time, unsigned int flags);
 	unsigned int cpu;
 
+	/* Serialize this snapshot with rate_limit_us_store(). */
+	mutex_lock(&sg_policy->tunables->attr_set.update_lock);
 	sg_policy->freq_update_delay_ns	= sg_policy->tunables->rate_limit_us * NSEC_PER_USEC;
+	mutex_unlock(&sg_policy->tunables->attr_set.update_lock);
 	sg_policy->last_freq_update_time	= 0;
 	sg_policy->next_freq			= 0;
 	sg_policy->work_in_progress		= false;

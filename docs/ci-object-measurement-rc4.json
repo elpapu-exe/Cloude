@@ -1,0 +1,142 @@
+{
+  "version": "0.1.0-rc4",
+  "target": "descend",
+  "jobs": 2,
+  "completed": true,
+  "exit_code": 0,
+  "seconds": 42.0,
+  "incremental": true,
+  "full_lto_link_measured": false,
+  "memory_scope": "Shared local cgroup; sampled memory.current includes other processes and page cache. memory.peak is lifetime, not per-build.",
+  "samples": [
+    {
+      "elapsed": 0.0,
+      "memory_current": 3902607360,
+      "memory_peak": 4120387584
+    },
+    {
+      "elapsed": 2.0,
+      "memory_current": 3911839744,
+      "memory_peak": 4120387584
+    },
+    {
+      "elapsed": 4.0,
+      "memory_current": 3909656576,
+      "memory_peak": 4120387584
+    },
+    {
+      "elapsed": 6.0,
+      "memory_current": 3960782848,
+      "memory_peak": 4120387584
+    },
+    {
+      "elapsed": 8.0,
+      "memory_current": 4100329472,
+      "memory_peak": 4120387584
+    },
+    {
+      "elapsed": 10.0,
+      "memory_current": 4062470144,
+      "memory_peak": 4120387584
+    },
+    {
+      "elapsed": 12.0,
+      "memory_current": 4006125568,
+      "memory_peak": 4120387584
+    },
+    {
+      "elapsed": 14.0,
+      "memory_current": 4023545856,
+      "memory_peak": 4120387584
+    },
+    {
+      "elapsed": 16.0,
+      "memory_current": 4084387840,
+      "memory_peak": 4120387584
+    },
+    {
+      "elapsed": 18.0,
+      "memory_current": 4004995072,
+      "memory_peak": 4120387584
+    },
+    {
+      "elapsed": 20.0,
+      "memory_current": 4018151424,
+      "memory_peak": 4120387584
+    },
+    {
+      "elapsed": 22.0,
+      "memory_current": 4019867648,
+      "memory_peak": 4120387584
+    },
+    {
+      "elapsed": 24.0,
+      "memory_current": 4135784448,
+      "memory_peak": 4135784448
+    },
+    {
+      "elapsed": 26.0,
+      "memory_current": 4216295424,
+      "memory_peak": 4219756544
+    },
+    {
+      "elapsed": 28.0,
+      "memory_current": 4205346816,
+      "memory_peak": 4252667904
+    },
+    {
+      "elapsed": 30.0,
+      "memory_current": 4183261184,
+      "memory_peak": 4252667904
+    },
+    {
+      "elapsed": 32.0,
+      "memory_current": 4183400448,
+      "memory_peak": 4252667904
+    },
+    {
+      "elapsed": 34.0,
+      "memory_current": 4182753280,
+      "memory_peak": 4252667904
+    },
+    {
+      "elapsed": 36.0,
+      "memory_current": 4183982080,
+      "memory_peak": 4254973952
+    },
+    {
+      "elapsed": 38.0,
+      "memory_current": 4009254912,
+      "memory_peak": 4254973952
+    },
+    {
+      "elapsed": 40.0,
+      "memory_current": 3923980288,
+      "memory_peak": 4254973952
+    }
+  ],
+  "effective_config_sha256": "60b12e653667c93f5b19fdf152453e6c02322277d0fc2d8586f60e6ccd6e6f15",
+  "source_pins_sha256": "1787988ac2c433dc2d4eb38c9c37362f604e7b0006dc0d959a557946d8ee2048",
+  "out_bytes": 1151901696,
+  ".cache_bytes": 2143612928,
+  "objects": 2985,
+  "sampled_cgroup_memory_peak_bytes": 4216295424,
+  "patches": {
+    "0001-susfs-v2.3.0-r10-context.patch": "7e4612109ff9ad6f4a4a4a50ddc5921024f2192eea8e0953d0b315fe02467beb",
+    "0002-integrate-pinned-root-and-real-config.patch": "a67273fffc369753ce4cd37703c388ad8ed1867b280a9e29a09912a55ecc226c",
+    "0003-kprofiles-fix-context-and-input.patch": "ecdb0e40e137047b6a6b7d4e191e10db882334090ed64dc0d619156527db9ac7",
+    "0004-mm-increase-reclaim-headroom.patch": "092da7c19c42494b003581f2f48caba3ff8ffcfc1e93782c579a13e54bd9b265",
+    "0005-schedhorizon-protect-dynamic-tunables.patch": "fe30c50f77599153a32d2210f0fb46783fc06faa1096ef7b072e324db7b36dce",
+    "0006-schedhorizon-fix-rejected-frequency-cache-and-limits.patch": "c1cb1fe75f99d8aa2a088746aa56e22cda29e96cfcad77d3d258c171d0d6cad8",
+    "0007-mglru-preserve-page-type-accounting.patch": "0d6d55e2a5f83bdad670edcd31955ddb63fdd941e8843a396e20d65dae930ee7",
+    "0008-ssg-fix-lookup-lifetime-and-sysfs-input.patch": "2aff5b33fd2a8f017ea53580270a34e2c766cd9a08d49ec58713c81bf91babb7",
+    "0009-ssg-bound-request-metadata-by-allocation.patch": "638c7a56c180ab8d2520f5407f074e29d40cf6a6ddffe634e7852bcd35173e8b",
+    "0010-mglru-avoid-retry-scan-counter-underflow.patch": "6b6955714788f26f54b0b49428aa17ff706be10b7b02007f213a7f26ec2ffafa",
+    "0011-mglru-skip-special-vmas-in-lookaround.patch": "c36058b5e35e73757afb81f28c576df53ca49f9f3b9b1271591a5cacc753e7bd",
+    "0012-binder-fix-async-quota-boundary.patch": "d2b20bc0f105e01be0e9aa61e9ae3027897ef2348909513bec8bc4f30be836ce",
+    "0013-cpufreq-serialize-governor-start-rate-limits.patch": "cd272a9154bc568f09401f1315a4ba68d6a6e9eba370e2515f94da7eff79f9d2",
+    "0014-f2fs-propagate-collapse-writeback-errors.patch": "f5e49302b3e3a734e28fae65b69edf14d3924a15430de4579ceef96c6bb3beea",
+    "0015-f2fs-check-expanded-move-range-overlap.patch": "4360ff4995e5c15f2e541aee0df1698e7b2cfd2ac4e96afe435a2fb6e283f9fc",
+    "0016-mm-restore-baseline-reclaim-watermark.patch": "1ce7f156686dbd49e77a9da2b8995dae4bbadcbcd567ef89f8b3265b89050187"
+  }
+}

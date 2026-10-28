@@ -6,21 +6,23 @@
     "completed": true,
     "target": "descend",
     "jobs": 2,
-    "seconds": 883,
+    "seconds": 42.0,
     "objects": 2985,
     "out_bytes": 1151901696,
     "cache_bytes": 2143612928,
-    "sampled_cgroup_memory_peak_bytes": 4111265792,
-    "effective_config_sha256": "959f9931856597bc5219a68392c77334887315c8e53e30a039f52b82dfaa3cc7",
-    "source_pins_sha256": "a92067d83a66b1dbf54581593916cb6dbecf2e2b2f7125e5f4c58118f477b53d",
-    "full_lto_link_measured": false
+    "sampled_cgroup_memory_peak_bytes": 4216295424,
+    "effective_config_sha256": "60b12e653667c93f5b19fdf152453e6c02322277d0fc2d8586f60e6ccd6e6f15",
+    "source_pins_sha256": "1787988ac2c433dc2d4eb38c9c37362f604e7b0006dc0d959a557946d8ee2048",
+    "full_lto_link_measured": false,
+    "incremental": true,
+    "evidence": "docs/ci-object-measurement-rc4.json"
   },
   "profiles": {
     "hosted_compact": {
       "minimum_free_workspace_gib": 15,
       "build_disk_abort_reserve_gib": 2,
-      "status": "monitored experimental attempt; complete linking capacity is not yet established",
-      "basis": "Measured inputs ~2.0 GiB and object phase ~1.07 GiB; reserve also covers container/bootstrap, final source archive and still-unmeasured DWARF ELF temporaries. Abort if actual reserve runs low."
+      "status": "Completed rc3-rebuild1 Full LTO build on the standard runner; recheck gates for each build",
+      "basis": "Run 40633724058 completed Full LTO with unchanged security, 7.75 GiB physical RAM plus provisioned swap; minimum observed link free space about12.5 GiB. Preserve the 15 GiB startup workspace gate and 2 GiB abort reserve."
     },
     "conservative": {
       "minimum_free_workspace_gib": 45,
@@ -29,5 +31,5 @@
     }
   },
   "kernel_security_configuration_changed": false,
-  "explanation": "The old 45 GiB gate was a conservative policy, not a measured disk requirement. This profile is an instrumented attempt, not a claim that the standard runner suffices."
+  "explanation": "Resource gates are checked against actual runner measurements. Prior successful run is evidence for this pinned toolchain/base, not a guarantee for every future build."
 }

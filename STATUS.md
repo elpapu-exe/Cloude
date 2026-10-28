@@ -1,37 +1,29 @@
 # Estado y continuación
 
-Actualización: 2026-10-28 (America/La_Paz). Candidata **0.1.0-rc3-rebuild1**.
+Candidata actual: **0.1.0-rc4, pendiente de compilación completa y publicación en GitHub Actions**.
 
-## Recuperación comprobada
+## Trabajo de rc4
 
-El nuevo ejecutor responde y contiene `/workspace/Cloude`, inicialmente limpio en `4fc1ad554ac54ffce0a6792ca6d85f67435e8a86`. GitHub confirma que `chatgpt-kernel-download` es la única rama y la predeterminada; `main` no existe. No había Releases ni ejecuciones de Actions. El binario disponible era rc1.
+Se añaden seis correcciones comprobadas como ausentes: dos de MGLRU (contador de escaneo y VMA especiales), una de cuota Binder, una de serialización al iniciar schedutil/Horizon y dos de manejo de rangos/errores F2FS. La [revisión internacional](docs/community-review-rc4.md) enlaza los commits primarios, la adaptación y los descartes. El parche 0016 restaura `watermark_scale_factor=10`, retirando el experimento 64 para una candidata de alcance TAPAS/A13 general.
 
-El commit local rc2 `b6107b63…`, rc3 sin commit, `dist/`, `logs/rc3-checkpoint.json` y los binarios con hashes históricos no están en este checkout. No se borró ni sobrescribió el entorno anterior. No hay un mecanismo disponible en este ejecutor para montar arbitrariamente su disco; su contenido no se declara perdido ni recuperado.
+Las pruebas locales nuevas compilan funciones C reales con ASan/UBSan y controles negativos: memoria/Binder, arranque de los gobernadores y rangos F2FS. Son modelos de regresión del host. La compilación ARM64, exports/CRC, configuración embebida, BTF, imagen, archivo final de fuentes y descarga de rc4 deben pasar en su propia ejecución. No se considera completado ese trabajo por los resultados de rc3-rebuild1.
 
-## Reconstrucción
+Se mantienen la ROM y los módulos necesarios, root histórico, MGLRU activo, CFI, Full LTO/O2, SCS, BTF, MODVERSIONS y térmicas. No se introducen cambios de zRAM, LMKD, swappiness, frecuencias o voltajes. La restauración del watermark afecta su inicializador compilado; la ROM conserva la posibilidad de sobrescribirlo.
 
-Serie nueva de nueve parches reaplicada sin fuzz: 35 archivos modificados comprobados. Árboles completos idénticos por contenido/tipo/symlink: Linux 76.069, KSU 764 y BBG 21 entradas. Compilaron localmente los cinco objetos ARM64 modificados y después terminó la fase `descend` con 2.985 objetos; la configuración efectiva solo cambia LOCALVERSION respecto a rc1.
+## Entrega anterior verificada
 
-Regresiones de adquisición de fuentes, copias de arranque, tunables/frecuencia Horizon, contabilidad MGLRU y seguridad/capacidad SSG. Los cambios están reconstruidos y revisados de nuevo; no equivalen a recuperar exactamente las modificaciones anteriores.
+[rc3-rebuild1](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058) se construyó desde `a01d67ebe63f98a705c068ea735f9ae87848b35c` en [Actions 40633724058](https://github.com/elpapu-exe/Cloude/actions/runs/40633724058). Sus 15.543 exports/CRC coincidieron con R10, pasaron 50 pruebas sin omisiones y se auditó el tar final. Se descargaron y comprobaron los 34 archivos del listado SHA256SUMS y el propio listado antes de publicar sus 35 assets.
 
-La adquisición usa commits Git originales y archivos codeload inmutables con SHA256 y recibos de procedencia. KSU requiere su historia real completa para obtener versión 35142; si solo se dispone de su archive, la preparación aborta sin fabricar historia Git.
+ZIP anterior: 25.215.885 bytes; SHA256 `4ecb0febfb9a284c3b624bab7e404ccc205941c69bf3a275312407d1267c2d55`. Los avisos BTF de esa compilación fueron `filp_close`, `should_failslab` y `vfs_getattr`. Más detalles en [ci-build-result.json](docs/ci-build-result.json). Esos datos describen la versión anterior, cuyo inicializador watermark era 64.
 
-## Compilación y entrega terminadas
+La receta de Actions ya completó esa entrega en un runner estándar con limpieza limitada al entorno desechable, checkout parcial y swap automática. Las mediciones de [objetos y recursos](docs/ci-object-measurement.md) justifican sus límites para esta carga; rc4 debe comprobar de nuevo la capacidad real. No se requiere compilar en Windows ni configurar un runner personal para repetir la receta existente.
 
-[Run 40633724058](https://github.com/elpapu-exe/Cloude/actions/runs/40633724058): build y publicación **SUCCESS**. Commit compilado `a01d67ebe63f98a705c068ea735f9ae87848b35c`. [Release experimental](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058). ZIP instalable: 25,215,885 bytes; SHA256 `4ecb0febfb9a284c3b624bab7e404ccc205941c69bf3a275312407d1267c2d55`.
+## Recuperación del trabajo previo
 
-La imagen ARM64 tiene 47.454.720 bytes, SHA256 `861973441ccc44bc59201b08eff5cdb03b0f56d379f43e758b0cf6af64c9d0bb`. La configuración efectiva y la embebida coinciden con SHA256 `959f9931856597bc5219a68392c77334887315c8e53e30a039f52b82dfaa3cc7`. Inicializador watermark=64 verificado en ELF. Conserva O2/Full LTO, CFI, SCS, BTF, MODVERSIONS y protecciones térmicas.
+Este checkout comenzó limpio en el commit publicado `4fc1ad554ac54ffce0a6792ca6d85f67435e8a86`. La rama remota disponible era `chatgpt-kernel-download`; `main` no existía. El commit local rc2 `b6107b63…`, rc3 sin commit y sus binarios históricos no se recuperaron. No se borró ni sobrescribió el entorno anterior y no se declara perdido su disco por no poder acceder a él.
 
-Los 15.543 exports y todos sus CRC coinciden con R10; no hay añadidos ni ausentes. Pasaron 50 pruebas obligatorias, sin fallos ni omisiones. El tar final de fuentes auditó 76.972 entradas por contenido, tipo, modo y destino literal de symlink; las cuentas de componentes incluyen su directorio raíz. Fuentes: 195.312.956 bytes, SHA256 `b967e8a4b2d1936e68f35821c2a59ebb0501992e070046decb42dfafdc3b544d`. No se añadieron a Git normal.
+rc3-rebuild1 fue una reconstrucción nueva a partir de rc1 y del resumen registrado. Sus fuentes originales se adquirieron mediante Git real o archivos codeload con SHA256 y recibos honestos. KSU requiere historia original completa para conservar la identidad 35142; no se fabrica un historial Git.
 
-La publicación cargó 35 assets como borrador, los volvió a descargar, verificó los 34 archivos de SHA256SUMS y comparó el propio listado antes de hacer visible la prerelease. No hay un enlace inventado ni un binario recuperado del entorno anterior.
+## Pendiente
 
-Avisos BTF reales: `filp_close`, `should_failslab`, `vfs_getattr`. La reconstrucción cambia el aviso histórico `should_fail_alloc_page` por `should_failslab`; no se afirma que todas las funciones tengan BTF resuelto. Más evidencia y recursos observados en [ci-build-result.json](docs/ci-build-result.json).
-
-El bloqueo inicial de disco se resolvió midiendo la fase de objetos y usando limpieza acotada a SDKs del runner desechable, checkout parcial y swap automática. La receta estándar funcionó en esta ejecución sin relajar la configuración del kernel. Los límites y el margen de 15 GiB son propios de esta carga medida; no garantizan cualquier otra compilación.
-
-Terminados: reconstrucción, revisión, serie/árboles comprobados, compilación completa, pruebas, imagen/ABI, tar auditado, publicación y descarga comprobada, receta de Actions, respaldo y guías. Pendiente: prueba real de arranque, funciones básicas, fluidez, ANR y temperatura en TAPAS. El rc3 histórico no se recuperó; este resultado es una reconstrucción nueva.
-
-## Teléfono
-
-Esta reconstrucción no se ha instalado ni probado. Mantener WhatsApp y módulos necesarios, térmicas activas y TikTok oficial. La [prueba de cinco minutos](docs/testing.md) produce un archivo para comparar ANR, PSI, zRAM y temperatura; no presupone una causa de los ANR.
+Terminar las comprobaciones globales y CI de rc4, publicar sus artefactos y verificar sus descargas. Después comprobar arranque, funciones básicas, root/módulos, notificaciones de WhatsApp y la [prueba de cinco minutos](docs/testing.md). Ni rc4 ni rc3-rebuild1 tienen una prueba de arranque confirmada en este teléfono. La experiencia favorable histórica corresponde a una versión anterior.

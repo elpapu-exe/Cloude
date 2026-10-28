@@ -15,7 +15,7 @@ subprocess.run(['python3', str(ROOT / 'scripts/run-release-tests.py')], check=Tr
 lock = json.loads((ROOT / 'config/sources.lock.json').read_text())
 reference = ROOT / '.cache/R10.zip'
 assert hashlib.sha256(reference.read_bytes()).hexdigest() == lock['installer']['sha256']
-name = 'ChatGPTKernel-0.1.0-rc3-rebuild1-topaz-tapas-A13-KSU'
+name = 'ChatGPTKernel-0.1.0-rc4-topaz-tapas-A13-KSU'
 package = DIST / (name + '.zip')
 members = {}
 with zipfile.ZipFile(reference) as source:
@@ -32,12 +32,12 @@ members.update({
     'build-manifest.json': ((ROOT / 'out/build-manifest.json').read_bytes(), 0o644),
     'abi-comparison.json': ((ROOT / 'out/abi-comparison.json').read_bytes(), 0o644),
     'README.md': ((ROOT / 'docs/installation.md').read_bytes(), 0o644),
-    'COMMUNITY-REVIEW.md': ((ROOT / 'docs/community-review-rc3.md').read_bytes(), 0o644),
+    'COMMUNITY-REVIEW.md': ((ROOT / 'docs/community-review-rc4.md').read_bytes(), 0o644),
     'RELEASE-NOTES.md': ((ROOT / 'docs/release-notes.md').read_bytes(), 0o644),
 })
 with zipfile.ZipFile(package, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as output:
     for path, (data, mode) in sorted(members.items()):
-        info = zipfile.ZipInfo(path, date_time=(2026, 10, 27, 0, 0, 0))
+        info = zipfile.ZipInfo(path, date_time=(2026, 10, 28, 0, 0, 0))
         info.create_system = 3
         info.external_attr = (0o100000 | mode) << 16
         info.compress_type = zipfile.ZIP_DEFLATED

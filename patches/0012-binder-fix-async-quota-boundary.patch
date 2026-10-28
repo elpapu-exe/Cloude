@@ -1,0 +1,33 @@
+From: Carlos Llamas <cmllamas@google.com>
+Subject: [PATCH 12/12] binder: complete the async quota boundary check
+
+Adapt the remaining guard from upstream commit
+c6d05e0762ab276102246d24affd1e116a46aa0c
+("binder: fix unused alloc->free_async_space"). This tree already excludes
+struct binder_buffer from async debits, credits and spam accounting, but
+still includes its heap-only size when checking the available quota.
+
+Compare the requested aligned size with the actual remaining quota. Keep
+the Android vendor hook, empty-buffer padding and accounting unchanged.
+The gain here is limited to avoiding rejection in the final metadata-sized
+quota band; the much larger upstream capacity example does not apply to
+this partially corrected base. No claim is made about the phone's ANRs.
+
+Link: https://github.com/torvalds/linux/commit/c6d05e0762ab276102246d24affd1e116a46aa0c
+Link: https://lore.kernel.org/r/20231201172212.1813387-6-cmllamas@google.com
+Signed-off-by: Carlos Llamas <cmllamas@google.com>
+Reviewed-by: Alice Ryhl <aliceryhl@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+--- a/drivers/android/binder_alloc.c
++++ b/drivers/android/binder_alloc.c
+@@ -412,8 +412,7 @@
+ 	size = max(size, sizeof(void *));
+ 
+ 	trace_android_vh_binder_alloc_new_buf_locked(size, &alloc->free_async_space, is_async);
+-	if (is_async &&
+-	    alloc->free_async_space < size + sizeof(struct binder_buffer)) {
++	if (is_async && alloc->free_async_space < size) {
+ 		binder_alloc_debug(BINDER_DEBUG_BUFFER_ALLOC,
+ 			     "%d: binder_alloc_buf size %zd failed, no async space left\n",
+ 			      alloc->pid, size);

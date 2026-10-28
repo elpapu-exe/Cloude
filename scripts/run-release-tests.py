@@ -11,7 +11,9 @@ from source_path import SOURCE_ROOT
 FILES = ('test_ci_resources.py', 'test_backup.py', 'test_manual_boot_backup.py', 'test_source_acquisition.py',
          'test_schedhorizon_tunables.py', 'test_schedhorizon_frequency.py',
          'test_mglru_accounting.py', 'test_ssg_safety.py',
-         'test_ssg_request_capacity.py')
+         'test_ssg_request_capacity.py', 'test_mglru_reclaim.py',
+         'test_binder_async_quota.py', 'test_cpufreq_start_serialization.py',
+         'test_f2fs_range_safety.py')
 suite = unittest.TestSuite()
 counts = {}
 for name in FILES:

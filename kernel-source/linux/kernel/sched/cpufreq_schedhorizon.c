@@ -963,11 +963,14 @@ static int sugov_start(struct cpufreq_policy *policy)
 	void (*uu)(struct update_util_data *data, u64 time, unsigned int flags);
 	unsigned int cpu;
 
+	/* Match sysfs store ordering: attr_set.update_lock -> min_rate_lock. */
+	mutex_lock(&sg_policy->tunables->attr_set.update_lock);
 	sg_policy->up_rate_delay_ns =
 		(u64)sg_policy->tunables->up_rate_limit_us * NSEC_PER_USEC;
 	sg_policy->down_rate_delay_ns =
 		(u64)sg_policy->tunables->down_rate_limit_us * NSEC_PER_USEC;
 	update_min_rate_limit_ns(sg_policy);
+	mutex_unlock(&sg_policy->tunables->attr_set.update_lock);
 	sg_policy->last_freq_update_time	= 0;
 	sg_policy->next_freq			= 0;
 	sg_policy->work_in_progress		= false;

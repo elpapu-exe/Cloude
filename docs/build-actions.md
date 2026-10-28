@@ -26,11 +26,11 @@ Las fases visibles son preparación, compilación de objetos, enlace Full LTO/Im
 
 Los artefactos y logs de Actions se conservan 90 días, incluso cuando falla la construcción. La publicación usa un job separado con `contents: write`; el contenedor de compilación no recibe un token de GitHub.
 
-Después de verificar imagen/configuración/ABI, se ejecutan las 50 regresiones obligatorias sin omisiones y se audita el archivo final de fuentes por contenido, tipo, modo y destino literal de symlink. Un listado cerrado SHA256SUMS cubre todos los assets.
+Después de verificar imagen/configuración/ABI, se ejecutan las 71 regresiones obligatorias sin omisiones y se audita el archivo final de fuentes por contenido, tipo, modo y destino literal de symlink. Un listado cerrado SHA256SUMS cubre todos los assets.
 
 La prerelease se crea como borrador con tag único. Se vuelven a descargar todos sus archivos, se comprueban sus hashes y solo entonces se publica. El tar de fuentes se conserva como asset y artefacto, fuera del historial Git normal. Las fuentes comprimidas excluyen `.git`; la receta obtiene las historias originales fijadas necesarias para reconstruir, especialmente la de KSU.
 
-`0.1.0-rc3-rebuild1` es una reconstrucción nueva. Una compilación y sus auditorías no certifican arranque, estabilidad, temperatura ni fluidez en TAPAS.
+`0.1.0-rc4` continúa la reconstrucción publicada rc3-rebuild1. Una compilación y sus auditorías no certifican arranque, estabilidad, temperatura ni fluidez en TAPAS.
 
 ## Ejecución completada
 

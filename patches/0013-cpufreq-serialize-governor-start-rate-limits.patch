@@ -1,0 +1,43 @@
+Subject: [PATCH 13/13] cpufreq: serialize governor start rate limit reads
+
+Adapt upstream ce390caf5541c493c9061e7a2d98a463e66b736a to the 5.15
+schedutil and Horizon implementations. Share attr_set.update_lock with
+sysfs stores so start cannot overwrite a newly stored delay with a stale
+value. Horizon keeps the existing attr_set -> min_rate_lock order.
+
+This only fixes start/store serialization; it changes no default rate,
+frequency table, governor, exported symbol or security setting.
+
+---
+diff --git a/kernel/sched/cpufreq_schedutil.c b/kernel/sched/cpufreq_schedutil.c
+--- a/kernel/sched/cpufreq_schedutil.c
++++ b/kernel/sched/cpufreq_schedutil.c
+@@ -757,7 +757,10 @@
+ 	void (*uu)(struct update_util_data *data, u64 time, unsigned int flags);
+ 	unsigned int cpu;
+ 
++	/* Serialize this snapshot with rate_limit_us_store(). */
++	mutex_lock(&sg_policy->tunables->attr_set.update_lock);
+ 	sg_policy->freq_update_delay_ns	= sg_policy->tunables->rate_limit_us * NSEC_PER_USEC;
++	mutex_unlock(&sg_policy->tunables->attr_set.update_lock);
+ 	sg_policy->last_freq_update_time	= 0;
+ 	sg_policy->next_freq			= 0;
+ 	sg_policy->work_in_progress		= false;
+diff --git a/kernel/sched/cpufreq_schedhorizon.c b/kernel/sched/cpufreq_schedhorizon.c
+--- a/kernel/sched/cpufreq_schedhorizon.c
++++ b/kernel/sched/cpufreq_schedhorizon.c
+@@ -963,11 +963,14 @@
+ 	void (*uu)(struct update_util_data *data, u64 time, unsigned int flags);
+ 	unsigned int cpu;
+ 
++	/* Match sysfs store ordering: attr_set.update_lock -> min_rate_lock. */
++	mutex_lock(&sg_policy->tunables->attr_set.update_lock);
+ 	sg_policy->up_rate_delay_ns =
+ 		(u64)sg_policy->tunables->up_rate_limit_us * NSEC_PER_USEC;
+ 	sg_policy->down_rate_delay_ns =
+ 		(u64)sg_policy->tunables->down_rate_limit_us * NSEC_PER_USEC;
+ 	update_min_rate_limit_ns(sg_policy);
++	mutex_unlock(&sg_policy->tunables->attr_set.update_lock);
+ 	sg_policy->last_freq_update_time	= 0;
+ 	sg_policy->next_freq			= 0;
+ 	sg_policy->work_in_progress		= false;

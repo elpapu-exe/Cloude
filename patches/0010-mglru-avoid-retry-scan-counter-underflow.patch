@@ -1,0 +1,34 @@
+From: Yu Zhao <yuzhao@google.com>
+Subject: [PATCH 10/12] mm: mglru: avoid scan counter underflow on retry
+
+Adapted from upstream commit
+8b671fe1a879923ecfb72dda6caf01460dd885ef.
+
+A page rejected by trylock_page() was not counted by shrink_page_list().
+Subtracting it before a clean-page retry can underflow nr_scanned and
+subsequently cause division by zero in vmpressure_calc_level(). Keep the
+scan counter monotonic, as upstream does for folio-based reclaim.
+
+Adaptation: remove the equivalent thp_nr_pages() subtraction from the
+page-based Android 5.15 evict_pages(). No vendor hook, ABI or policy
+change is introduced.
+The original upstream authorship trailers are retained below; they are
+not new sign-offs made on behalf of these contributors.
+
+Link: https://github.com/torvalds/linux/commit/8b671fe1a879923ecfb72dda6caf01460dd885ef
+Signed-off-by: Yu Zhao <yuzhao@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -4914,9 +4914,8 @@
+ 		}
+ 
+ 		/* retry pages that may have missed rotate_reclaimable_page() */
+ 		list_move(&page->lru, &clean);
+-		sc->nr_scanned -= thp_nr_pages(page);
+ 	}
+ 
+ 	spin_lock_irq(&lruvec->lru_lock);
+ 

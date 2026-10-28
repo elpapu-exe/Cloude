@@ -1,0 +1,23 @@
+From: ChatGPT Kernel project
+Subject: [PATCH] mm: restore baseline reclaim watermark default
+
+The wider TAPAS/A13 candidate keeps the base default instead of retaining
+an unmeasured low-memory policy experiment. Runtime ROM policy remains
+in control. This does not claim a performance improvement by itself.
+
+---
+ mm/page_alloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -435,7 +435,7 @@
+ int min_free_kbytes = 1024;
+ int user_min_free_kbytes = -1;
+ int watermark_boost_factor __read_mostly = 15000;
+-int watermark_scale_factor = 64;
++int watermark_scale_factor = 10;
+ 
+ static unsigned long nr_kernel_pages __initdata;
+ static unsigned long nr_all_pages __initdata;

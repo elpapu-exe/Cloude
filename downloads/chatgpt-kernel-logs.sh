@@ -181,6 +181,15 @@ if [ "${1:-}" = --worker ]; then
   printf 'Duration target: %s seconds; samples every %s seconds. Sleep may extend wall time.\n' "$DURATION" "$INTERVAL"
   uname -a
   printf 'Kernel build: '; read_value /proc/version
+  heading 'Filesystem mounted at /data (read only)'
+  CHATGPT_DATA_FILESYSTEM=
+  if [ -r /proc/mounts ]; then
+    while read -r source mountpoint filesystem options rest; do
+      [ "$mountpoint" = /data ] || continue
+      CHATGPT_DATA_FILESYSTEM=$filesystem
+    done < /proc/mounts
+  fi
+  printf '/data filesystem: %s\n' "${CHATGPT_DATA_FILESYSTEM:-unavailable}"
   for property in ro.product.device ro.build.display.id ro.lineage.version init.svc.lmkd \
     ro.config.low_ram ro.lmk.thrashing_limit ro.lmk.thrashing_limit_critical \
     persist.device_config.lmkd_native.thrashing_limit persist.device_config.lmkd_native.thrashing_limit_critical \

@@ -1,17 +1,19 @@
-# ChatGPT Kernel 0.1.0-rc3-rebuild1
+# ChatGPT Kernel 0.1.0-rc4
 
-**Nueva reconstrucción experimental para TAPAS/topaz, Android 13 / LineageOS 20 del usuario.** No es el binario rc3 del entorno anterior. Compilación y validaciones de esta ejecución deben comprobarse en el manifest y los registros entregados. Sin prueba de arranque, estabilidad, fluidez, temperatura o batería en el teléfono.
+Candidata experimental para Redmi Note 12 4G TAPAS/topaz y Android 13. Continúa la reconstrucción publicada rc3-rebuild1; no es el binario rc3 perdido. La validación de arranque y rendimiento en hardware sigue pendiente. No se garantiza compatibilidad con cualquier combinación de ROM/vendor por conservar el nombre del dispositivo.
 
-Retiene MGLRU activo, IKCONFIG real, correcciones KProfiles e integración histórica ReSukiSU/SUSFS/BBG. Reconstruye el margen experimental de reclaim (`watermark_scale_factor=64`), protección de tablas de Horizon, reintentos de frecuencia/límites, contabilidad MGLRU por flags del CAS y correcciones de RCU/entrada/capacidad de SSG. Schedutil sigue por defecto; arreglos Horizon actúan al seleccionarlo.
+Cambios respecto a rc3-rebuild1:
 
-No cambia tamaño/compresor zRAM, LMKD, swappiness, frecuencias, voltajes ni protecciones térmicas. La ROM puede sobrescribir el watermark al arrancar. Conservar CRC no demuestra estabilidad ni que todos los módulos del teléfono funcionen.
+- MGLRU: evita un subdesbordamiento de contadores durante reintentos de reclaim que puede acabar en división por cero en vmpressure; omite VMA especiales durante lookaround.
+- Binder: corrige un rechazo prematuro justo en el límite de cuota de transacciones asíncronas. La mayor parte del arreglo upstream ya estaba en la base; no se atribuye una gran ampliación de capacidad a esta línea.
+- Schedutil y Horizon: serializa el arranque del gobernador con escrituras sysfs de sus límites temporales. No cambia sus valores ni el gobernador por defecto (schedutil).
+- F2FS: propaga errores de writeback al colapsar un rango y rechaza movimientos sobre el mismo archivo que se solapan tras expandir longitud cero. Son correcciones de integridad, no resultados de FPS.
+- Restaura `watermark_scale_factor=10`, valor original de la base, para abandonar el ajuste experimental 64 sin mediciones y preparar una candidata de alcance más general. La ROM puede sobrescribirlo después del arranque.
 
-El SUSFS 2.3.0 fijado es un candidato cronológico, sin identificación demostrada de la fuente exacta de R10. No se afirma resolver todos los posibles problemas SSG, incluidos blkg retenidos y contabilidad multi-hctx. No se atribuyen los ANR del usuario a estas incidencias sin evidencia del dispositivo.
+Las referencias primarias, pruebas y cambios descartados están en `COMMUNITY-REVIEW.md` y en las fuentes correspondientes. Las pruebas de helpers reales con ASan/UBSan detectan los casos reproducidos; no sustituyen el arranque ni miden TikTok.
 
-Las compilaciones históricas registraron avisos BTF para `filp_close`, `should_fail_alloc_page` y `vfs_getattr`. Los avisos efectivos de esta compilación se conservan en `build.log` y `build-manifest.json`; los anteriores no sustituyen una auditoría del nuevo resultado.
+Retiene MGLRU activo, IKCONFIG real, correcciones KProfiles, de Horizon y de SSG anteriores, y la integración histórica ReSukiSU/SUSFS/BBG. Mantiene O2, Full LTO, CFI, Shadow Call Stack, BTF, MODVERSIONS y las protecciones térmicas. No cambia frecuencias, voltajes, LMKD, swappiness ni tamaño/compresor de zRAM. El tamaño lógico de zRAM lo configura la ROM o un módulo.
 
-Antes de instalar: copia verificada del boot funcional fuera del teléfono, recovery/fastboot disponible y lectura de `LEEME-instalacion.md`. Conservar WhatsApp y módulos necesarios, térmicas activas y TikTok oficial. La comparación corta usa el recolector de solo lectura de `docs/testing.md`.
+SUSFS 2.3.0 sigue siendo un candidato de procedencia cronológica, sin identificación demostrada de la fuente exacta de R10. No se afirma resolver todos los problemas posibles de SSG (blkg retenidos o contabilidad multi-hctx), ni atribuir los ANR del usuario a estos defectos sin registros del dispositivo. Los avisos BTF efectivos quedan en `build.log` y `build-manifest.json`.
 
-## Resultado publicado de esta reconstrucción
-
-Actions 40633724058 completó la compilación y las auditorías desde a01d67ebe63f98a705c068ea735f9ae87848b35c. Pasaron 50 regresiones sin omisiones; 15.543 exports y CRC idénticos a R10; archivo final de fuentes auditado y todos los assets descargados y verificados antes de publicar. Los avisos BTF efectivos son `filp_close`, `should_failslab` y `vfs_getattr`: la lista histórica no identifica los avisos actuales. La validación en hardware sigue pendiente.
+Antes de instalar, guarda una copia verificada del boot funcional fuera del teléfono y lee `LEEME-instalacion.md`. La prueba de `docs/testing.md` conserva WhatsApp, módulos, protecciones térmicas y TikTok oficial.

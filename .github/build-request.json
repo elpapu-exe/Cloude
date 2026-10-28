@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0-rc3-rebuild1",
-  "request": "reconstruct-rc3-compact-hosted-measured-objects-20261028",
-  "purpose": "Monitored standard-runner attempt after successful measured object compilation; preserve security configuration and publish only after full audits."
+  "version": "0.1.0-rc4",
+  "request": "rc4-reviewed-upstream-fixes-20261028",
+  "purpose": "Build and audit six targeted upstream corrections, with baseline reclaim watermark restored, preserving thermal and security configuration."
 }
