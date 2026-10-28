@@ -4,7 +4,7 @@ Kernel experimental para **Redmi Note 12 4G TAPAS/topaz**, con la LineageOS 20 A
 
 Esta es una **nueva reconstrucción** desde el commit publicado `4fc1ad554ac54ffce0a6792ca6d85f67435e8a86` y los cambios descritos en el resumen del desarrollo anterior. No se recuperaron el commit local rc2, los cambios sin commit rc3 ni sus binarios. Los hashes históricos de rc3 no identifican esta reconstrucción.
 
-**Estado:** fuentes reconstruidas y pruebas de regresión locales; compilación ARM64 y entrega pendientes de GitHub Actions. No se afirma arranque, estabilidad ni mejora medida en el teléfono. La percepción favorable comunicada por el usuario corresponde a una versión anterior.
+**Estado: entrega bloqueada por capacidad del runner.** Fuentes reconstruidas, 42 pruebas obligatorias y cuatro del recolector aprobadas; los cinco objetos ARM64 modificados compilan. El runner estándar se detuvo en preflight: 7,75 GiB de RAM, 3 GiB de swap y 28,32 GiB libres después de limpiar SDKs. No hay disco adicional en `/mnt`. Falta asignar un runner de más capacidad para completar Full LTO. [Ejecución completa](https://github.com/elpapu-exe/Cloude/actions/runs/40628797721) · [Inventario comprobado](https://github.com/elpapu-exe/Cloude/actions/runs/40629147342). No se afirma arranque, estabilidad ni mejora medida en el teléfono. La percepción favorable comunicada por el usuario corresponde a una versión anterior.
 
 [Compilaciones de Actions](https://github.com/elpapu-exe/Cloude/actions) · [Publicaciones](https://github.com/elpapu-exe/Cloude/releases) · [Instalación y recuperación](docs/installation.md) · [Comparación de cinco minutos](docs/testing.md)
 

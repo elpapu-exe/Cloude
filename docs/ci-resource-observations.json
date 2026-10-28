@@ -1,0 +1,32 @@
+{
+  "source_complete_commit": "5c0bb03fda8ed7940427635cee32379739752cf3",
+  "build_run": "https://github.com/elpapu-exe/Cloude/actions/runs/40628797721",
+  "build_run_result": "failed preflight; kernel build and publication skipped",
+  "observed_runner": {
+    "cpu_count": 2,
+    "physical_ram_bytes": 8323969024,
+    "existing_swap_bytes": 3221221376,
+    "available_ram_after_cleanup_bytes": 7346475008,
+    "free_workspace_after_cleanup_bytes": 30406492160
+  },
+  "configured_capacity_gates": {
+    "available_ram_plus_usable_swap_gib": 36,
+    "workspace_free_after_extra_swap_gib": 45,
+    "requested_extra_swap_gib": 32
+  },
+  "disk_gate_basis": "conservative workspace margin, not a measured peak of this reconstruction",
+  "insufficient_even_if_disk_margin_reduced": "extra swap needed to reach the memory gate would leave too little disk for source acquisition and build output",
+  "capacity_inventory_run": "https://github.com/elpapu-exe/Cloude/actions/runs/40629147342",
+  "new_installable_zip_available": false,
+  "historical_rc3_recovered": false,
+  "further_actions": "Configure an Actions runner with sufficient physical RAM (40 GiB recommended) and at least the conservative 45 GiB free workspace margin; run the prepared workflow. Standard runner cannot fit the configured swap and disk gates.",
+  "capacity_inventory_result": "success",
+  "capacity_inventory": {
+    "root_volume_total_gib": 71.6,
+    "root_volume_free_gib_before_cleanup_sparse_checkout": 13.9,
+    "mnt_and_runner_temp_share_root_volume": true,
+    "extra_build_disk_present": false,
+    "sdk_cache_total_measured_approximately_gib": 31.9,
+    "all_measured_directories_safe_to_remove_verified": false
+  }
+}

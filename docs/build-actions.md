@@ -23,3 +23,9 @@ Los artefactos de Actions se conservan 90 días y requieren acceso al repositori
 Cuando `publish` está activado, la entrega se carga como borrador de una prerelease experimental con una etiqueta nueva que incluye versión, commit y número de ejecución. Antes de publicarla, el workflow descarga **todos** los archivos desde GitHub, comprueba sus SHA-256 y compara el listado con el original. No reemplaza assets de otra entrega. Las fuentes comprimidas se almacenan como asset de la publicación y como artefacto de Actions, fuera del historial Git normal.
 
 La compilación `0.1.0-rc3-rebuild1` es una reconstrucción nueva. El resultado no se identifica con el binario rc3 que quedó inaccesible. Una compilación y sus auditorías no certifican arranque, rendimiento, temperatura ni estabilidad en el teléfono.
+
+## Resultado observado en esta sesión
+
+El [build de la serie completa](https://github.com/elpapu-exe/Cloude/actions/runs/40628797721) falló en el preflight de capacidad, antes de compilar. El [inventario independiente](https://github.com/elpapu-exe/Cloude/actions/runs/40629147342) comprobó que el runner estándar tiene un único volumen raíz de 71,6 GiB, sin disco adicional en `/mnt`. Tras la limpieza inicial quedaron 28,32 GiB libres; no caben la swap necesaria y un espacio de construcción suficiente. El margen de 45 GiB es conservador y no representa un pico medido de la candidata.
+
+La siguiente ejecución requiere un runner de mayor capacidad registrado/disponible en la cuenta. No hace falta reconectar GitHub. No se generó ni publicó un kernel en esos intentos.
