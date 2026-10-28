@@ -85,6 +85,6 @@ def main():
     }
     (ROOT / 'out/abi-comparison.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report))
-    assert not missing and not changed, 'ABI export comparison failed; do not package a release'
+    assert not missing and not changed and not report['added_exports'], 'ABI export comparison failed; do not package a release'
 
 if __name__ == '__main__': main()

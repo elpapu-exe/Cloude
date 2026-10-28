@@ -1,26 +1,43 @@
-# Compilación reproducible por entradas fijadas
+# Compilar y entregar con GitHub Actions
 
-Host usado: Debian 13 x86_64, 5 procesos de compilación y límite de 32 GiB de RAM. Full LTO y BTF requieren memoria, espacio y tiempo. Se mantienen para aproximarse a la base R10; no se atribuyen como mejoras nuevas.
+La candidata actual es **0.1.0-rc3-rebuild1**, una reconstrucción nueva. No corresponde al ZIP rc3 histórico con SHA `6c1cb3d1…`. Se conserva Full LTO, O2, CFI, Shadow Call Stack, BTF y MODVERSIONS. No hace falta compilar en Windows.
+
+El workflow `.github/workflows/kernel.yml` se puede iniciar en Actions mediante **Run workflow** en `chatgpt-kernel-download`. También se ejecuta al cambiar `.github/build-request.json` en esa rama, para permitir entregas trazables desde Git.
+
+## Recursos
+
+El enlace anterior necesitó alrededor de 32 GiB temporales. El ZIP final ronda 25 MB: son magnitudes diferentes. El preflight registra memoria física disponible, límites de cgroup, swap realmente utilizable y espacio libre. Exige 36 GiB combinados y 45 GiB de disco después de crear swap; no garantiza que esas condiciones basten para cualquier runner.
+
+Se prefiere un runner con al menos 40 GiB de RAM física. El campo `runner` acepta JSON con las etiquetas de un runner que exista en la cuenta; no crea ni contrata uno. El estándar `"ubuntu-24.04"` puede usar swap en su máquina desechable y fallará antes de construir si no hay capacidad. En self-hosted no se eliminan SDKs ni se crea swap: su operador debe disponer los recursos. No se desactivan protecciones para eludir falta de memoria.
+
+## Receta
+
+CI usa una imagen Debian 13 fijada por digest y las herramientas registradas. Descarga entradas verificadas, comprueba la historia original de KSU y reaplica los nueve parches sin fuzz. Los recibos distinguen Git real de archivos codeload; SUSFS continúa siendo un candidato de procedencia expresamente limitada.
 
 ```sh
 python3 scripts/fetch_host_tools.py
 python3 scripts/fetch-sources.py
 python3 scripts/prepare-sources.py
 bash scripts/configure.sh
-bash scripts/build.sh
+bash scripts/build.sh 2>&1 | tee logs/build.log
 python3 scripts/verify-artifact.py
 python3 scripts/compare-r10-exports.py
-python3 scripts/package.py
+bash scripts/package-sources.sh
+python3 scripts/ci-audit-dist.py
 ```
 
-No ejecutes `prepare-sources.py` sobre el árbol ya preparado: aborta para evitar mezclar parches. No hay `curl | bash`, publicación automática ni operaciones sobre el teléfono. Los paquetes Debian se verifican y extraen en `.cache/host`; no se instalan en el sistema. Se necesitan de antemano Git, make, GCC de host, Perl, Python 3.12+, dpkg-deb, OpenSSL y utilidades básicas.
+Para reproducir fuera de CI se necesita Bash con `set -o pipefail`, los recursos anteriores y dependencias de `scripts/ci-build-in-container.sh`; consultar ese script para la receta completa. `CHATGPT_JOBS` controla paralelismo. Timestamp fijado en época `1793059200`; las dependencias del sistema del contenedor se registran. Una receta fijada no promete identidad binaria entre máquinas.
 
-La receta conserva KSU con su historia Git completa: 4442 commits, tag más cercano v4.2.0-rc1, versión numérica 35142. Los hashes de descargas y versiones están en `config/`. SUSFS está fijado a un candidato de la misma versión y fecha, sin prueba de que sea exactamente el commit empleado por el mantenedor de R10.
+## Comprobaciones obligatorias
 
-Fijar las entradas facilita reconstruir la entrega; no se promete identidad bit a bit entre hosts. La clave de firma que el árbol genera automáticamente, las rutas y las herramientas de host pueden modificar el binario. No se distribuyen claves privadas del proceso de construcción.
+- Configuración de seguridad y compatibilidad, ARM64/ELF AArch64, versión/root, IKCONFIG idéntica a `.config` e inicializador `watermark_scale_factor=64` en ELF.
+- Decoder de exports contrastado contra `vmlinux.symvers`, igualdad completa de símbolos y CRC con el R10 de referencia.
+- Ocho suites (incluida la copia manual previa) de regresión obligatorias: ausencia, fallo u omisión bloquean el empaquetado.
+- Reaplicación de todos los parches y auditoría del archivo `.tar.zst` **final**, comparando cada contenido, tipo, modo y destino literal de symlink. Se excluyen `.git`, herramientas y objetos compilados.
+- CRC e imagen/config del ZIP y listado cerrado SHA256SUMS.
 
-La configuración efectiva se distribuye con el binario y se incorpora en su IKCONFIG. El nombre de release cambia; las comprobaciones CFI, MODVERSIONS y firmas de módulos permanecen activas. Las comprobaciones KMI del wrapper Android no se ejecutan con `make` directo: no se certifica el ABI contra los módulos reales del teléfono.
+`check-patches.py --compare-tracked` permite además contrastar todos los árboles preparados contra `kernel-source/`, ignorando diferencias de permisos entre el snapshot y Git. Los archives fuente se conservan como assets y artefactos de Actions, nunca en el historial Git normal.
 
-El fragmento preserva el orden LSM de la base y añade su Baseband Guard existente. Se usan O2, HZ=300 y Full LTO, como resuelve el defconfig fijado. La opción O3 original depende de ARC y no activa O3 en ARM64. No se altera swappiness, TTL MGLRU, zRAM, LMKD, voltajes ni límites térmicos.
+El job de publicación usa permisos de escritura solo tras el build auditado. Crea un prerelease borrador con tag único, carga los archivos, vuelve a descargarlos y verifica todos sus hashes antes de hacerlo visible. Los artefactos y logs de Actions se retienen 90 días; los assets de Release no dependen de esa caducidad. Un fallo deja el kernel sin publicar y registros para diagnosticarlo.
 
-Al desactivar LOCALVERSION_AUTO para un nombre de release fijo, Kconfig desactiva también MODULE_SCMVERSION. Esto afecta metadatos informativos de módulos, sin desactivar MODVERSIONS ni sus CRC.
+El archivo de fuentes contiene los árboles completos preparados y los pines, pero excluye la historia `.git`. Para reconstruir, se obtiene de nuevo la historia original fijada de KSU y una base Linux limpia mediante esta receta en un checkout nuevo del commit de entrega. No se afirma que el tar pueda compilar sin red por sí solo.

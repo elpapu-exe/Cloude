@@ -1,29 +1,13 @@
-# ChatGPT Kernel 0.1.0-rc1
+# ChatGPT Kernel 0.1.0-rc3-rebuild1
 
-Compilación ARM64 realizada el 23 de octubre de 2026. Destino: Redmi Note 12 4G topaz/tapas, LineageOS 20 Android 13, conservando la base funcional Zepharo R10. **Candidata experimental; no probada en el teléfono.**
+**Nueva reconstrucción experimental para TAPAS/topaz, Android 13 / LineageOS 20 del usuario.** No es el binario rc3 del entorno anterior. Compilación y validaciones de esta ejecución deben comprobarse en el manifest y los registros entregados. Sin prueba de arranque, estabilidad, fluidez, temperatura o batería en el teléfono.
 
-## Cambios propios
+Retiene MGLRU activo, IKCONFIG real, correcciones KProfiles e integración histórica ReSukiSU/SUSFS/BBG. Reconstruye el margen experimental de reclaim (`watermark_scale_factor=64`), protección de tablas de Horizon, reintentos de frecuencia/límites, contabilidad MGLRU por flags del CAS y correcciones de RCU/entrada/capacidad de SSG. Schedutil sigue por defecto; arreglos Horizon actúan al seleccionarlo.
 
-- MGLRU activo desde el arranque. El usuario confirmó que R10 lo tenía apagado (`0x0000`). TTL, zRAM y política LMKD no se modifican.
-- KProfiles: validar entradas antes de tomar los locks; proteger estado coherentemente; ejecutar notificadores bloqueantes mediante trabajo diferido; retirar el cambio inseguro de schedulers de todos los discos. No se atribuye una mejora de fluidez medida a estas correcciones.
-- IKCONFIG incorpora la configuración real que produjo el binario, sustituyendo la referencia stock fija de la fuente original.
-- Instalador KSU-only, Android 13, slot activo, con respaldo completo del boot y checksum obligatorio antes de escribir.
+No cambia tamaño/compresor zRAM, LMKD, swappiness, frecuencias, voltajes ni protecciones térmicas. La ROM puede sobrescribir el watermark al arrancar. Conservar CRC no demuestra estabilidad ni que todos los módulos del teléfono funcionen.
 
-Se conservan Clang/LLD 24, O2, Full LTO, CFI, MODVERSIONS, comprobaciones de módulos, frecuencias/voltajes y protecciones térmicas. HZ=300 corresponde al defconfig fijado; no se pudo recuperar cada entrada efectiva de la compilación histórica R10. ReSukiSU conserva versión 35142, identidad v4.2.0-rc1-7e92d45e y soporte de manager/módulos. SUSFS 2.3.0 está fijado a un candidato cronológico de su versión; Baseband Guard coincide con la revisión identificada en R10.
+El SUSFS 2.3.0 fijado es un candidato cronológico, sin identificación demostrada de la fuente exacta de R10. No se afirma resolver todos los posibles problemas SSG, incluidos blkg retenidos y contabilidad multi-hctx. No se atribuyen los ANR del usuario a estas incidencias sin evidencia del dispositivo.
 
-## Validación pasada
+Las compilaciones históricas registraron avisos BTF para `filp_close`, `should_fail_alloc_page` y `vfs_getattr`. Los avisos efectivos de esta compilación se conservan en `build.log` y `build-manifest.json`; los anteriores no sustituyen una auditoría del nuevo resultado.
 
-- Compilación completa `Image`, sin desactivar WERROR, CFI, BTF ni MODVERSIONS para completarla. Full LTO terminó dentro del límite de 32 GiB de RAM; no se usó el fallback ThinLTO.
-- Cabecera ARM64 y ELF AArch64, release `5.15.216-ChatGPTKernel-0.1.0-rc1`, identidades KSU/SUSFS/BBG comprobadas.
-- Configuración extraída de la imagen idéntica a la `.config` efectiva.
-- **15.543 exports de R10 conservados, todos con CRC idénticos; cero ausentes, cero diferencias.** Los exports PREL32 y CRC se recuperaron del R10 publicado. El decodificador se contrastó con la imagen nueva y su `vmlinux.symvers`, obtenido de modpost.
-- Tres parches repetidos desde los archivos originales: 30 archivos finales idénticos al árbol compilado. Checkpatch del parche KProfiles: cero avisos/errores.
-- Cuatro pruebas del respaldo: copia correcta, tamaño incompleto, error de escritura y checksum incorrecto. Sintaxis de instalador comprobada también con BusyBox ash.
-
-## Avisos y límites
-
-El enlace terminó con tres avisos `resolve_btfids` para `dentry_open`, `vfs_getattr` y `should_fail_alloc_page`. Sus identificadores de función no están presentes en los metadatos BTF finales, lo que limita las rutas de trazado/BPF que requieren esos identificadores. No son exports ausentes ni CRC distintos. Se conservaron las opciones de generación BTF del árbol; una prueba aislada con menos opciones generó más avisos y no se incorporó al binario. El log y el manifiesto registran los tres avisos.
-
-No se compararon los `.ko` reales del teléfono ni se probó su arranque, carga de drivers, root, módulos, TikTok, temperatura o batería. La coincidencia con los exports de R10 aporta evidencia de compatibilidad, sin certificar toda interacción semántica del vendor. No se promete eliminar todos los bloqueos con 4 GB de RAM.
-
-El ZIP, manifiesto, configuración, informe ABI y fuentes se distribuyen con checksums. La guía de instalación incluye cómo recuperar el boot original. La nueva imagen requiere reiniciar para ejecutarse.
+Antes de instalar: copia verificada del boot funcional fuera del teléfono, recovery/fastboot disponible y lectura de `LEEME-instalacion.md`. Conservar WhatsApp y módulos necesarios, térmicas activas y TikTok oficial. La comparación corta usa el recolector de solo lectura de `docs/testing.md`.

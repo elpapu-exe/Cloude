@@ -1,52 +1,27 @@
-# Descargar ChatGPT Kernel 0.1.0-rc1
+# ChatGPT Kernel — reconstrucción 0.1.0-rc3-rebuild1
 
-[Descargar ZIP para Redmi Note 12 4G / Android 13 / KSU](https://github.com/elpapu-exe/Cloude/raw/refs/heads/chatgpt-kernel-download/downloads/ChatGPTKernel-0.1.0-rc1-topaz-tapas-A13-KSU.zip)
+Kernel experimental para **Redmi Note 12 4G TAPAS/topaz**, con la LineageOS 20 Android 13 del usuario. La ROM y los módulos personales se conservan. Protecciones térmicas, Full LTO, CFI, Shadow Call Stack, BTF y MODVERSIONS siguen siendo requisitos de compilación.
 
-Si GitHub pide iniciar sesión, usa la cuenta que tiene acceso a este repositorio. En móvil también puedes abrir el ZIP en `downloads/` y pulsar **Download raw file**.
+Esta es una **nueva reconstrucción** desde el commit publicado `4fc1ad554ac54ffce0a6792ca6d85f67435e8a86` y los cambios descritos en el resumen del desarrollo anterior. No se recuperaron el commit local rc2, los cambios sin commit rc3 ni sus binarios. Los hashes históricos de rc3 no identifican esta reconstrucción.
 
-[Instalación y recuperación](downloads/LEEME-instalacion.md) · [Notas y límites conocidos](downloads/release-notes.md) · [Checksums](downloads/SHA256SUMS) · [Fuentes completas](kernel-source/)
+**Estado:** fuentes reconstruidas y pruebas de regresión locales; compilación ARM64 y entrega pendientes de GitHub Actions. No se afirma arranque, estabilidad ni mejora medida en el teléfono. La percepción favorable comunicada por el usuario corresponde a una versión anterior.
 
-**Experimental: todavía no probado en el teléfono.** Incluye tres avisos BTF documentados. Conserva una copia recuperable del boot actual antes de instalar.
+[Compilaciones de Actions](https://github.com/elpapu-exe/Cloude/actions) · [Publicaciones](https://github.com/elpapu-exe/Cloude/releases) · [Instalación y recuperación](docs/installation.md) · [Comparación de cinco minutos](docs/testing.md)
 
+No hay un enlace directo nuevo hasta que Actions compile, audite, publique y compruebe la descarga. `downloads/` conserva el **binario histórico rc1** y sus metadatos; no se deben confundir con la reconstrucción. El recolector canónico actual está en `downloads/chatgpt-kernel-logs.sh`.
 
-## Prueba con un solo archivo de logs
+## Cambios de la candidata
 
-[Descargar recolector](https://github.com/elpapu-exe/Cloude/raw/chatgpt-kernel-download/downloads/chatgpt-kernel-logs.sh) · [Instrucciones](docs/testing.md)
+- MGLRU existente activo por defecto; configuración real embebida y arreglos de KProfiles retenidos de rc1.
+- `watermark_scale_factor=64` como inicializador experimental de margen de recuperación. La ROM o los módulos pueden sobrescribirlo tras arrancar; no garantiza fluidez.
+- Horizon: tablas dinámicas protegidas, entrada sysfs estricta, caché invalidada ante rechazos y actualización de límites coherente. **Schedutil sigue siendo el gobernador predeterminado.**
+- MGLRU: conservar el tipo anon/file observado en el CAS exitoso al actualizar contabilidad batched.
+- SSG: lectura de política dentro de RCU, errores de entrada sysfs y capacidad real de metadatos por petición. No se consideran resueltos todos sus problemas históricos.
 
-Guarda el script en Descargas y ejecuta una sola vez en Termux:
+No hay cambios nuevos de tamaño/compresor zRAM, LMKD, swappiness, frecuencias, voltajes ni límites térmicos. No se atribuye una fuga concreta o los ANR del teléfono a un único componente sin registros.
 
-```sh
-su -c '/system/bin/sh /sdcard/Download/chatgpt-kernel-logs.sh'
-```
+## Fuentes y entrega
 
-Usa TikTok normalmente durante diez minutos y comparte el `.txt` de Descargas cuando termine. No cambia ajustes ni sube datos. Revisa la guía de recuperación antes de probar el kernel experimental.
+Base Linux 5.15.216 / Zepharo R10 `d246c8c17548bb1a2756092cabf34d11eedcde8c`, ReSukiSU histórico `7e92d45e` (35142), BBG `a54e0dc6` y candidato SUSFS 2.3.0 `7af04b08`. La procedencia exacta del SUSFS de R10 sigue sin demostrarse. Pines completos en `config/sources.lock.json`; límites y referencias en [revisión](docs/community-review-rc3.md).
 
-
----
-
-# ChatGPT Kernel
-
-Kernel personalizado para Redmi Note 12 4G (topaz/tapas), basado en el Zepharo R10 que ya funciona con la LineageOS 20 no oficial del usuario.
-
-**Estado: 0.1.0-rc1 compilado y verificado estáticamente; todavía sin prueba de arranque ni rendimiento en el teléfono.** Los 15.543 exports y sus CRC coinciden con R10. La compilación no sustituye una prueba real de arranque, llamadas, cámara, Wi-Fi, carga y suspensión. Véanse [estado](STATUS.md) y [notas de versión](docs/release-notes.md), incluidos tres avisos BTF conocidos.
-
-## Objetivo
-
-Reducir trabajo innecesario y mejorar la gestión de memoria de un equipo de 4 GB, conservando la ROM, los módulos del vendor, KernelSU, WaEnhancer e InstaEclipse. Se mantendrán las protecciones térmicas y la verificación de compatibilidad de módulos. No se promete eliminar toda la lentitud ni aumentar la RAM física.
-
-## Base fijada
-
-- Fuentes: `belowzeroiq/kernel_msm-5.15`, commit `d246c8c17548bb1a2756092cabf34d11eedcde8c`.
-- Referencia funcional: `5.15.216-Zepharo-R10-gd246c8c17548`.
-- Configuración y dependencias fijadas en `config/`; la configuración IKCONFIG extraída de la imagen publicada corresponde a un archivo stock y no se tomará como receta efectiva.
-- Instalación prevista: AnyKernel3 conservando el resto del arranque y sin sustituir DTB, DTBO ni módulos del vendor.
-
-## Trabajo
-
-La investigación de memoria y la matriz de alternativas están en `docs/`. Esta primera entrega compila una candidata sobre las fuentes R10 fijadas; no realiza una segunda compilación completa de referencia ni afirma reproducir el binario del mantenedor.
-
-Los cambios propios son MGLRU activo por defecto (el usuario confirmó `0x0000` en R10), correcciones de bloqueo/contexto en KProfiles y la incorporación de la configuración real en IKCONFIG. No se aumentan frecuencias, voltajes ni límites térmicos. Se mantienen los mecanismos KSU/SUSFS y Baseband Guard de la base.
-
-Consulta [compilación](docs/build.md), [instalación y recuperación](docs/installation.md) y [compatibilidad](docs/compatibility-review.md). No existe una garantía de eliminar toda la lentitud con 4 GB de RAM.
-
-Los directorios `.cache`, `out`, `logs` y `dist` son locales y se excluyen de Git. Ningún comando de construcción debe flashear el teléfono ni publicar archivos automáticamente.
+Actions conserva ZIP, configuración efectiva, SHA256SUMS, registros, comparación ABI y fuentes correspondientes comprimidas, sin añadir el archivo grande a Git. La publicación exige comprobar el archivo final de fuentes y volver a descargar todos los assets para verificar sus hashes. [Receta y recursos](docs/build.md).

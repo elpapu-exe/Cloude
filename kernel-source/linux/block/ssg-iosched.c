@@ -97,6 +97,7 @@ struct ssg_data {
 	 * I/O context information for each request
 	 */
 	struct ssg_request_info *rq_info;
+	unsigned int rq_info_count;
 
 	spinlock_t lock;
 	spinlock_t zone_lock;
@@ -150,7 +151,7 @@ static inline struct ssg_request_info *ssg_rq_info(struct ssg_data *ssg,
 	if (unlikely(rq->internal_tag < 0))
 		return NULL;
 
-	if (unlikely(rq->internal_tag >= rq->q->nr_requests))
+	if (unlikely(rq->internal_tag >= ssg->rq_info_count))
 		return NULL;
 
 	return &ssg->rq_info[rq->internal_tag];
@@ -456,6 +457,27 @@ static void ssg_set_shallow_depth(struct ssg_data *ssg, struct blk_mq_tags *tags
 		max_t(unsigned int, ssg->max_tgroup_rqs / map_nr, 1);
 }
 
+/*
+ * Queue setup and depth changes run with request allocation stopped. Keep the
+ * old allocation on failure; other hctxs may already have grown their tags.
+ * Do not shrink here: a later hctx update can fail after an earlier callback.
+ */
+static void ssg_resize_rq_info(struct ssg_data *ssg, unsigned int count)
+{
+	struct ssg_request_info *rq_info;
+
+	if (count <= ssg->rq_info_count)
+		return;
+
+	rq_info = kcalloc(count, sizeof(*rq_info), GFP_KERNEL);
+	if (!rq_info)
+		return;
+
+	kfree(ssg->rq_info);
+	ssg->rq_info = rq_info;
+	ssg->rq_info_count = count;
+}
+
 static void ssg_depth_updated(struct blk_mq_hw_ctx *hctx)
 {
 	struct request_queue *q = hctx->queue;
@@ -465,11 +487,8 @@ static void ssg_depth_updated(struct blk_mq_hw_ctx *hctx)
 
 	ssg->congestion_threshold_rqs = depth * congestion_threshold / 100U;
 
-	kfree(ssg->rq_info);
-	ssg->rq_info = kmalloc_array(depth, sizeof(struct ssg_request_info),
-				     GFP_KERNEL | __GFP_ZERO);
-	if (ZERO_OR_NULL_PTR(ssg->rq_info))
-		ssg->rq_info = NULL;
+	/* nr_tags includes reserved tags; bitmap depth does not. */
+	ssg_resize_rq_info(ssg, tags->nr_tags);
 
 	ssg_set_shallow_depth(ssg, tags);
 	sbitmap_queue_min_shallow_depth(tags->bitmap_tags,
@@ -501,9 +520,9 @@ static unsigned int ssg_tgroup_shallow_depth(struct blk_mq_alloc_data *data)
 {
 	struct ssg_data *ssg = data->q->elevator->elevator_data;
 	pid_t tgid = task_tgid_nr(current->group_leader);
-	int nr_requests = data->q->nr_requests;
+	unsigned int nr_requests = min(ssg->rq_info_count, data->q->nr_requests);
 	int tgroup_rqs = 0;
-	int i;
+	unsigned int i;
 
 	if (unlikely(!ssg->rq_info))
 		return 0;
@@ -593,10 +612,7 @@ static int ssg_init_queue(struct request_queue *q, struct elevator_type *e)
 	atomic_set(&ssg->async_write_rqs, 0);
 	ssg->congestion_threshold_rqs =
 		q->nr_requests * congestion_threshold / 100U;
-	ssg->rq_info = kmalloc_array(q->nr_requests, sizeof(struct ssg_request_info),
-				     GFP_KERNEL | __GFP_ZERO);
-	if (ZERO_OR_NULL_PTR(ssg->rq_info))
-		ssg->rq_info = NULL;
+	ssg_resize_rq_info(ssg, q->nr_requests);
 
 	spin_lock_init(&ssg->lock);
 	spin_lock_init(&ssg->zone_lock);
@@ -808,12 +824,9 @@ static ssize_t ssg_var_show(int var, char *page)
 	return sprintf(page, "%d\n", var);
 }
 
-static void ssg_var_store(int *var, const char *page)
+static int ssg_var_store(int *var, const char *page)
 {
-	long val;
-
-	if (!kstrtol(page, 10, &val))
-		*var = val;
+	return kstrtoint(page, 10, var);
 }
 
 #define SHOW_FUNCTION(__FUNC, __VAR, __CONV)				\
@@ -837,8 +850,10 @@ SHOW_FUNCTION(ssg_async_write_shallow_depth_show, ssg->async_write_shallow_depth
 static ssize_t __FUNC(struct elevator_queue *e, const char *page, size_t count)	\
 {									\
 	struct ssg_data *ssg = e->elevator_data;			\
-	int __data;							\
-	ssg_var_store(&__data, (page));					\
+	int __data, ret;							\
+	ret = ssg_var_store(&__data, (page));				\
+	if (ret)							\
+		return ret;						\
 	if (__data < (MIN))						\
 		__data = (MIN);						\
 	else if (__data > (MAX))					\

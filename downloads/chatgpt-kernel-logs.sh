@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# ChatGPT Kernel diagnostic v4. Read-only diagnostics; one shareable text file.
+# ChatGPT Kernel diagnostic v5. Read-only diagnostics; one shareable text file.
 # No network access, tuning, cache clearing, app closing or automatic upload.
 PATH=/system/bin:/system/xbin:/vendor/bin:/product/bin
 export PATH
@@ -66,7 +66,7 @@ graphics() {
   heading "Graphics $1: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   printf 'Read-only HWUI counters and recent numeric frame records; no resets or window titles.\n'
   printf 'Compare counters only for the same PID and Stats since. Video surfaces may not be represented.\n'
-  for package in com.zhiliaoapp.musically com.android.systemui; do
+  for package in com.zhiliaoapp.musically com.ss.android.ugc.trill com.android.systemui; do
     printf '\nPackage: %s\n' "$package"
     bounded dumpsys gfxinfo "$package" framestats > "$LOCK/graphics"
     printf 'gfxinfo exit status: %s\n' "$?"
@@ -176,7 +176,7 @@ if [ "${1:-}" = --worker ]; then
   trap 'exit 130' 1 2 15
   START_EPOCH=$(date +%s)
   START_LOGCAT=$(date '+%m-%d %H:%M:%S.000')
-  heading 'ChatGPT Kernel diagnostic v4'
+  heading 'ChatGPT Kernel diagnostic v5'
   printf 'Start UTC: '; date -u '+%Y-%m-%dT%H:%M:%SZ'
   printf 'Duration target: %s seconds; samples every %s seconds. Sleep may extend wall time.\n' "$DURATION" "$INTERVAL"
   uname -a

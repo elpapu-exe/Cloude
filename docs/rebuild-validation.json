@@ -1,0 +1,55 @@
+{
+  "version": "0.1.0-rc3-rebuild1",
+  "identity": "new reconstruction, not the inaccessible rc3 binary",
+  "starting_commit": "4fc1ad554ac54ffce0a6792ca6d85f67435e8a86",
+  "patches_replayed": 9,
+  "modified_final_source_files_checked": 35,
+  "complete_tree_entries_compared": {
+    "linux": 76069,
+    "kernelsu": 764,
+    "baseband-guard": 21
+  },
+  "tree_comparison": "file content, entry type and literal symlink target; all match",
+  "effective_config_difference_from_published_rc1": [
+    "CONFIG_LOCALVERSION"
+  ],
+  "arm64_changed_objects_compiled": [
+    "kernel/sched/cpufreq_schedhorizon.o",
+    "mm/page_alloc.o",
+    "mm/vmscan.o",
+    "block/ssg-cgroup.o",
+    "block/ssg-iosched.o"
+  ],
+  "full_arm64_build": false,
+  "final_source_archive_audit": false,
+  "hardware_tested": false,
+  "patch_sha256": {
+    "0001-susfs-v2.3.0-r10-context.patch": "7e4612109ff9ad6f4a4a4a50ddc5921024f2192eea8e0953d0b315fe02467beb",
+    "0002-integrate-pinned-root-and-real-config.patch": "a67273fffc369753ce4cd37703c388ad8ed1867b280a9e29a09912a55ecc226c",
+    "0003-kprofiles-fix-context-and-input.patch": "ecdb0e40e137047b6a6b7d4e191e10db882334090ed64dc0d619156527db9ac7",
+    "0004-mm-increase-reclaim-headroom.patch": "092da7c19c42494b003581f2f48caba3ff8ffcfc1e93782c579a13e54bd9b265",
+    "0005-schedhorizon-protect-dynamic-tunables.patch": "fe30c50f77599153a32d2210f0fb46783fc06faa1096ef7b072e324db7b36dce",
+    "0006-schedhorizon-fix-rejected-frequency-cache-and-limits.patch": "c1cb1fe75f99d8aa2a088746aa56e22cda29e96cfcad77d3d258c171d0d6cad8",
+    "0007-mglru-preserve-page-type-accounting.patch": "0d6d55e2a5f83bdad670edcd31955ddb63fdd941e8843a396e20d65dae930ee7",
+    "0008-ssg-fix-lookup-lifetime-and-sysfs-input.patch": "2aff5b33fd2a8f017ea53580270a34e2c766cd9a08d49ec58713c81bf91babb7",
+    "0009-ssg-bound-request-metadata-by-allocation.patch": "638c7a56c180ab8d2520f5407f074e29d40cf6a6ddffe634e7852bcd35173e8b"
+  },
+  "required_tests": {
+    "tests_run": 42,
+    "files": {
+      "test_backup.py": 4,
+      "test_manual_boot_backup.py": 6,
+      "test_source_acquisition.py": 5,
+      "test_schedhorizon_tunables.py": 5,
+      "test_schedhorizon_frequency.py": 12,
+      "test_mglru_accounting.py": 4,
+      "test_ssg_safety.py": 3,
+      "test_ssg_request_capacity.py": 3
+    },
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "scope": "host unit and regression checks; no device validation"
+  },
+  "collector_tests_passed": 4
+}

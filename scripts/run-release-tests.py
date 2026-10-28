@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+"""Required release regressions: absent files, failures and skips block packaging."""
+from pathlib import Path
+import json
+import sys
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+FILES = ('test_backup.py', 'test_manual_boot_backup.py', 'test_source_acquisition.py',
+         'test_schedhorizon_tunables.py', 'test_schedhorizon_frequency.py',
+         'test_mglru_accounting.py', 'test_ssg_safety.py',
+         'test_ssg_request_capacity.py')
+suite = unittest.TestSuite()
+counts = {}
+for name in FILES:
+    assert (ROOT / 'tests' / name).is_file(), f'Required test missing: {name}'
+    loaded = unittest.defaultTestLoader.discover(str(ROOT / 'tests'), pattern=name)
+    counts[name] = loaded.countTestCases()
+    assert counts[name] > 0, f'Empty required suite: {name}'
+    suite.addTests(loaded)
+result = unittest.TextTestRunner(verbosity=2).run(suite)
+report = {'tests_run': result.testsRun, 'files': counts, 'failures': len(result.failures),
+          'errors': len(result.errors), 'skips': len(result.skipped),
+          'scope': 'host unit and regression checks; no device validation'}
+(ROOT / 'logs').mkdir(exist_ok=True)
+(ROOT / 'logs/release-tests.json').write_text(json.dumps(report, indent=2) + '\n')
+sys.exit(0 if result.wasSuccessful() and not result.skipped else 1)

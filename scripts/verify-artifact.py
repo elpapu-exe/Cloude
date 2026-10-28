@@ -18,7 +18,7 @@ with (OUT / 'vmlinux').open('rb') as source:
     source.seek(18)
     assert int.from_bytes(source.read(2), 'little') == 183, 'Not AArch64'
 release = (OUT / 'include/config/kernel.release').read_text().strip()
-assert release == '5.15.216-ChatGPTKernel-0.1.0-rc1', release
+assert release == '5.15.216-ChatGPTKernel-0.1.0-rc3-rebuild1', release
 assert release.encode() in image, 'Release string absent from image'
 assert b'v4.2.0-rc1-7e92d45e@ReSukiSU' in image, 'Unexpected KSU identity'
 assert b'v2.3.0' in image, 'SUSFS identity absent'
@@ -28,9 +28,34 @@ end = image.index(b'IKCFG_ED', start)
 embedded = gzip.decompress(image[start:end])
 assert embedded == (OUT / '.config').read_bytes(), 'Embedded configuration differs from actual build'
 assert 'module_layout' in (OUT / 'vmlinux.symvers').read_text(), 'Module CRC data absent'
+# Read the file-backed ELF symbol rather than trusting source or a log message.
+import struct
+import mmap
+elf_file = (OUT / 'vmlinux').open('rb')
+elf = mmap.mmap(elf_file.fileno(), 0, access=mmap.ACCESS_READ)
+shoff = struct.unpack_from('<Q', elf, 40)[0]
+shentsize, shnum = struct.unpack_from('<HH', elf, 58)
+sections = [struct.unpack_from('<IIQQQQIIQQ', elf, shoff + i * shentsize) for i in range(shnum)]
+found = []
+for section in sections:
+    if section[1] != 2:  # SHT_SYMTAB
+        continue
+    strings = sections[section[6]]
+    strtab = elf[strings[4]:strings[4] + strings[5]]
+    for offset in range(section[4], section[4] + section[5], section[9]):
+        name, info, other, index, value, size = struct.unpack_from('<IBBHQQ', elf, offset)
+        if strtab[name:strtab.find(b'\0', name)] != b'watermark_scale_factor':
+            continue
+        data = sections[index]
+        assert data[1] == 1 and size == 4, 'Unexpected watermark symbol storage'
+        address = data[4] + value - data[3]
+        found.append(struct.unpack_from('<i', elf, address)[0])
+assert found == [64], f'Unexpected compiled reclaim headroom initializer: {found}'
 manifest = {
-    'project': 'ChatGPT Kernel', 'version': '0.1.0-rc1',
-    'release': release, 'image_bytes': len(image),
+    'project': 'ChatGPT Kernel', 'version': '0.1.0-rc3-rebuild1',
+    'release': release, 'reconstruction': 'new reconstruction; not the lost rc3 binary',
+    'project_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+    'image_bytes': len(image),
     'image_sha256': hashlib.sha256(image).hexdigest(),
     'config_sha256': hashlib.sha256(embedded).hexdigest(),
     'vmlinux_symvers_sha256': hashlib.sha256((OUT / 'vmlinux.symvers').read_bytes()).hexdigest(),

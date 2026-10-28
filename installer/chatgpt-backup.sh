@@ -23,7 +23,7 @@ chatgpt_backup_boot() {
   (
     cd "$CHATGPT_BACKUP_DIR" || exit 1
     printf '%s  boot.img\n' "$saved_hash" > SHA256SUMS
-    printf 'Kernel: ChatGPT Kernel 0.1.0-rc1\nOriginal partition: %s\nSlot: %s\nSize: %s\n' "$BLOCK" "$SLOT" "$bytes" > backup-info.txt
+    printf 'Kernel: ChatGPT Kernel 0.1.0-rc3-rebuild1\nOriginal partition: %s\nSlot: %s\nSize: %s\n' "$BLOCK" "$SLOT" "$bytes" > backup-info.txt
     sha256sum -c SHA256SUMS
   ) || abort "Cannot verify saved boot backup."
   sync || abort "Cannot sync boot backup."

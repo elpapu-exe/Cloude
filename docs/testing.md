@@ -1,82 +1,39 @@
-# Prueba breve y un solo archivo de diagnóstico
+# Comparación breve: un archivo por kernel
 
-La versión 0.1.0-rc1 está compilada, comprobada estáticamente y tiene una primera prueba de arranque y uso registrada en un teléfono. Eso no valida todas sus funciones ni la estabilidad a largo plazo. Mantén disponible R10 KSU y una copia recuperable del boot, como explica [instalación y recuperación](installation.md).
+La reconstrucción **0.1.0-rc3-rebuild1** es una candidata nueva. No es el binario rc3 que quedó inaccesible y todavía no tiene validación en este teléfono. Una versión anterior arrancó y el usuario percibió mejoras; eso no demuestra que esta candidata arranque, elimine ANR o mejore la fluidez.
 
-## Uso
+Antes de instalar, guarda fuera del teléfono la copia verificada de `boot` y lee [instalación y recuperación](installation.md). Tras instalar comprueba root, llamadas, Wi-Fi y cámara antes de medir rendimiento. Si hay reinicios o fallos básicos, restaura el arranque anterior.
 
-1. Instala el kernel desde un recovery compatible y reinicia. Antes de la prueba de rendimiento comprueba que funcionan root, llamadas, Wi-Fi y cámara. Si hay problemas básicos o reinicios, vuelve a R10.
-2. Descarga `chatgpt-kernel-logs.sh` en **Descargas** del teléfono.
-3. En Termux pega una sola vez:
+## Prueba de cinco minutos
 
-```sh
-su -c '/system/bin/sh /sdcard/Download/chatgpt-kernel-logs.sh'
-```
+Haz una captura con el kernel que utilizas ahora, antes de cambiarlo. Repite una sola vez después de instalar y reiniciar la candidata, dejando pasar el mismo tiempo desde el arranque y esperando a que el teléfono recupere una temperatura inicial parecida.
 
-Acepta el permiso de KernelSU si aparece. El comando muestra la ruta de un archivo `ChatGPTKernel-<fecha>-<id>.txt`. Si no encuentra el script, revisa que el navegador no haya cambiado su nombre o la carpeta de descarga.
-
-4. Usa TikTok y alterna con tus apps habituales durante unos diez minutos. Mantén los módulos que necesitas y las protecciones térmicas activas. Haz esta primera prueba desenchufado, para distinguir la carga del uso normal. Conserva Termux en recientes; no lo fuerces a cerrar.
-5. Al cabo de 10–12 minutos, adjunta **solo ese `.txt`** desde Descargas al chat. El marcador `TEST FINISHED` al final confirma que terminó. Si Android mata el recolector, el archivo parcial todavía puede servir; si el teléfono se suspende, el tiempo real puede alargarse.
-
-No se necesitan capturas ni comandos adicionales. El informe incluye la identidad del kernel ejecutado, por lo que también sirve como referencia si se ejecuta sobre R10 antes de instalar.
-
-## Qué recoge
-
-- Una muestra cada diez segundos: RAM, swap, PSI de memoria/CPU/I/O, contadores de recuperación y paginación, zRAM, uso global de CPU, frecuencias y temperaturas disponibles.
-- Configuración de MGLRU/zRAM y propiedades concretas de kernel/ROM; versión instalada de TikTok.
-- Procesos con mayor RSS/CPU, usando nombres y sin argumentos; la cifra CPU de `ps` puede ser un promedio desde que arrancó el proceso.
-- PSS/swap de TikTok al terminar, eventos LMKD y de ANR/muerte de procesos, resumen de ANR de TikTok y un extracto acotado de sus pilas si existe una traza reciente.
-- Errores concretos del kernel desde el arranque. Las trazas pueden incluir TikTok como proceso secundario y se etiquetan así; su mera presencia no demuestra que sufriera el ANR.
-
-## Captura de fluidez de dos minutos
-
-Para tirones sin ANR, descarga [chatgpt-fluidez.sh](../downloads/chatgpt-fluidez.sh) en Descargas y ejecuta:
+1. Conserva tu ROM, TikTok oficial, WhatsApp y los módulos necesarios: Integrity Box, Hybrid Mount, ReVanced, Leica, LSPosed/NeoZygisk, WaEnhancer e InstaEclipse según tu instalación actual. Mantén activas las protecciones térmicas y WhatsApp con sus notificaciones habituales. No cambies opciones de batería, gobernador, zRAM ni ajustes entre las dos capturas.
+2. Descarga el recolector actualizado [chatgpt-kernel-logs.sh](../downloads/chatgpt-kernel-logs.sh) en **Descargas**. Ejecuta una vez en Termux y acepta root de KernelSU si aparece:
 
 ```sh
-su -c '/system/bin/sh /sdcard/Download/chatgpt-fluidez.sh 120'
+su -c '/system/bin/sh /sdcard/Download/chatgpt-kernel-logs.sh 300'
 ```
 
-Es el recolector general v4 con un nombre de descarga distinto para evitar ejecutar por error una copia antigua. Usa las apps normalmente durante unos dos minutos, con el teléfono desenchufado, y comparte el único `ChatGPTKernel-<fecha>-<id>.txt` cuando aparezca `TEST FINISHED`. Las consultas y la suspensión pueden alargar el tiempo. No necesita provocar un bloqueo, reiniciar, limpiar datos ni modificar ajustes.
+3. Con el teléfono desenchufado, usa TikTok normal unos tres minutos. Durante los dos minutos restantes, alterna varias veces entre TikTok, WhatsApp y las mismas dos apps que acostumbras usar. Usa un brillo, refresco, conexión y secuencia parecidos en ambas capturas. Conserva Termux en recientes.
+4. Espera el marcador `TEST FINISHED` al final del `.txt` indicado. La recogida final añade algunos segundos; si Android mata el recolector, conserva el archivo parcial. Comparte el `.txt` de cada kernel y una frase: tirones percibidos, ANR si apareció y si WhatsApp notificó de inmediato. No hace falta una captura de pantalla ni otra tanda de comandos.
 
-Esta versión añade uso de CPU por núcleo, máximos de hardware/política, parámetros WALT y KProfiles disponibles, preferencias de refresco y contadores HWUI al inicio/final de TikTok y SystemUI. Las preferencias de pantalla no prueban el refresco real. Los títulos de ventanas y las jerarquías de vistas quedan excluidos; solo se guardan resúmenes y filas numéricas de fotogramas.
+Si solo puedes entregar un archivo, envía primero la referencia del kernel actual. No hace falta provocar un bloqueo. Una notificación de WhatsApp que recibas normalmente durante la prueba sirve como comprobación práctica; el informe por sí solo no mide su latencia de entrega.
 
-Los contadores gráficos solo pueden compararse si coinciden PID y `Stats since`. Sus percentiles son acumulados; no se restan para calcular el intervalo. El anillo de fotogramas cubre solo actividad reciente, puede repetir registros entre capturas y no representa necesariamente el vídeo de TikTok, que puede usar una superficie distinta. No usar un umbral fijo de 16,67 ms para todos los modos ni convertir estos datos automáticamente a FPS de pantalla. El muestreo de recursos cada diez segundos permite detectar presión sostenida, pero no demuestra por sí solo la causa de cada microtirón.
+## Qué permite comparar
 
-La versión 4 incluye los dispositivos zRAM adicionales y los valores concretos disponibles de LMKD, junto con versiones de Instagram/InstaEclipse. Para el ensayo temporal de capacidad adicional, consulta [la guía específica](zram-trial.md); el recolector por sí mismo sigue siendo de solo lectura.
+El informe guarda identidad del kernel/ROM, versión de TikTok, MGLRU y parámetros de memoria realmente activos, no solo sus valores compilados. Cada diez segundos recoge RAM disponible, swap, PSI, contadores de reclaim/paginación, zRAM, CPU, frecuencias y sensores disponibles. También recoge resúmenes de procesos, memoria de TikTok, eventos LMKD/ANR y contadores gráficos al inicio y al final. La versión 5 consulta HWUI para las dos variantes oficiales de TikTok (`com.zhiliaoapp.musically` y `com.ss.android.ugc.trill`) y SystemUI.
 
-## Estado puntual de memoria y contexto OOM existente
+Se compararán presión de memoria sostenida y deltas de contadores durante intervalos semejantes, incidencias de ANR/muerte de procesos y evolución térmica. El tamaño lógico de zRAM no equivale a RAM física consumida: `orig_data_size`, `compr_data_size` y `mem_used_total` son cifras distintas. Un valor de `watermark_scale_factor` cambiado por la ROM después del arranque puede diferir del inicializador del kernel.
 
-Si el informe completo contiene cierres OOM pero un extracto posterior queda vacío, descarga [chatgpt-memoria-estado.zip](../downloads/chatgpt-memoria-estado.zip), extrae `chatgpt-memory-status.sh` directamente en Descargas y ejecuta:
+Los contadores gráficos solo se pueden comparar dentro de una captura si coinciden PID y `Stats since`. Los percentiles son acumulados y no deben restarse. El anillo de fotogramas representa actividad HWUI reciente; el vídeo de TikTok puede utilizar otra superficie. No equivale a FPS de pantalla ni justifica un umbral fijo de 16,67 ms para cualquier refresco. El muestreo de diez segundos detecta presión sostenida, pero no identifica la causa de cada microtirón.
 
-```sh
-su -c '/system/bin/sh /sdcard/Download/chatgpt-memory-status.sh'
-```
+La temperatura de batería y las zonas CPU/SoC son sensores distintos. Los valores crudos y su unidad se etiquetan en el informe; un sensor ausente no significa temperatura cero. Una prueba corta orienta el siguiente cambio y no certifica estabilidad prolongada, batería ni superioridad de rendimiento.
 
-Comparte únicamente el `ChatGPTKernel-memoria-<fecha>-<id>.txt` que indica. Es una captura puntual: no repite la prueba de fluidez ni provoca un OOM. Siempre escribe un encabezado y el estado de los lectores; un archivo vacío obtenido con un filtro no permite concluir que el registro haya sido sobrescrito o que la lectura estuviera permitida.
+## Alcance del recolector
 
-Incluye RAM/swap y zonas de memoria actuales, configuración VM y contadores. Lee `dmesg` en un directorio temporal privado y conserva solo los dos últimos bloques OOM, acotados, excluyendo la tabla de procesos. Informa del estado de salida, errores, cantidad de líneas y primer/último tiempo de kernel reconocido. Consulta además el búfer **kernel** de logcat con un límite de cinco segundos, con el mismo filtro; no recoge el logcat general de aplicaciones. Los datos crudos temporales se borran al salir. El informe queda en Descargas, y no se sube automáticamente.
+El script solo lee ajustes y registros. Escribe su informe y un directorio temporal de control; no ajusta zRAM/LMKD, detiene apps, limpia cachés/logs, desactiva servicios ni instala nada al arranque. No transmite datos. Conserva los módulos y las protecciones térmicas. No requiere Hail ni otro TikTok. No uses los ensayos temporales antiguos de zRAM para esta comparación.
 
-El estado actual no reconstruye la memoria disponible en el instante de un cierre anterior. Si los mensajes ya no existen en ninguna de las dos fuentes, este script no puede recuperarlos ni determinar retrospectivamente su causa. No modifica parámetros, módulos, procesos, zRAM ni archivos del sistema.
+El `.txt` puede contener nombres de apps y trazas de diagnóstico; puedes revisarlo antes de compartirlo. Se excluyen argumentos completos de procesos, bases de datos de `meminfo`, títulos de ventanas y jerarquías de vistas. El ANR más reciente puede preceder a la prueba y una aparición de TikTok como proceso secundario no demuestra que fuera la aplicación bloqueada. La ausencia de una traza accesible tampoco demuestra ausencia de ANR.
 
-Los archivos sysfs y proc solo se leen. El recolector escribe el informe y su directorio temporal de control; no modifica ajustes, detiene apps, limpia cachés/logs ni sube datos. No instala un servicio de arranque.
-
-El `.txt` contiene nombres de apps y datos de diagnóstico; puedes revisarlo antes de compartirlo. Se excluyen líneas de comando completas, mensajes generales de excepciones de otras apps y las secciones de bases de datos de `meminfo`. La batería y las zonas CPU/SoC son sensores distintos; las frecuencias leídas pueden ser solicitadas en lugar de medidas. Las muestras no equivalen a una medición de FPS ni certifican estabilidad.
-
-## Captura puntual de SecureElement y TikTok
-
-Si el informe muestra cierres repetidos de `com.android.se` con motivo `bg anr`, usa [chatgpt-secureelement-logs.sh](../downloads/chatgpt-secureelement-logs.sh). Descárgalo en Descargas y ejecuta:
-
-```sh
-su -c '/system/bin/sh /sdcard/Download/chatgpt-secureelement-logs.sh'
-```
-
-Termina en primer plano, normalmente en pocos segundos, y muestra la ruta de un único `ChatGPTKernel-SE-<fecha>-<id>.txt`. Comparte ese archivo. No hay que repetir la prueba de diez minutos ni reiniciar.
-
-La versión 2 consulta el último resumen ANR si corresponde a SecureElement o TikTok, el bloque SecureElement en las tres trazas ANR más recientes y un bloque de TikTok entre las últimas 32 trazas. Busca primero una traza cuyo proceso principal sea TikTok; si solo lo encuentra como secundario, lo indica expresamente. Así puede recuperar un fallo que haya dejado de ser el ANR más reciente, siempre que su traza todavía exista.
-
-También consulta servicios/HAL de SecureElement y el estado actual de batería, límites de CPU y refrigeración. Informa de los comandos que fallan o agotan su tiempo. El estado térmico recogido después no reconstruye el estado exacto del momento del ANR. No modifica ajustes ni detiene servicios. `com.android.se` gestiona elementos seguros eSE/UICC/SIM y no debe desactivarse suponiendo que únicamente sirve para NFC.
-
-Si las pilas confirman una espera de eSE ausente mientras SIM1/SIM2 están registrados, existe un [parche experimental específico para tapas con Android 13](../modules/chatgpt-se-fix/README.md). Se instala como APK de LSPosed, con ámbito exclusivo `com.android.se`; necesita validación en el teléfono y no sustituye el diagnóstico de memoria o temperatura.
-
-## Validación del recolector
-
-Se comprobó la sintaxis con BusyBox ash y se ejecutó con archivos y comandos Android simulados. Las pruebas verifican muestras, terminación, ausencia de cambios a los archivos de sistema simulados y exclusión de otro proceso en ANR. El recolector general ya completó una captura real en esta ROM; el puntual de SecureElement todavía necesita esa primera ejecución real.
+La sintaxis y las pruebas con archivos/comandos Android simulados comprueban muestras, terminación, filtrado y conservación de los archivos de sistema simulados. Esta revisión del recolector necesita su primera captura real. Si un informe ya existente requiere más contexto, están disponibles el [estado puntual de memoria](../downloads/chatgpt-memory-status.sh) y el [diagnóstico SecureElement](../downloads/chatgpt-secureelement-logs.sh); no son pasos obligatorios de esta comparación.

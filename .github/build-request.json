@@ -1,0 +1,5 @@
+{
+  "version": "0.1.0-rc3-rebuild1",
+  "request": "reconstruct-rc3-20261028",
+  "purpose": "New reconstruction from published rc1 and the recorded change specification; never claim identity with the unavailable historical rc3 binary."
+}

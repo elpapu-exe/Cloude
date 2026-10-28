@@ -1,10 +1,12 @@
 {
   "project": "ChatGPT Kernel",
-  "version": "0.1.0-rc1",
+  "version": "0.1.0-rc3-rebuild1",
   "kernel": {
     "repository": "https://github.com/belowzeroiq/kernel_msm-5.15.git",
     "commit": "d246c8c17548bb1a2756092cabf34d11eedcde8c",
-    "defconfig": "unified_defconfig"
+    "defconfig": "unified_defconfig",
+    "archive_url": "https://codeload.github.com/belowzeroiq/kernel_msm-5.15/tar.gz/d246c8c17548bb1a2756092cabf34d11eedcde8c",
+    "archive_sha256": "94af9cc30162454749425e7448f592a9b22fd2c4111161c095b7f91c6db11658"
   },
   "toolchain": {
     "url": "https://github.com/greenforce-project/greenforce_clang/releases/download/20260912/gf-clang-24.0.0-20260912.tar.gz",
@@ -19,7 +21,9 @@
     "status": "full Git history verified",
     "commit_count": 4442,
     "version_code": 35142,
-    "nearest_tag": "v4.2.0-rc1"
+    "nearest_tag": "v4.2.0-rc1",
+    "archive_url": "https://codeload.github.com/Baka-SU/BakaSU/tar.gz/7e92d45ed5c7e0ed6e3e0f7e87d1cea510d068ea",
+    "archive_sha256": "fb7ebc7afce533696a5d9fa113298424f1345d1d739e7ac195066444c512ee2e"
   },
   "susfs": {
     "status": "chronological_candidate_not_binary_provenance_verified",
