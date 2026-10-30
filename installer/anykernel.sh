@@ -2,7 +2,7 @@
 # ChatGPT Kernel: KSU-only, boot-only AnyKernel3 package.
 # Backend copyright osm0sis @ xda-developers; see LICENSE.
 properties() { '
-kernel.string=ChatGPT Kernel 0.1.0-rc4 (experimental)
+kernel.string=ChatGPT Kernel 0.1.0-rc5 (experimental)
 do.devicecheck=1
 do.modules=0
 do.systemless=0
@@ -30,7 +30,7 @@ esac
 [ -b "$BLOCK" ] || abort "Boot block device unavailable."
 [ -s "$AKHOME/Image" ] || abort "Kernel image missing."
 
-ui_print "ChatGPT Kernel 0.1.0-rc4: experimental, hardware untested."
+ui_print "ChatGPT Kernel 0.1.0-rc5: experimental, hardware untested."
 ui_print "Preserving ramdisk and vendor partitions."
 split_boot
 . "$AKHOME/tools/chatgpt-backup.sh"

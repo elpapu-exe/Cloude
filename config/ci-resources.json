@@ -6,23 +6,23 @@
     "completed": true,
     "target": "descend",
     "jobs": 2,
-    "seconds": 42.0,
+    "seconds": 45.0,
     "objects": 2985,
-    "out_bytes": 1151901696,
+    "out_bytes": 1151905792,
     "cache_bytes": 2143612928,
-    "sampled_cgroup_memory_peak_bytes": 4216295424,
-    "effective_config_sha256": "60b12e653667c93f5b19fdf152453e6c02322277d0fc2d8586f60e6ccd6e6f15",
-    "source_pins_sha256": "1787988ac2c433dc2d4eb38c9c37362f604e7b0006dc0d959a557946d8ee2048",
+    "sampled_cgroup_memory_peak_bytes": 2489114624,
+    "effective_config_sha256": "c3d43db9a52f7aeda6168c70197278e27ca9b165a76d93e53875849cf39f93ba",
+    "source_pins_sha256": "f2972b2d283b3ca354f04fda8d740e31de3f8a572b910c16ab662d2e50b73153",
     "full_lto_link_measured": false,
     "incremental": true,
-    "evidence": "docs/ci-object-measurement-rc4.json"
+    "evidence": "docs/ci-object-measurement-rc5.json"
   },
   "profiles": {
     "hosted_compact": {
       "minimum_free_workspace_gib": 15,
       "build_disk_abort_reserve_gib": 2,
-      "status": "Completed rc3-rebuild1 Full LTO build on the standard runner; recheck gates for each build",
-      "basis": "Run 40633724058 completed Full LTO with unchanged security, 7.75 GiB physical RAM plus provisioned swap; minimum observed link free space about12.5 GiB. Preserve the 15 GiB startup workspace gate and 2 GiB abort reserve."
+      "status": "Previous rc4 completed Full LTO on the standard runner; rc5 full build not requested yet",
+      "basis": "Run40663572783 completed protected rc4 with 28 GiB additional swap; Full LTO/Image took1h16m10s with substantial paging. Recheck actual RAM/swap/disk gates for each future build."
     },
     "conservative": {
       "minimum_free_workspace_gib": 45,

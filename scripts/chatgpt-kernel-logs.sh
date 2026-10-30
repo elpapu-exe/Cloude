@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# ChatGPT Kernel diagnostic v5. Read-only diagnostics; one shareable text file.
+# ChatGPT Kernel diagnostic v6. Read-only diagnostics; one shareable text file.
 # No network access, tuning, cache clearing, app closing or automatic upload.
 PATH=/system/bin:/system/xbin:/vendor/bin:/product/bin
 export PATH
@@ -21,6 +21,136 @@ bounded() {
     return 127
   fi
 }
+# Extra hardware/configuration readers have short timeouts and bounded output.
+# These readers do not inspect process arguments, task lists or addresses.
+detail_command() {
+  if command -v timeout >/dev/null 2>&1; then
+    timeout 2 "$@" 2>/dev/null
+  else
+    return 127
+  fi
+}
+detail_value() {
+  if [ ! -r "$1" ]; then printf 'NA\n'; return; fi
+  detail_output=$(detail_command cat "$1")
+  detail_status=$?
+  if [ "$detail_status" -eq 0 ]; then
+    printf '%s\n' "$detail_output" | sed -n '1,8p;8q'
+  else
+    printf 'NA (reader exit %s)\n' "$detail_status"
+  fi
+}
+governor_tunables() {
+  active_governor=$(detail_command cat "$1/scaling_governor")
+  case "$active_governor" in
+    schedutil) rate_fields=rate_limit_us;;
+    schedhorizon|horizon) rate_fields='up_rate_limit_us down_rate_limit_us';;
+    *) printf '  active governor rate fields: NA (unlisted or unavailable governor)\n'; return;;
+  esac
+  for scope in "$1/$active_governor" "/sys/devices/system/cpu/cpufreq/$active_governor"; do
+    printf '  active governor tunables %s:\n' "$scope"
+    for rate_field in $rate_fields; do
+      printf '    %s: ' "$rate_field"; detail_value "$scope/$rate_field"
+    done
+  done
+}
+gpu_configuration() {
+  heading 'GPU configuration snapshots (read only; driver reports, not measured throughput)'
+  for gpu_field in gpu_model gpuclk min_gpuclk max_gpuclk; do
+    printf 'KGSL %s: ' "$gpu_field"; detail_value "/sys/class/kgsl/kgsl-3d0/$gpu_field"
+  done
+  for gpu_scope in /sys/class/kgsl/kgsl-3d0/devfreq /sys/class/devfreq/*; do
+    [ -d "$gpu_scope" ] || continue
+    case "$gpu_scope" in
+      /sys/class/kgsl/*|*kgsl*|*gpu*|*GPU*|*3d0*) :;;
+      *) continue;;
+    esac
+    printf '%s:\n' "$gpu_scope"
+    for gpu_field in governor cur_freq min_freq max_freq available_frequencies; do
+      printf '  %s: ' "$gpu_field"; detail_value "$gpu_scope/$gpu_field"
+    done
+  done
+}
+io_configuration() {
+  heading "Block I/O $1 (read only; kernel device names and numeric counters only)"
+  for io_device in /sys/block/sd* /sys/block/mmcblk*; do
+    [ -d "$io_device" ] || continue
+    printf '%s scheduler: ' "${io_device##*/}"; detail_value "$io_device/queue/scheduler"
+    printf '%s hardware queue count: ' "${io_device##*/}"
+    if [ -d "$io_device/mq" ]; then
+      io_queue_count=0
+      for io_queue in "$io_device"/mq/*; do
+        [ -d "$io_queue" ] || continue
+        io_queue_count=$((io_queue_count + 1))
+      done
+      printf '%s\n' "$io_queue_count"
+    else
+      printf 'NA\n'
+    fi
+  done
+  printf 'device reads sectors_read read_ms writes sectors_written write_ms in_flight io_ms weighted_io_ms\n'
+  if [ -r /proc/diskstats ]; then
+    detail_command sh -c '
+      rows=0
+      while read -r major minor name reads merged_read sectors_read read_ms writes merged_write sectors_written write_ms in_flight io_ms weighted_ms rest; do
+        rows=$((rows + 1)); [ "$rows" -le 512 ] || break
+        case "$name" in
+          sd*) suffix=${name#sd}; case "$suffix" in ""|*[!a-z0-9]*) continue;; esac;;
+          mmcblk*) suffix=${name#mmcblk}; case "$suffix" in ""|*[!0-9p]*) continue;; esac;;
+          dm-*) suffix=${name#dm-}; case "$suffix" in ""|*[!0-9]*) continue;; esac;;
+          *) continue;;
+        esac
+        valid=1
+        for number in "$reads" "$sectors_read" "$read_ms" "$writes" "$sectors_written" "$write_ms" "$in_flight" "$io_ms" "$weighted_ms"; do
+          case "$number" in ""|*[!0-9]*) valid=0;; esac
+        done
+        [ "$valid" -eq 1 ] || continue
+        printf "%s %s %s %s %s %s %s %s %s %s\n" "$name" "$reads" "$sectors_read" "$read_ms" "$writes" "$sectors_written" "$write_ms" "$in_flight" "$io_ms" "$weighted_ms"
+      done < "$1"
+    ' sh /proc/diskstats
+  else
+    printf 'NA\n'
+  fi
+}
+runtime_hardware() {
+  heading 'Driver links (read only; NA when not exposed)'
+  for driver_link in /sys/devices/system/cpu/cpufreq/policy*/device/driver \
+    /sys/class/kgsl/kgsl-3d0/device/driver; do
+    printf '%s: ' "$driver_link"
+    driver_target=$(detail_command readlink -f "$driver_link")
+    if [ -n "$driver_target" ]; then printf '%s\n' "$driver_target"; else printf 'NA\n'; fi
+  done
+  heading 'Loaded modules (name, bytes, reference count only; max 160 entries)'
+  printf 'name bytes refs\n'
+  if [ -r /proc/modules ]; then
+    detail_command sh -c '
+      rows=0
+      while read -r name bytes refs rest; do
+        rows=$((rows + 1)); [ "$rows" -le 160 ] || break
+        case "$name" in ""|*[!A-Za-z0-9_-]*) continue;; esac
+        case "$bytes" in ""|*[!0-9]*) continue;; esac
+        ref_digits=${refs#-}
+        case "$ref_digits" in ""|*[!0-9]*) continue;; esac
+        printf "%s %s %s\n" "$name" "$bytes" "$refs"
+      done < "$1"
+    ' sh /proc/modules
+  else
+    printf 'NA\n'
+  fi
+  heading 'Top-app and foreground CPU group configuration (no membership/task data)'
+  for cpu_group in top-app foreground; do
+    for group_file in /dev/cpuset/"$cpu_group"/cpus \
+      /dev/cpuset/"$cpu_group"/effective_cpus \
+      /dev/cpuctl/"$cpu_group"/cpu.uclamp.min \
+      /dev/cpuctl/"$cpu_group"/cpu.uclamp.max \
+      /sys/fs/cgroup/"$cpu_group"/cpuset.cpus \
+      /sys/fs/cgroup/"$cpu_group"/cpuset.cpus.effective \
+      /sys/fs/cgroup/"$cpu_group"/cpu.uclamp.min \
+      /sys/fs/cgroup/"$cpu_group"/cpu.uclamp.max; do
+      printf '%s: ' "$group_file"; detail_value "$group_file"
+    done
+  done
+}
 cleanup() {
   rm -f "$LOCK/pid" "$LOCK/bootid" "$LOCK/thermal-paths" "$LOCK/lastanr" "$LOCK/processes" "$LOCK/graphics"
   rmdir "$LOCK" 2>/dev/null
@@ -29,6 +159,7 @@ configuration() {
   heading 'Memory configuration (read only)'
   for file in /sys/kernel/mm/lru_gen/enabled /sys/kernel/mm/lru_gen/min_ttl_ms \
     /proc/sys/vm/swappiness /proc/sys/vm/page-cluster /proc/sys/vm/watermark_scale_factor \
+    /proc/sys/vm/watermark_boost_factor \
     /proc/sys/vm/min_free_kbytes /sys/block/zram0/disksize /sys/block/zram0/comp_algorithm; do
     printf '%s: ' "$file"; read_value "$file"
   done
@@ -48,6 +179,8 @@ configuration() {
     for field in cpuinfo_max_freq scaling_governor scaling_min_freq scaling_max_freq; do
       printf '  %s: ' "$field"; read_value "$policy/$field"
     done
+    printf '  scaling_driver: '; detail_value "$policy/scaling_driver"
+    governor_tunables "$policy"
     for field in up_rate_limit_us down_rate_limit_us hispeed_load hispeed_freq rtg_boost_freq boost adaptive_low_freq adaptive_high_freq target_load_thresh target_load_shift; do
       tunable="$policy/walt/$field"
       [ -r "$tunable" ] || tunable="/sys/devices/system/cpu/cpufreq/walt/$field"
@@ -57,6 +190,7 @@ configuration() {
   for file in /sys/kernel/kprofiles/kp_mode /sys/module/kprofiles/parameters/auto_kp; do
     printf '%s: ' "$file"; read_value "$file"
   done
+  gpu_configuration
   heading 'Requested display refresh preferences (not measured refresh rate)'
   for setting in min_refresh_rate peak_refresh_rate; do
     printf '%s: ' "$setting"; bounded settings get system "$setting"
@@ -86,14 +220,14 @@ graphics() {
 snapshot() {
   heading "Sample $1: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   printf 'uptime: '; read_value /proc/uptime
-  grep -E '^(MemTotal|MemAvailable|SwapTotal|SwapFree|Active\(anon\)|Inactive\(anon\)|Active\(file\)|Inactive\(file\)):' /proc/meminfo
+  grep -E '^(MemTotal|MemAvailable|SwapTotal|SwapFree|CmaTotal|CmaFree|Active\(anon\)|Inactive\(anon\)|Active\(file\)|Inactive\(file\)):' /proc/meminfo
   for kind in memory cpu io; do
     printf 'PSI %s:\n' "$kind"; read_value "/proc/pressure/$kind"
   done
   printf 'CPU ticks (aggregate and per core):\n'; grep -E '^cpu([0-9]+)? ' /proc/stat
   printf 'loadavg: '; read_value /proc/loadavg
   printf 'vmstat counters:\n'
-  grep -E '^(pswpin|pswpout|pgmajfault|pgscan[^ ]*|pgsteal[^ ]*|allocstall[^ ]*|workingset_refault[^ ]*|compact_(stall|fail|success)|oom_kill) ' /proc/vmstat
+  grep -E '^(pswpin|pswpout|pgmajfault|kswapd_low_wmark_hit_quickly|kswapd_high_wmark_hit_quickly|pgscan[^ ]*|pgsteal[^ ]*|allocstall[^ ]*|workingset_refault[^ ]*|compact_(stall|fail|success)|oom_kill) ' /proc/vmstat
   printf 'zram mm_stat: '; read_value /sys/block/zram0/mm_stat
   printf 'zram io_stat: '; read_value /sys/block/zram0/io_stat
   for extra in /sys/block/zram*; do
@@ -125,6 +259,7 @@ processes() {
 }
 finish_logs() {
   graphics END
+  io_configuration END
   configuration
   processes
   heading 'TikTok process memory summaries (at the end of the test)'
@@ -176,7 +311,7 @@ if [ "${1:-}" = --worker ]; then
   trap 'exit 130' 1 2 15
   START_EPOCH=$(date +%s)
   START_LOGCAT=$(date '+%m-%d %H:%M:%S.000')
-  heading 'ChatGPT Kernel diagnostic v5'
+  heading 'ChatGPT Kernel diagnostic v6'
   printf 'Start UTC: '; date -u '+%Y-%m-%dT%H:%M:%SZ'
   printf 'Duration target: %s seconds; samples every %s seconds. Sleep may extend wall time.\n' "$DURATION" "$INTERVAL"
   uname -a
@@ -211,6 +346,8 @@ if [ "${1:-}" = --worker ]; then
     esac
   done
   configuration
+  runtime_hardware
+  io_configuration BEGIN
   processes
   graphics BEGIN
   elapsed=0; sample=0

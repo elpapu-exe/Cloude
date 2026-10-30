@@ -1,23 +1,17 @@
-# ChatGPT Kernel 0.1.0-rc4
+# ChatGPT Kernel 0.1.0-rc5 — en preparación
 
-Candidata experimental para Redmi Note 12 4G TAPAS/topaz y Android 13. Continúa la reconstrucción publicada rc3-rebuild1; no es el binario rc3 perdido. La validación de arranque y rendimiento en hardware sigue pendiente. No se garantiza compatibilidad con cualquier combinación de ROM/vendor por conservar el nombre del dispositivo.
+Fuentes candidatas para Redmi Note 12 4G TAPAS/topaz y Android 13. No hay ZIP rc5 publicado todavía ni una mejora de rendimiento medida en el teléfono. La entrega anterior rc4 permanece disponible con sus propios hashes.
 
-Cambios respecto a rc3-rebuild1:
+Cambios respecto a rc4:
 
-- MGLRU: evita un subdesbordamiento de contadores durante reintentos de reclaim que puede acabar en división por cero en vmpressure; omite VMA especiales durante lookaround.
-- Binder: corrige un rechazo prematuro justo en el límite de cuota de transacciones asíncronas. La mayor parte del arreglo upstream ya estaba en la base; no se atribuye una gran ampliación de capacidad a esta línea.
-- Schedutil y Horizon: serializa el arranque del gobernador con escrituras sysfs de sus límites temporales. No cambia sus valores ni el gobernador por defecto (schedutil).
-- F2FS: propaga errores de writeback al colapsar un rango y rechaza movimientos sobre el mismo archivo que se solapan tras expandir longitud cero. Son correcciones de integridad, no resultados de FPS.
-- Restaura `watermark_scale_factor=10`, valor original de la base, para abandonar el ajuste experimental 64 sin mediciones y preparar una candidata de alcance más general. La ROM puede sobrescribirlo después del arranque.
+- MGLRU: protege mejor la caché reutilizada mediante colocación de generaciones, referencias saturadas y estado de refault (upstream 081488051d28).
+- Reclaim: retira el filtro CMA que puede prolongar recorridos del LRU clásico y provocar promociones innecesarias en MGLRU (upstream bfe0857c20c6). Se conservan los filtros de zona y los demás requisitos de aislamiento.
+- Recolector v6 de solo lectura: identifica drivers/tasas reales, colas de almacenamiento y señales adicionales de memoria para elegir los ajustes siguientes.
 
-Las referencias primarias, pruebas y cambios descartados están en `COMMUNITY-REVIEW.md` y en las fuentes correspondientes. Las pruebas de helpers reales con ASan/UBSan detectan los casos reproducidos; no sustituyen el arranque ni miden TikTok.
+Los cambios anteriores de rc4 se mantienen. El inicializador watermark sigue en 10; no se han decidido cambios de zRAM, compresor, swappiness, LMKD, frecuencias o voltajes. La ROM puede sobrescribir parámetros tras el arranque. No se desactivan protecciones térmicas, CFI, Full LTO, SCS, BTF o MODVERSIONS.
 
-Retiene MGLRU activo, IKCONFIG real, correcciones KProfiles, de Horizon y de SSG anteriores, y la integración histórica ReSukiSU/SUSFS/BBG. Mantiene O2, Full LTO, CFI, Shadow Call Stack, BTF, MODVERSIONS y las protecciones térmicas. No cambia frecuencias, voltajes, LMKD, swappiness ni tamaño/compresor de zRAM. El tamaño lógico de zRAM lo configura la ROM o un módulo.
+Las pruebas de helpers reales verifican contratos de las correcciones, no FPS, batería o arranque. La procedencia exacta del SUSFS histórico de R10 sigue sin demostrarse y los límites anteriores de SSG/ABI permanecen documentados. Los resultados definitivos deben corresponder al manifest y los logs de una futura ejecución propia de rc5, sin reutilizar la validación de rc4.
 
-SUSFS 2.3.0 sigue siendo un candidato de procedencia cronológica, sin identificación demostrada de la fuente exacta de R10. No se afirma resolver todos los problemas posibles de SSG (blkg retenidos o contabilidad multi-hctx), ni atribuir los ANR del usuario a estos defectos sin registros del dispositivo. Los avisos BTF efectivos quedan en `build.log` y `build-manifest.json`.
+Antes de instalar una entrega verificada, guarda el boot funcional fuera del teléfono y consulta la guía de instalación/recuperación. La comparación conserva TikTok oficial, WhatsApp y los módulos del usuario.
 
-Antes de instalar, guarda una copia verificada del boot funcional fuera del teléfono y lee `LEEME-instalacion.md`. La prueba de `docs/testing.md` conserva WhatsApp, módulos, protecciones térmicas y TikTok oficial.
-
-## Resultado de la entrega
-
-[Actions 40663572783](https://github.com/elpapu-exe/Cloude/actions/runs/40663572783) compiló y publicó rc4 desde `0640e8f41412eba3b66ce3b353735897dc322842`. Pasaron 71 pruebas sin omisiones y los 15.543 exports/CRC coinciden con R10. La auditoría final de fuentes comprobó 76.992 entradas, y los 34 archivos listados por SHA256SUMS se comprobaron antes y después de descargarlos de GitHub. [Entrega con 35 assets](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783). Los avisos BTF efectivos son `filp_close`, `should_failslab` y `vfs_getattr`. La validación en el teléfono sigue pendiente.
+Comprobaciones locales: 93 pruebas obligatorias sin fallos ni omisiones y reaplicación exacta de 18 parches sobre 40 archivos finales, con snapshots Linux/KSU/BBG coincidentes. El enlace Full LTO, la comparación de exports/CRC del nuevo binario y la evaluación en hardware siguen pendientes.

@@ -1,6 +1,8 @@
 # Estado y continuación
 
-Candidata actual: **0.1.0-rc4, compilada y publicada mediante GitHub Actions**.
+Entrega anterior: **0.1.0-rc4, compilada y publicada mediante GitHub Actions**.
+
+Candidata en preparación: **0.1.0-rc5**. Se adaptan 0017/0018 de protección de caché MGLRU y retirada del filtro CMA. El usuario prepara una captura para confirmar versión y presión real; su percepción de empeoramiento todavía es incierta. Pasaron 93 regresiones sin omisiones, la recompilación ARM64 incremental de objetos y el replay exacto de 18 parches. No hay compilación completa ni enlace de descarga rc5. [Preparación verificable](docs/rc5-preparation.json). [Revisión](docs/community-review-rc5.md).
 
 ## Trabajo de rc4
 

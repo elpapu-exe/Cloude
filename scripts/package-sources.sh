@@ -6,10 +6,10 @@ test -s out/arch/arm64/boot/Image
 cp out/.config config/effective.config
 mkdir -p dist
 # No nested Git history, build output, toolchain or credentials in this archive.
-tar --sort=name --mtime='2026-10-28 00:00:00 UTC' \
+tar --sort=name --mtime='2026-10-30 00:00:00 UTC' \
   --owner=0 --group=0 --numeric-owner \
   --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' \
-  -I 'zstd -T2 -3' -cf dist/ChatGPTKernel-0.1.0-rc4-sources.tar.zst \
+  -I 'zstd -T2 -3' -cf dist/ChatGPTKernel-0.1.0-rc5-sources.tar.zst \
   README.md STATUS.md .gitignore .gitattributes .github config docs patches scripts tests installer \
   .cache/linux .cache/kernelsu .cache/baseband-guard .cache/susfs .cache/prepared.json \
   .cache/source-receipts out/build-manifest.json

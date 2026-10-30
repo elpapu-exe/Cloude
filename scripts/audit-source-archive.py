@@ -14,7 +14,7 @@ import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.1.0-rc4'
+VERSION = '0.1.0-rc5'
 ARCHIVE = ROOT / f'dist/ChatGPTKernel-{VERSION}-sources.tar.zst'
 TOPS = ('README.md', 'STATUS.md', '.gitignore', '.gitattributes', '.github',
         'config', 'docs', 'patches', 'scripts', 'tests', 'installer',

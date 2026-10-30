@@ -18,7 +18,7 @@ with (OUT / 'vmlinux').open('rb') as source:
     source.seek(18)
     assert int.from_bytes(source.read(2), 'little') == 183, 'Not AArch64'
 release = (OUT / 'include/config/kernel.release').read_text().strip()
-assert release == '5.15.216-ChatGPTKernel-0.1.0-rc4', release
+assert release == '5.15.216-ChatGPTKernel-0.1.0-rc5', release
 assert release.encode() in image, 'Release string absent from image'
 assert b'v4.2.0-rc1-7e92d45e@ReSukiSU' in image, 'Unexpected KSU identity'
 assert b'v2.3.0' in image, 'SUSFS identity absent'
@@ -52,8 +52,8 @@ for section in sections:
         found.append(struct.unpack_from('<i', elf, address)[0])
 assert found == [10], f'Unexpected compiled reclaim headroom initializer: {found}'
 manifest = {
-    'project': 'ChatGPT Kernel', 'version': '0.1.0-rc4',
-    'release': release, 'reconstruction': 'rc4 successor of published rc3-rebuild1; newly built binary',
+    'project': 'ChatGPT Kernel', 'version': '0.1.0-rc5',
+    'release': release, 'reconstruction': 'rc5 successor of published rc4; newly built binary',
     'project_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
     'image_bytes': len(image),
     'image_sha256': hashlib.sha256(image).hexdigest(),

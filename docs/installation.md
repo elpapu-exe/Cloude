@@ -1,8 +1,8 @@
 # Instalación y recuperación
 
-**ChatGPT Kernel 0.1.0-rc4** es una candidata experimental para Redmi Note 12 **4G TAPAS/topaz y Android 13**, con la LineageOS 20 del usuario como referencia. **Compilada y publicada:** [ZIP y hashes verificados](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783). Todavía no se ha probado en el teléfono. No corresponde al Redmi Note 12 5G. Compilar y comprobar exports/CRC no certifica arranque, módulos del vendor o estabilidad.
+**ChatGPT Kernel 0.1.0-rc5 (en preparación)** es una candidata experimental para Redmi Note 12 **4G TAPAS/topaz y Android 13**, con la LineageOS 20 del usuario como referencia. **Todavía no hay ZIP rc5 publicado.** [Entrega anterior rc4: ZIP y hashes verificados](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783). Todavía no se ha probado en el teléfono. No corresponde al Redmi Note 12 5G. Compilar y comprobar exports/CRC no certifica arranque, módulos del vendor o estabilidad.
 
-La [publicación anterior rc3-rebuild1](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058) permanece disponible con sus propios hashes e instrucciones. Es una reconstrucción distinta del rc3 histórico inaccesible; su ZIP no debe identificarse como rc4. Para otras ROM A13, la compatibilidad del dispositivo, ramdisk y módulos requiere comprobación real.
+La [publicación anterior rc3-rebuild1](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058) permanece disponible con sus propios hashes e instrucciones. Es una reconstrucción distinta del rc3 histórico inaccesible; su ZIP no debe identificarse como rc4 o rc5. Para otras ROM A13, la compatibilidad del dispositivo, ramdisk y módulos requiere comprobación real.
 
 El ZIP conserva KernelSU/ReSukiSU y sus mecanismos de módulos. Mantén la ROM y los módulos que necesitas; el paquete no incluye tus módulos personales ni configura sus ámbitos. Cada integración requiere comprobación real después del arranque. Conserva las protecciones térmicas; Kreapic Thermal Disabler debe seguir retirado.
 
@@ -47,7 +47,7 @@ uname -r
 su -c 'cat /sys/kernel/mm/lru_gen/enabled'
 ```
 
-Si instalaste rc4, se espera `5.15.216-ChatGPTKernel-0.1.0-rc4`. Si elegiste la entrega anterior rc3-rebuild1, su nombre seguirá siendo `5.15.216-ChatGPTKernel-0.1.0-rc3-rebuild1`. En MGLRU debe estar activo el bit 0: valores como `0x0001`, `0x0003` o `0x0007` lo indican; los bits adicionales dependen de las capacidades ARM. La ROM o un módulo pueden modificar parámetros después del arranque. rc4 restaura `watermark_scale_factor=10` como inicializador; la entrega anterior usaba 64. No instales un script para forzarlo durante la primera comparación.
+Para una futura rc5 verificada se espera `5.15.216-ChatGPTKernel-0.1.0-rc5`; la rc4 publicada conserva `5.15.216-ChatGPTKernel-0.1.0-rc4`. Si elegiste la entrega anterior rc3-rebuild1, su nombre seguirá siendo `5.15.216-ChatGPTKernel-0.1.0-rc3-rebuild1`. En MGLRU debe estar activo el bit 0: valores como `0x0001`, `0x0003` o `0x0007` lo indican; los bits adicionales dependen de las capacidades ARM. La ROM o un módulo pueden modificar parámetros después del arranque. rc4 y la candidata rc5 conservan `watermark_scale_factor=10` como inicializador; rc3-rebuild1 usaba 64. No instales un script para forzarlo durante la primera comparación.
 
 Comprueba KernelSU, módulos necesarios, llamadas/datos, Wi-Fi, cámara, suspensión, carga y notificaciones de WhatsApp. Después realiza [la prueba de cinco minutos](testing.md). Si falla alguna función básica o hay reinicios, restaura el boot anterior. No se ha demostrado que esta candidata reduzca ANR, temperatura o tirones.
 

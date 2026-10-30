@@ -1986,25 +1986,6 @@ static __always_inline void update_lru_sizes(struct lruvec *lruvec,
 
 }
 
-#ifdef CONFIG_CMA
-/*
- * It is waste of effort to scan and reclaim CMA pages if it is not available
- * for current allocation context. Kswapd can not be enrolled as it can not
- * distinguish this scenario by using sc->gfp_mask = GFP_KERNEL
- */
-static bool skip_cma(struct page *page, struct scan_control *sc)
-{
-	return !current_is_kswapd() &&
-			gfp_migratetype(sc->gfp_mask) != MIGRATE_MOVABLE &&
-			get_pageblock_migratetype(page) == MIGRATE_CMA;
-}
-#else
-static bool skip_cma(struct page *page, struct scan_control *sc)
-{
-	return false;
-}
-#endif
-
 /*
  * Isolating page from the lruvec to fill in @dst list by nr_to_scan times.
  *
@@ -2051,8 +2032,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
 		nr_pages = compound_nr(page);
 		total_scan += nr_pages;
 
-		if (page_zonenum(page) > sc->reclaim_idx ||
-				skip_cma(page, sc)) {
+		if (page_zonenum(page) > sc->reclaim_idx) {
 			nr_skipped[page_zonenum(page)] += nr_pages;
 			move_to = &pages_skipped;
 			goto move;
@@ -4618,7 +4598,7 @@ static bool sort_page(struct lruvec *lruvec, struct page *page, struct scan_cont
 	}
 
 	/* protected */
-	if (tier > tier_idx) {
+	if (tier > tier_idx || refs == BIT(LRU_REFS_WIDTH)) {
 		int hist = lru_hist_from_seq(lrugen->min_seq[type]);
 
 		gen = page_inc_gen(lruvec, page, false);
@@ -4630,7 +4610,7 @@ static bool sort_page(struct lruvec *lruvec, struct page *page, struct scan_cont
 	}
 
 	/* ineligible */
-	if (zone > sc->reclaim_idx || skip_cma(page, sc)) {
+	if (zone > sc->reclaim_idx) {
 		gen = page_inc_gen(lruvec, page, false);
 		list_move_tail(&page->lru, &lrugen->lists[gen][type][zone]);
 		return true;

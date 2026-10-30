@@ -1,4 +1,6 @@
-# ChatGPT Kernel 0.1.0-rc4
+# ChatGPT Kernel — rc5 en preparación; rc4 publicada
+
+**Estado de desarrollo:** rc5 añade dos correcciones de rendimiento de memoria y el recolector v6. Todavía no hay ZIP rc5 publicado; los enlaces de descarga siguientes corresponden a rc4. [Revisión y evaluación pendiente](docs/community-review-rc5.md).
 
 Kernel experimental para **Redmi Note 12 4G TAPAS/topaz y Android 13**. Conserva la ROM, los módulos necesarios y las protecciones térmicas. La LineageOS 20 del usuario sigue siendo la referencia de uso; la compatibilidad con otras ROM A13 requiere comprobación real.
 

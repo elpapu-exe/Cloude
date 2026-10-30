@@ -14,6 +14,6 @@ for name in required:
     assert f"CONFIG_{name}=y\n" in config, f"Required setting missing: {name}"
 for name in ("KSU_DISABLE_MANAGER", "KSU_DISABLE_POLICY", "KSU_TRACEPOINT_HOOK", "BBG_BLOCK_BOOT", "MODULE_SIG_FORCE", "TRIM_UNUSED_KSYMS"):
     assert f"CONFIG_{name}=y\n" not in config, f"Unexpected setting: {name}"
-assert 'CONFIG_LOCALVERSION="-ChatGPTKernel-0.1.0-rc4"\n' in config
+assert 'CONFIG_LOCALVERSION="-ChatGPTKernel-0.1.0-rc5"\n' in config
 assert 'baseband_guard' in next(x for x in config.splitlines() if x.startswith('CONFIG_LSM='))
 print("Verified candidate configuration: MGLRU, thermal, KSU, CFI and module protections")

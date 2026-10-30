@@ -13,7 +13,9 @@ FILES = ('test_ci_resources.py', 'test_backup.py', 'test_manual_boot_backup.py',
          'test_mglru_accounting.py', 'test_ssg_safety.py',
          'test_ssg_request_capacity.py', 'test_mglru_reclaim.py',
          'test_binder_async_quota.py', 'test_cpufreq_start_serialization.py',
-         'test_f2fs_range_safety.py')
+         'test_f2fs_range_safety.py', 'test_mglru_cache_protection.py',
+         'test_mglru_cma.py', 'test_diagnostic.py',
+         'test_diagnostic_runtime_details.py')
 suite = unittest.TestSuite()
 counts = {}
 for name in FILES:

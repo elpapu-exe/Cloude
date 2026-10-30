@@ -1,0 +1,44 @@
+{
+  "version": "0.1.0-rc5",
+  "status": "source candidate; no rc5 Image, ZIP or release yet",
+  "base_release_commit": "0640e8f41412eba3b66ce3b353735897dc322842",
+  "new_patches": [
+    "0017-mglru-protect-frequently-reused-page-cache.patch",
+    "0018-mm-stop-skipping-cma-in-reclaim.patch"
+  ],
+  "release_tests": {
+    "run": 93,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "source": ".cache/linux"
+  },
+  "patch_replay": {
+    "patches": 18,
+    "final_files": 40,
+    "tracked_snapshots_match": true
+  },
+  "config_difference_from_rc4": [
+    "CONFIG_LOCALVERSION"
+  ],
+  "watermark_scale_factor_source_initializer": 10,
+  "thermal_or_security_reductions": false,
+  "phone_kernel_version": "awaiting diagnostic report",
+  "phone_performance": "not measured; subjective impression uncertain",
+  "github_actions_requested_for_rc5": false,
+  "new_image_compiled": false,
+  "new_exports_crcs_verified": false,
+  "next": "Inspect pending phone report before choosing runtime memory changes and spending another Full LTO Actions run.",
+  "object_compile": {
+    "target": "descend",
+    "jobs": 2,
+    "completed": true,
+    "exit_code": 0,
+    "seconds": 45.0,
+    "incremental": true,
+    "full_lto_link_measured": false,
+    "effective_config_sha256": "c3d43db9a52f7aeda6168c70197278e27ca9b165a76d93e53875849cf39f93ba",
+    "source_pins_sha256": "f2972b2d283b3ca354f04fda8d740e31de3f8a572b910c16ab662d2e50b73153",
+    "evidence": "ci-object-measurement-rc5.json"
+  }
+}

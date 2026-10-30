@@ -1,6 +1,6 @@
 {
   "project": "ChatGPT Kernel",
-  "version": "0.1.0-rc4",
+  "version": "0.1.0-rc5",
   "kernel": {
     "repository": "https://github.com/belowzeroiq/kernel_msm-5.15.git",
     "commit": "d246c8c17548bb1a2756092cabf34d11eedcde8c",
