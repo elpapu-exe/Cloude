@@ -1,0 +1,76 @@
+{
+  "project": "ChatGPT Fluidez Memoria",
+  "version": "0.1.0-rc1",
+  "source_commit": "717b18174da04859413c8936ce2f193d10e82593",
+  "run_id": 41151064733,
+  "run_url": "https://github.com/elpapu-exe/Cloude/actions/runs/41151064733",
+  "jobs": [
+    {
+      "name": "build",
+      "id": 124387434706,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "publish",
+      "id": 124387522162,
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "release": {
+    "url": "https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733",
+    "tag": "chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733",
+    "draft": false,
+    "prerelease": true,
+    "assets": [
+      {
+        "name": "build-manifest.json",
+        "bytes": 2434,
+        "sha256": "3fd7d33381f1fd4ec580f369bfde1f1f3804e195db7126cc6233e25c48c9551e",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733/build-manifest.json"
+      },
+      {
+        "name": "ChatGPT-Fluidez-Memoria-0.1.0-rc1-KSU.zip",
+        "bytes": 16236,
+        "sha256": "90832f5a97d9090004fd49c6565be969b4a36ca70f1e47385c2cb9ef675d03c3",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733/ChatGPT-Fluidez-Memoria-0.1.0-rc1-KSU.zip"
+      },
+      {
+        "name": "ChatGPT-Fluidez-Memoria-0.1.0-rc1-sources.zip",
+        "bytes": 26434,
+        "sha256": "113f1aa1050e5818319218219634e024db5d0946407e5a67de985c15934c8d09",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733/ChatGPT-Fluidez-Memoria-0.1.0-rc1-sources.zip"
+      },
+      {
+        "name": "SHA256SUMS",
+        "bytes": 382,
+        "sha256": "9d74304743ff29f058c2c6d771211e8bbfb743f12b9ad90ea8235bb73a009606",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733/SHA256SUMS"
+      },
+      {
+        "name": "tests.log",
+        "bytes": 3563,
+        "sha256": "135bf434f766ab58e7c55cbc350d25b5887e9616d8783e602232e33c31c7382a",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733/tests.log"
+      }
+    ]
+  },
+  "validation": {
+    "tests_run": 23,
+    "skips": 0,
+    "worktree_dirty": false,
+    "zip_crc_and_contents_verified": true,
+    "sources_zip_contents_verified": true,
+    "remote_zip_digests_match_build_manifest": true,
+    "checksum_files": 4,
+    "checksum_ok_events": 8,
+    "download_all_assets_and_compare_checksums_before_publication": true,
+    "hardware_tested": false,
+    "performance_measured": false
+  },
+  "parameters": {
+    "mglru": "current | 1 only when bit0 is disabled",
+    "watermark_scale_factor": "raise to 64 only when current is lower"
+  }
+}
