@@ -1,0 +1,6 @@
+id=chatgpt_fluidez_memoria
+name=ChatGPT Fluidez Memoria
+version=v0.1.0-rc1
+versionCode=1
+author=ChatGPT Kernel project
+description=Prueba reversible de memoria para TAPAS Android 13. Accion pausa/reactiva y guarda un informe. Mantiene las protecciones termicas.

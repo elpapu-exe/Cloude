@@ -31,3 +31,7 @@ rc3-rebuild1 fue una reconstrucción nueva a partir de rc1 y del resumen registr
 ## Pendiente
 
 Comprobar arranque, funciones básicas, root/módulos, notificaciones de WhatsApp y la [prueba de cinco minutos](docs/testing.md). Ni rc4 ni rc3-rebuild1 tienen una prueba de arranque confirmada en este teléfono. La experiencia favorable histórica corresponde a una versión anterior.
+
+## Módulo de memoria
+
+Se prepara ChatGPT Fluidez Memoria0.1.0-rc1 para KernelSU/ReSukiSU, TAPAS/topaz Android13 y kernel5.15 ARM64. Tiene dos ajustes experimentales: activar el coreMGLRU cuando estaba desactivado y elevar watermark hasta64 si era menor. El usuario aún no entregó un informe que demuestre causa o mejora. Conserva ROM, módulos, térmicas y seguridad. Pasaron 23 pruebas de scripts reales con fixtures Android, incluidas restauración, cambios de terceros, reinicio/actualización, escrituras fallidas, máscara inválida y pausa persistente; no sustituyen rendimiento en hardware. Su workflow y publicación son independientes del kernel y no solicitan una compilación rc5.

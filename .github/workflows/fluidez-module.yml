@@ -1,0 +1,71 @@
+name: Build and deliver Fluidez memory module
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chatgpt-kernel-download]
+    paths:
+      - modules/chatgpt-fluidez-memoria/**
+      - scripts/package-fluidez-module.py
+      - scripts/publish-fluidez-module.sh
+      - tests/test_fluidez_module.py
+      - .github/workflows/fluidez-module.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fluidez-module-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            modules/chatgpt-fluidez-memoria/
+            scripts/package-fluidez-module.py
+            scripts/publish-fluidez-module.sh
+            tests/test_fluidez_module.py
+            .github/workflows/fluidez-module.yml
+            .gitignore
+          sparse-checkout-cone-mode: false
+      - name: Test real scripts, build ZIPs and verify contents and checksums
+        run: python3 scripts/package-fluidez-module.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fluidez-module-${{ github.sha }}
+          path: dist/fluidez-module/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            scripts/publish-fluidez-module.sh
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: fluidez-module-${{ github.sha }}
+          path: dist/fluidez-module/
+      - name: Upload draft, download and verify every file, then publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/publish-fluidez-module.sh

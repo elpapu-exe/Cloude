@@ -1,0 +1,34 @@
+ChatGPT Fluidez Memoria 0.1.0-rc1
+KernelSU / ReSukiSU — Redmi Note 12 4G TAPAS/topaz, Android 13, kernel 5.15 ARM64
+
+INSTALAR
+1. KernelSU > Modulos > Instalar desde almacenamiento > este ZIP.
+2. Reinicia y espera aproximadamente un minuto despues de entrar a Android.
+3. Usa TikTok y cambia entre tus apps como acostumbras, con WhatsApp y tus modulos habituales.
+
+ACCION = PAUSAR / REACTIVAR
+La primera pulsacion de Accion pausa el perfil y restaura los valores que este modulo cambio, si siguen siendo los que aplico. La siguiente pulsacion lo reactiva. La pausa persiste al reiniciar. Cada pulsacion intenta guardar un TXT nuevo en Download/ChatGPT-Fluidez-<fecha>-<id>.txt.
+
+Si empeora, pulsa Accion para pausarlo. Si el Manager no tiene Accion, puedes desactivarlo y reiniciar: desactivar por si solo no restaura inmediatamente los ajustes. Alternativa manual de pausa/restauracion con root:
+  su -c 'sh /data/adb/modules/chatgpt_fluidez_memoria/bin/control.sh restore'
+Para reactivar manualmente:
+  su -c 'sh /data/adb/modules/chatgpt_fluidez_memoria/bin/control.sh apply'
+Para exportar un informe sin cambiar el perfil:
+  su -c 'sh /data/adb/modules/chatgpt_fluidez_memoria/bin/control.sh report'
+
+QUE CAMBIA
+- MGLRU: habilita solo su bit principal si estaba apagado y la interfaz existe. Conserva otros bits.
+- watermark_scale_factor: prueba 64 solo cuando el valor actual es menor. No reduce valores mayores.
+Es una prueba de margen de memoria; 64 no es una recomendacion universal ni garantiza fluidez. Puede aumentar trabajo de recuperacion, consumo o temperatura, o empeorar el equilibrio de memoria.
+
+No cambia el tamano/compresor de zRAM, swappiness, page-cluster, LMKD, frecuencias, gobernador, voltajes, protecciones termicas, SELinux, notificaciones o modulos personales. No limpia caches, mata apps ni instala un servicio permanente que pelee con otros perfiles. No aumenta la RAM fisica y no modifica boot.
+
+RETIRAR
+Para retirar efectos ahora: Accion/restore. Para dejar de aplicarlo: desactivar y reiniciar, o desinstalar y reiniciar. El desinstalador del Manager puede ejecutarse durante el siguiente arranque. El reboot con el modulo desactivado deja que kernel/ROM establezcan sus valores normales.
+
+Solo se restauran registros del mismo arranque y controles cuyo valor actual siga coincidiendo con el aplicado. Si otro perfil cambio el valor despues, se conserva. Esta comparacion no puede ser atomica frente a otro controlador root; el modulo no impone valores repetidamente. Cambiar MGLRU reorganiza listas y escribir el margen recalcula zonas: restaurar controles no deshace exactamente el historial de memoria.
+
+Una interrupcion puede dejar aplicacion parcial. Los registros permiten restaurar; si un bloqueo interrumpido impide Accion, desactiva y reinicia. Si aparece error de restauracion o de almacenamiento, conserva el informe y reinicia con el modulo pausado/desactivado. Los datos privados del modulo estan en /data/adb/chatgpt-fluidez-memoria/ y se conservan al actualizar. El TXT contiene memoria/PSI/zRAM, temperatura y frecuencias; no mensajes, trazas de apps ni subidas de datos.
+
+VALIDACION
+Se prueban scripts reales con archivos y comandos Android simulados. Eso no prueba rendimiento en el telefono. Compara unos minutos de uso con el perfil aplicado y pausado. Si lo sientes igual o peor, dejalo pausado y comparte el TXT. No necesitas retirar tus otros modulos para esta comparacion.
