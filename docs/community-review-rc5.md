@@ -1,6 +1,6 @@
 # Candidata rc5: rendimiento de memoria y evaluación pendiente
 
-Estado: **fuentes en preparación; no hay ZIP rc5 publicado**. La versión instalada en el teléfono y la causa de la percepción de empeoramiento todavía deben confirmarse con su informe. La entrega anterior [rc4](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783) conserva sus hashes, fuentes y resultados. Sus auditorías no se transfieren a esta candidata.
+Estado: **fuentes en preparación; no hay ZIP rc5 publicado**. Los informes ya identifican rc4 en el teléfono. La causa de la percepción de empeoramiento sigue sin demostrarse. La entrega anterior [rc4](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783) conserva sus hashes, fuentes y resultados. Sus auditorías no se transfieren a esta candidata.
 
 ## Cambios seleccionados
 
@@ -33,3 +33,5 @@ Se conservan ROM, módulos necesarios, WhatsApp, protecciones térmicas, CFI, Fu
 Pasaron 93 pruebas obligatorias sin omisiones sobre `.cache/linux`. La reaplicación de los 18 parches produjo los 40 archivos finales esperados; los árboles preparados Linux/KSU/BBG coinciden con el snapshot en contenido, tipos y destinos literales de enlaces. La configuración difiere de rc4 solo en LOCALVERSION; la compilación completa y la comparación de ABI del binario nuevo siguen pendientes.
 
 La compilación incremental ARM64 de objetos (`descend -j2`) terminó sin errores en 45 segundos; recompiló los archivos afectados y reutilizó los demás objetos. No ejecutó Image/Full LTO ni valida un ZIP. [Medición y hashes](ci-object-measurement-rc5.json). Se mantiene el último marcador automático de compilación en rc4: rc5 todavía no se ha solicitado a Actions.
+
+Una segunda observación sí incluye varias horas del mismo arranque, con presión de memoria y un cambio de zRAM de 2 a 3 GiB, además de límites CPU distintos. Confirma que el margen se aplicó y se retiró, pero no constituye una comparación controlada de su efecto. La identificación del controlador de zRAM es necesaria para evitar superponer perfiles; no se considera este archivo una repetición equivocada de la captura inicial.
