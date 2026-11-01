@@ -1,12 +1,12 @@
 # Compilar y entregar con GitHub Actions
 
-La candidata en fuentes es **0.1.0-rc5**, todavía sin compilación completa ni ZIP publicado; la entrega anterior es rc4. No corresponde al ZIP rc3 histórico con SHA `6c1cb3d1…`. Se conserva Full LTO, O2, CFI, Shadow Call Stack, BTF y MODVERSIONS. No hace falta compilar en Windows.
+**0.1.0-rc5 está compilada y publicada** en [su entrega verificada](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824); rc4 es la referencia anterior. [Resultados de esta ejecución](ci-build-result-rc5.json). No corresponde al ZIP rc3 histórico con SHA `6c1cb3d1…`. Se conserva Full LTO, O2, CFI, Shadow Call Stack, BTF y MODVERSIONS. No hace falta compilar en Windows.
 
 El workflow `.github/workflows/kernel.yml` se puede iniciar en Actions mediante **Run workflow** en `chatgpt-kernel-download`. También se ejecuta al cambiar `.github/build-request.json` en esa rama, para permitir entregas trazables desde Git.
 
 ## Recursos
 
-El enlace anterior registró alrededor de 32 GiB temporales; no es el tamaño del ZIP. Se conserva Full LTO y su configuración de seguridad. La nueva medición de objetos (`descend -j2`, sin enlace) terminó con 2.985 `.o`, `out/` de 1,073 GiB y entradas de 1,996 GiB. Los ELF finales aún no se han medido: [presupuesto detallado](ci-object-measurement.md).
+El enlace anterior registró alrededor de 32 GiB temporales; no es el tamaño del ZIP. Se conserva Full LTO y su configuración de seguridad. La nueva medición de objetos (`descend -j2`, sin enlace) terminó con 2.985 `.o`, `out/` de 1,073 GiB y entradas de 1,996 GiB. La ejecución completa de rc5 terminó Full LTO/Image en 52 min 15 s con 28 GiB de swap adicional y aproximadamente 7,75 GiB de RAM física. [Presupuesto histórico](ci-object-measurement.md) y [resultado completo](ci-build-result-rc5.json).
 
 El perfil compacto para runners desechables de GitHub es un ensayo vigilado: recupera SDKs ajenos al build, evita fuentes duplicadas, calcula swap para 37 GiB combinados disponibles con margen de arranque y exige 36 GiB utilizables y 15 GiB libres de trabajo tras provisionarla. Conserva una vigilancia de 2 GiB de disco durante objetos/enlace. Esos umbrales son un presupuesto elegido con mediciones parciales y no garantizan que termine. El margen anterior de 45 GiB era conservador, no un requisito medido del kernel.
 

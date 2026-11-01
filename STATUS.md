@@ -1,57 +1,36 @@
 # Estado y continuación
 
-Entrega anterior: **0.1.0-rc4, compilada y publicada mediante GitHub Actions**.
+**0.1.0-rc5 compilada, auditada y publicada** por [Actions 41290063824](https://github.com/elpapu-exe/Cloude/actions/runs/41290063824), desde `9c81476ba0a6ffc452d5fdb5463cf5cebf128ad9`. [Entrega](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824) · [Evidencia completa](docs/ci-build-result-rc5.json).
 
-Candidata en preparación: **0.1.0-rc5**. Se adaptan 0017/0018 de protección de caché MGLRU y retirada del filtro CMA. El primer informe identifica rc4, pero solo observa unos 15 segundos del primer minuto de arranque. Falta una captura de uso estable para escoger ajustes. Pasaron 93 regresiones sin omisiones, la recompilación ARM64 incremental de objetos y el replay exacto de 18 parches. No hay compilación completa ni enlace de descarga rc5. [Preparación verificable](docs/rc5-preparation.json). [Revisión](docs/community-review-rc5.md).
+ZIP: 25,216,619 bytes; SHA256 `0d419065b704c276e12055a0ddb0d1a4126893d898b2fa0032f07b161dfaa4cc`. Fuentes tar.zst: 195,383,642 bytes; SHA256 `3559b47d1fea259ce63cd408ff3b1981a79d2d4957521ad485f8d68eb864403a`. Se conservan como assets, fuera del historial Git normal.
 
-## Trabajo de rc4
+## Validación de rc5
 
-Se añaden seis correcciones comprobadas como ausentes: dos de MGLRU (contador de escaneo y VMA especiales), una de cuota Binder, una de serialización al iniciar schedutil/Horizon y dos de manejo de rangos/errores F2FS. La [revisión internacional](docs/community-review-rc4.md) enlaza los commits primarios, la adaptación y los descartes. El parche 0016 restaura `watermark_scale_factor=10`, retirando el experimento 64 para una candidata de alcance TAPAS/A13 general.
+- ARM64 completo, Full LTO/O2, CFI, SCS, BTF, MODVERSIONS y protecciones térmicas conservados.
+- 93 pruebas obligatorias, sin fallos ni omisiones, sobre el árbol compilado; replay previo de 18 parches sobre 40 archivos finales.
+- 15.543 exports y CRC idénticos a R10; ningún símbolo añadido, ausente o cambiado. Esto no prueba los módulos concretos del teléfono.
+- IKCONFIG idéntica a la configuración efectiva e inicializador ELF watermark=10.
+- Archivo final de fuentes: 77.010 entradas verificadas por contenido, tipo, modo y destinos literales de enlaces.
+- 35 assets descargados y verificados antes de publicar: 34 hashes comprobados dos veces, más comparación del propio SHA256SUMS.
 
-Las pruebas locales nuevas compilan funciones C reales con ASan/UBSan y controles negativos: memoria/Binder, arranque de los gobernadores y rangos F2FS. Son modelos de regresión del host. Su [ejecución propia](https://github.com/elpapu-exe/Cloude/actions/runs/40663572783) terminó con build y publicación SUCCESS: 71 pruebas sin fallos ni omisiones; 15.543 exports/CRC idénticos a R10; IKCONFIG real, inicializador ELF watermark=10 y archivo final de fuentes auditado. La descarga verificó dos veces los 34 archivos de SHA256SUMS, antes y después de subirlos, y publicó 35 assets. [Resultado rc4](docs/ci-build-result-rc4.json).
+Runner observado: dos CPU, aproximadamente 7,75 GiB RAM, 28 GiB de swap adicional. Full LTO/Image: 52 min 15 s con paginación considerable. El éxito corresponde a esta configuración medida. Avisos BTF: filp_close, should_failslab, vfs_getattr.
 
-[Entrega rc4](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783), commit compilado `0640e8f41412eba3b66ce3b353735897dc322842`. ZIP: 25.216.352 bytes; SHA256 `069f0fa1b59b39767597f40f78988f3a5aeaef70df468b2a8bc825c412f42265`. Fuentes tar.zst: 195.371.053 bytes; SHA256 `4438ea9297310b93e2021930e3165edc51a758a42b0cd2489a9fee64f5c855fb`. Avisos BTF: `filp_close`, `should_failslab`, `vfs_getattr`.
+La configuración difiere de rc4 solo en LOCALVERSION. Los cambios nuevos protegen caché reutilizada en MGLRU y retiran el filtro CMA problemático en reclaim. [Revisión](docs/community-review-rc5.md). No se modifican zRAM, LMKD, swappiness, frecuencias o voltajes.
 
-Se mantienen la ROM y los módulos necesarios, root histórico, MGLRU activo, CFI, Full LTO/O2, SCS, BTF, MODVERSIONS y térmicas. No se introducen cambios de zRAM, LMKD, swappiness, frecuencias o voltajes. La restauración del watermark afecta su inicializador compilado; la ROM conserva la posibilidad de sobrescribirlo.
+## Módulo CPU publicado
 
-## Entrega anterior verificada
+ChatGPT CPU Respuesta 0.1.0-rc1: [entrega](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310) · [evidencia](docs/cpu-respuesta-release.json). ZIP 24,960 bytes; SHA256 `0a0070959d330c901860a876305640c9c099a53e6fda2d9135fb007fe4e07a90`. Sus 33 pruebas y cinco assets fueron verificados en una ejecución independiente. Solo ajusta condicionalmente WALT up_rate_limit_us; Acción recoge 180 segundos con el recolector v7. El kernel rc5 congelado contiene v6 y 93 pruebas. No se modificó el módulo de memoria.
 
-[rc3-rebuild1](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058) se construyó desde `a01d67ebe63f98a705c068ea735f9ae87848b35c` en [Actions 40633724058](https://github.com/elpapu-exe/Cloude/actions/runs/40633724058). Sus 15.543 exports/CRC coincidieron con R10, pasaron 50 pruebas sin omisiones y se auditó el tar final. Se descargaron y comprobaron los 34 archivos del listado SHA256SUMS y el propio listado antes de publicar sus 35 assets.
+## Observaciones y siguiente prueba
 
-ZIP anterior: 25.215.885 bytes; SHA256 `4ecb0febfb9a284c3b624bab7e404ccc205941c69bf3a275312407d1267c2d55`. Los avisos BTF de esa compilación fueron `filp_close`, `should_failslab` y `vfs_getattr`. Más detalles en [ci-build-result.json](docs/ci-build-result.json). Esos datos describen la versión anterior, cuyo inicializador watermark era 64.
+Los informes identifican rc4, MGLRU activo y WALT seleccionado desde vendor. El primero dura unos 15 segundos al arrancar. El segundo contiene unas 4 h 22 min del mismo arranque con presión de memoria/IO, cambios de zRAM de 2 a 3 GiB y límites CPU diferentes. No permite atribuir una mejora o regresión a un parámetro concreto. El usuario identifica SmartPack como gestor de zRAM; [persistencia](docs/smartpack.md). Los informes originales y sus identificadores no se publicaron.
 
-La receta de Actions ya completó esa entrega en un runner estándar con limpieza limitada al entorno desechable, checkout parcial y swap automática. Las mediciones de [objetos y recursos](docs/ci-object-measurement.md) justifican sus límites para esta carga; rc4 debe comprobar de nuevo la capacidad real. No se requiere compilar en Windows ni configurar un runner personal para repetir la receta existente.
+**Pendiente en el teléfono:** arranque y funciones básicas de rc5, root/módulos, WhatsApp, estabilidad, fluidez y temperatura. Una captura de tres minutos con Acción del módulo CPU mantiene el perfil actual, WhatsApp y los módulos necesarios. El módulo es opcional; para comparar kernels mantén los mismos ajustes. [Procedimiento](docs/testing.md).
 
-## Recuperación del trabajo previo
+## Historia conservada
 
-Este checkout comenzó limpio en el commit publicado `4fc1ad554ac54ffce0a6792ca6d85f67435e8a86`. La rama remota disponible era `chatgpt-kernel-download`; `main` no existía. El commit local rc2 `b6107b63…`, rc3 sin commit y sus binarios históricos no se recuperaron. No se borró ni sobrescribió el entorno anterior y no se declara perdido su disco por no poder acceder a él.
+[rc4](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783) y [rc3-rebuild1](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058) conservan resultados propios. El [módulo de memoria](docs/fluidez-module-release.json) mantiene su versión y estado independiente.
 
-rc3-rebuild1 fue una reconstrucción nueva a partir de rc1 y del resumen registrado. Sus fuentes originales se adquirieron mediante Git real o archivos codeload con SHA256 y recibos honestos. KSU requiere historia original completa para conservar la identidad 35142; no se fabrica un historial Git.
+Este checkout comenzó desde el remoto 4fc1ad554ac54ffce0a6792ca6d85f67435e8a86, rama chatgpt-kernel-download; main no existía. El commit rc2 local y rc3 sin publicar no se recuperaron. El entorno anterior no se borró ni sobrescribió. rc3-rebuild1 fue una reconstrucción nueva. KSU utiliza su historia original completa para conservar 35142; no se fabricó un historial Git.
 
-## Pendiente
-
-El informe identifica rc4 arrancada. Faltan funciones básicas, estabilidad prolongada, root/módulos, notificaciones de WhatsApp y una captura de uso estable con el recolector. rc3-rebuild1 sigue sin una prueba de arranque confirmada. La experiencia favorable histórica corresponde a una versión anterior.
-
-## Módulo de memoria
-
-Se publicó ChatGPT Fluidez Memoria0.1.0-rc1 para KernelSU/ReSukiSU, TAPAS/topaz Android13 y kernel5.15 ARM64. Tiene dos ajustes experimentales: activar el coreMGLRU cuando estaba desactivado y elevar watermark hasta64 si era menor. El primer informe confirma el cambio y la restauración del valor de control, pero su intervalo de arranque no demuestra causa ni mejora. Conserva ROM, módulos, térmicas y seguridad. Pasaron 23 pruebas de scripts reales con fixtures Android, incluidas restauración, cambios de terceros, reinicio/actualización, escrituras fallidas, máscara inválida y pausa persistente; no sustituyen rendimiento en hardware. Su workflow y publicación son independientes del kernel y no solicitan una compilación rc5.
-
-[Entrega del módulo](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733), [Actions41151064733](https://github.com/elpapu-exe/Cloude/actions/runs/41151064733), commit `717b18174da04859413c8936ce2f193d10e82593`. Los jobs build/publish terminaron SUCCESS, pasaron23pruebas sin omisiones y el publicador descargó los5assets y comprobó los4archivos de SHA256SUMS dos veces (8OK). ZIP instalable:16.236bytes; SHA256 `90832f5a97d9090004fd49c6565be969b4a36ca70f1e47385c2cb9ef675d03c3`. [Manifest de evidencia](docs/fluidez-module-release.json). La mejora real en el dispositivo sigue sin medirse. La fuente rc5 y su compilación de kernel completa continúan pendientes del informe; esta entrega no ha solicitado otro build del kernel.
-
-## Primera observación del teléfono
-
-La captura se identifica como rc4, con MGLRU activo antes del módulo y WALT seleccionado en ambas políticas. Solo abarca aproximadamente 15 segundos del primer minuto de arranque; el margen pasó de 1 a 64 y volvió a 1 tras unos nueve segundos. Hay presión y tráfico de memoria, pero no una comparación estable del perfil. La capacidad lógica de zRAM es 2 GiB y su consumo físico es una magnitud distinta. La batería no basta para diagnosticar limitación térmica de CPU/SoC. No se publicó el archivo original ni identificadores de arranque. El siguiente paso es una captura de 180 segundos después de estabilizar el arranque, conservando módulos/WhatsApp y sin más cambios. Se corrigió el descarte de WALT basado únicamente en la configuración GKI; su receta vendor y el gobernador observado contradicen esa inferencia.
-
-## Segunda observación del teléfono
-
-El nuevo archivo conserva el historial anterior y añade un intervalo del mismo arranque de unas 4 h 22 min. Los contadores PSI indican presión durante ese tiempo; no es una captura exclusiva del arranque. El margen era 64 en ambos extremos antes de su restauración a 1. La zRAM0 pasó de 2 a 3 GiB lógicos y retrocedieron contadores propios del dispositivo, coherente con una reinicialización; el módulo publicado no la redimensiona. El límite máximo observado de CPU también cambió. Estos cambios y la carga desconocida impiden atribuir beneficio o perjuicio al margen. No hubo incremento de oom_kill durante el intervalo, lo que no descarta terminaciones LMKD o ANR. No se ha publicado el informe original ni los identificadores de arranque. El próximo dato necesario es qué herramienta o servicio cambió la zRAM; no se solicita otra vez el mismo informe ni se añaden perfiles a ciegas.
-
-## Compilación rc5 solicitada
-
-El usuario confirma que configuró los 3 GiB con SmartPack y que debe repetirlo después de reiniciar. Se solicita una única ejecución completa de rc5 con los dos arreglos MM ya revisados; no se añaden tamaños de zRAM ni límites CPU/GPU al kernel. Las validaciones previas mantienen 93 pruebas y replay18parches. El módulo se desarrolla aparte y no dispara otra compilación del kernel. La entrega nueva solo se enlaza después de terminar y comprobar la descarga real.
-
-## Módulo CPU y captura integrada
-
-Se publicó ChatGPT CPU Respuesta 0.1.0-rc1, independiente del módulo de memoria. Solo reduce un 25% la espera WALT up_rate_limit_us de 20001–100000µs cuando el ámbito y la identidad de nodos/políticas son inequívocos. Las tasas menores se conservan. No modifica GPU, relojes/límites, down_rate_limit_us, térmicas, zRAM o módulos personales. SmartPack es el gestor de los 3 GiB. Pasan 26 pruebas del perfil y siete del recolector v7; las tres suites también pasan fuera del checkout usando solo archivos del ZIP de fuentes. Acción ejecuta el recolector durante 180 segundos; no alterna el perfil. La mejora real sigue sin medición.
-
-[Entrega CPU](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310), [Actions41291184310](https://github.com/elpapu-exe/Cloude/actions/runs/41291184310), commit `7b0a51d49a6b78fb1d653b9539b3afc6f5b26bfc`. Build/publish terminaron SUCCESS; ZIP 24.960 bytes, SHA256 `0a0070959d330c901860a876305640c9c099a53e6fda2d9135fb007fe4e07a90`. Pasaron 33 pruebas sin omisiones y se descargaron los cinco assets con los cuatro hashes listados comprobados dos veces. [Resultado](docs/cpu-respuesta-release.json). No se modificó el módulo de memoria ni se solicitó otra compilación del kernel.
+Los documentos dentro de los assets son el snapshot del commit compilado. La actualización posterior de documentación conserva los binarios auditados y no solicita otra compilación.

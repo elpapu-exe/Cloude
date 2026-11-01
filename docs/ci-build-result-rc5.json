@@ -1,0 +1,492 @@
+{
+  "version": "0.1.0-rc5",
+  "source_commit": "9c81476ba0a6ffc452d5fdb5463cf5cebf128ad9",
+  "run_id": 41290063824,
+  "run_url": "https://github.com/elpapu-exe/Cloude/actions/runs/41290063824",
+  "jobs": [
+    {
+      "name": "build",
+      "id": 124799273043,
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success",
+          "started_at": "2026-11-01T08:43:48Z",
+          "completed_at": "2026-11-01T08:43:49Z"
+        },
+        {
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "conclusion": "success",
+          "started_at": "2026-11-01T08:43:49Z",
+          "completed_at": "2026-11-01T08:43:51Z"
+        },
+        {
+          "name": "Read locked version",
+          "conclusion": "success",
+          "started_at": "2026-11-01T08:43:51Z",
+          "completed_at": "2026-11-01T08:43:51Z"
+        },
+        {
+          "name": "Check actual RAM, cgroup limits, swap and disk",
+          "conclusion": "success",
+          "started_at": "2026-11-01T08:43:51Z",
+          "completed_at": "2026-11-01T08:46:01Z"
+        },
+        {
+          "name": "Start the pinned build container",
+          "conclusion": "success",
+          "started_at": "2026-11-01T08:46:01Z",
+          "completed_at": "2026-11-01T08:46:04Z"
+        },
+        {
+          "name": "Acquire pinned inputs and configure protected kernel",
+          "conclusion": "success",
+          "started_at": "2026-11-01T08:46:04Z",
+          "completed_at": "2026-11-01T08:47:55Z"
+        },
+        {
+          "name": "Compile kernel objects and measure resources",
+          "conclusion": "success",
+          "started_at": "2026-11-01T08:47:55Z",
+          "completed_at": "2026-11-01T09:07:01Z"
+        },
+        {
+          "name": "Link Full LTO and build ARM64 Image",
+          "conclusion": "success",
+          "started_at": "2026-11-01T09:07:01Z",
+          "completed_at": "2026-11-01T09:59:17Z"
+        },
+        {
+          "name": "Verify ABI, run regressions and audit deliverables",
+          "conclusion": "success",
+          "started_at": "2026-11-01T09:59:17Z",
+          "completed_at": "2026-11-01T10:00:09Z"
+        },
+        {
+          "name": "Keep audited deliverables for 90 days",
+          "conclusion": "success",
+          "started_at": "2026-11-01T10:00:09Z",
+          "completed_at": "2026-11-01T10:00:13Z"
+        },
+        {
+          "name": "Keep diagnostics even when the build fails",
+          "conclusion": "success",
+          "started_at": "2026-11-01T10:00:13Z",
+          "completed_at": "2026-11-01T10:00:15Z"
+        },
+        {
+          "name": "Stop the temporary build container",
+          "conclusion": "success",
+          "started_at": "2026-11-01T10:00:15Z",
+          "completed_at": "2026-11-01T10:00:17Z"
+        },
+        {
+          "name": "Remove swap created for this run",
+          "conclusion": "success",
+          "started_at": "2026-11-01T10:00:17Z",
+          "completed_at": "2026-11-01T10:00:19Z"
+        },
+        {
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "conclusion": "success",
+          "started_at": "2026-11-01T10:00:19Z",
+          "completed_at": "2026-11-01T10:00:21Z"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success",
+          "started_at": "2026-11-01T10:00:21Z",
+          "completed_at": "2026-11-01T10:00:21Z"
+        }
+      ]
+    },
+    {
+      "name": "publish",
+      "id": 124815475084,
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success",
+          "started_at": "2026-11-01T10:00:26Z",
+          "completed_at": "2026-11-01T10:00:27Z"
+        },
+        {
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "conclusion": "success",
+          "started_at": "2026-11-01T10:00:27Z",
+          "completed_at": "2026-11-01T10:00:30Z"
+        },
+        {
+          "name": "Run actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+          "conclusion": "success",
+          "started_at": "2026-11-01T10:00:30Z",
+          "completed_at": "2026-11-01T10:00:37Z"
+        },
+        {
+          "name": "Upload draft, download and verify every asset, then publish prerelease",
+          "conclusion": "success",
+          "started_at": "2026-11-01T10:00:37Z",
+          "completed_at": "2026-11-01T10:00:55Z"
+        },
+        {
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "conclusion": "success",
+          "started_at": "2026-11-01T10:00:55Z",
+          "completed_at": "2026-11-01T10:00:55Z"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success",
+          "started_at": "2026-11-01T10:00:55Z",
+          "completed_at": "2026-11-01T10:00:56Z"
+        }
+      ]
+    }
+  ],
+  "release": {
+    "url": "https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824",
+    "tag": "chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824",
+    "draft": false,
+    "prerelease": true,
+    "asset_count": 35,
+    "assets": [
+      {
+        "name": "abi-comparison.json",
+        "bytes": 380,
+        "sha256": "88e4549a4b9cd8b39f9909a81a44c11636d0d100ec1830a884830250d07d430b",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/abi-comparison.json"
+      },
+      {
+        "name": "build-manifest.json",
+        "bytes": 8951,
+        "sha256": "9b9fbdb5d550ca3468f253729af5b52d08432fb094670ed19e0000b4cce73fba",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/build-manifest.json"
+      },
+      {
+        "name": "build.log",
+        "bytes": 5168,
+        "sha256": "4eb141d1bdd52b2aae51c2d72779c26e80ae8d4938937dcf018379c81737cd16",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/build.log"
+      },
+      {
+        "name": "ChatGPTKernel-0.1.0-rc5-sources.tar.zst",
+        "bytes": 195383642,
+        "sha256": "3559b47d1fea259ce63cd408ff3b1981a79d2d4957521ad485f8d68eb864403a",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ChatGPTKernel-0.1.0-rc5-sources.tar.zst"
+      },
+      {
+        "name": "ChatGPTKernel-0.1.0-rc5-topaz-tapas-A13-KSU.zip",
+        "bytes": 25216619,
+        "sha256": "0d419065b704c276e12055a0ddb0d1a4126893d898b2fa0032f07b161dfaa4cc",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ChatGPTKernel-0.1.0-rc5-topaz-tapas-A13-KSU.zip"
+      },
+      {
+        "name": "ChatGPTKernel.config",
+        "bytes": 202113,
+        "sha256": "c3d43db9a52f7aeda6168c70197278e27ca9b165a76d93e53875849cf39f93ba",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ChatGPTKernel.config"
+      },
+      {
+        "name": "ci-build.log",
+        "bytes": 5168,
+        "sha256": "4eb141d1bdd52b2aae51c2d72779c26e80ae8d4938937dcf018379c81737cd16",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-build.log"
+      },
+      {
+        "name": "ci-ci-audit.log",
+        "bytes": 14940,
+        "sha256": "0c3a35673a2f6606b322e2d251bdd408b73e86d728ce929cce78295dd103fbf9",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-ci-audit.log"
+      },
+      {
+        "name": "ci-ci-link.log",
+        "bytes": 5242,
+        "sha256": "3d446cf0f8384d334a1f71a05744947da23d35b822d4fb415f80179fdc64eed2",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-ci-link.log"
+      },
+      {
+        "name": "ci-ci-objects.log",
+        "bytes": 186504,
+        "sha256": "e58b39070b2f220ec03957ce6ba3c2245e5109d2920813616554d5ed57df5e51",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-ci-objects.log"
+      },
+      {
+        "name": "ci-ci-setup.log",
+        "bytes": 54596,
+        "sha256": "4a8c9626e1024e2abc93f86ad964bbef5791f30c4e24858fd926ed0486d3d8b8",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-ci-setup.log"
+      },
+      {
+        "name": "ci-container-image.txt",
+        "bytes": 87,
+        "sha256": "2152e2c960eb4a0cad492b52e85d38adb7cd00343734fd7508afde3e6f0e1b75",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-container-image.txt"
+      },
+      {
+        "name": "ci-container-packages.txt",
+        "bytes": 5009,
+        "sha256": "526d6a8031242870e0402a27cb76afb29b73414a75c8c06d371b45ed0f60dda0",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-container-packages.txt"
+      },
+      {
+        "name": "ci-container-resources.json",
+        "bytes": 563,
+        "sha256": "bdf0d72c8582f9520bf8fbf9cc9db374af0159366a74244f6d7aa5035258bc90",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-container-resources.json"
+      },
+      {
+        "name": "ci-disk-guard-link.jsonl",
+        "bytes": 253469,
+        "sha256": "5ff9c3649560ce15a0016e188684051192aa3f5083a64349b3d2357401522701",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-disk-guard-link.jsonl"
+      },
+      {
+        "name": "ci-disk-guard-objects.jsonl",
+        "bytes": 93562,
+        "sha256": "b2e5a5e86fb18f6a1cf8c7bb4a004e84c199b794cabf0baaaa405ffc737149a1",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-disk-guard-objects.jsonl"
+      },
+      {
+        "name": "ci-dist-audit.json",
+        "bytes": 1336,
+        "sha256": "eadd8924f6ee64b5402bfa4e61f7fab1fd8b3d59002014c46c4c97266e400e77",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-dist-audit.json"
+      },
+      {
+        "name": "ci-docker-version.txt",
+        "bytes": 7,
+        "sha256": "6bd60857f0062defe4edbffc3b3e49ecd7b055a2598326793fc1cfb435587e0d",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-docker-version.txt"
+      },
+      {
+        "name": "ci-object-build.log",
+        "bytes": 186345,
+        "sha256": "224276167bd81c5f79c1e314b5e2b0031592fc4045394d7e9982a58e037cdb91",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-object-build.log"
+      },
+      {
+        "name": "ci-preflight.log",
+        "bytes": 15959,
+        "sha256": "1f08f44d762815d5ab98cd22552f32cd07d6f02010b5427dab77493fbc475650",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-preflight.log"
+      },
+      {
+        "name": "ci-release-tests.json",
+        "bytes": 802,
+        "sha256": "0b42f732357e673121e2d5e7b14b6c1f8b487de57a99b1d3c7cd5956010fd08e",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-release-tests.json"
+      },
+      {
+        "name": "ci-resource-plan.json",
+        "bytes": 410,
+        "sha256": "b334a9345a5400de50b3bb5e1b10475cdf990ca891d56f7d99ce77de00008457",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-resource-plan.json"
+      },
+      {
+        "name": "ci-resource-samples-link.jsonl",
+        "bytes": 184588,
+        "sha256": "cbdba52912258b076765db0940006464314d7475d582bc46e3cd4e38d12aab3a",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-resource-samples-link.jsonl"
+      },
+      {
+        "name": "ci-resource-samples-objects.jsonl",
+        "bytes": 66326,
+        "sha256": "d2e3124f314d278ef7c3d4f1a507b412e6ec3aa33ea867f94b94d42e1962bb17",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-resource-samples-objects.jsonl"
+      },
+      {
+        "name": "ci-runner-after-cleanup.json",
+        "bytes": 561,
+        "sha256": "a343708b9d2df370fe6a27eed005651ef979ebbf2a06164bc148bed8682bde5d",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-runner-after-cleanup.json"
+      },
+      {
+        "name": "ci-runner-before.json",
+        "bytes": 561,
+        "sha256": "9a3be0732cfe54d743298426c900b0b68f69b57f9648c1a0c02adc270487c6be",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-runner-before.json"
+      },
+      {
+        "name": "ci-runner-disk-after.log",
+        "bytes": 2175,
+        "sha256": "424e54fd5008e906a59e94e4f30274fc09e32bbb9780faec84287b2e2107840e",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-runner-disk-after.log"
+      },
+      {
+        "name": "ci-runner-disk-before.log",
+        "bytes": 2418,
+        "sha256": "b4afd52c00ea0b4667eb066a9e4f1a3f73c80544d7bc3cfa188564569455b245",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-runner-disk-before.log"
+      },
+      {
+        "name": "ci-runner-resources.json",
+        "bytes": 563,
+        "sha256": "19ee6b6367f19d7c71f825064bb69d6c2d33385ad4e7180595bcce80dd76f3ce",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-runner-resources.json"
+      },
+      {
+        "name": "ci-source-commit.txt",
+        "bytes": 41,
+        "sha256": "1c9488a1ff8c6137f8151d1ce6b97dae20db8902fc8441d41615119035948ea5",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ci-source-commit.txt"
+      },
+      {
+        "name": "LEEME-instalacion.md",
+        "bytes": 6055,
+        "sha256": "9db397d86e965acff5ad85bf660fe1a5b055433457e199af83c583f5bb503e0e",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/LEEME-instalacion.md"
+      },
+      {
+        "name": "release-notes.md",
+        "bytes": 2586,
+        "sha256": "f1ca70a5e34337f7d48b63f42a7f546c3f63272b03b6f6a99fb3886b6853a80d",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/release-notes.md"
+      },
+      {
+        "name": "SHA256SUMS",
+        "bytes": 3026,
+        "sha256": "6701f28638c67c981d9eafc20450cea3b1114c7848370148b1d21b481a75dc8f",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/SHA256SUMS"
+      },
+      {
+        "name": "source-archive-audit.json",
+        "bytes": 435,
+        "sha256": "dbf157541ebd9a6cc7adbfc139585891a6c19fb72b484a33dffba6b02f249fc7",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/source-archive-audit.json"
+      },
+      {
+        "name": "vmlinux.symvers",
+        "bytes": 943693,
+        "sha256": "61916325f425354758721cb292827ae8a882893e743b326563e5f23b406aac7e",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/vmlinux.symvers"
+      }
+    ]
+  },
+  "image": {
+    "release": "5.15.216-ChatGPTKernel-0.1.0-rc5",
+    "image_bytes": 47454720,
+    "image_sha256": "a1e8912df963a49a6ee11c2216c086085c774250297295f96b2dc3237790dd43"
+  },
+  "abi": {
+    "candidate_image_sha256": "a1e8912df963a49a6ee11c2216c086085c774250297295f96b2dc3237790dd43",
+    "reference_exports": 15543,
+    "candidate_exports": 15543,
+    "matching_exports": 15543,
+    "missing_exports": [],
+    "changed_crcs": {},
+    "added_exports": [],
+    "decoder_cross_checked_with_vmlinux_symvers": true,
+    "hardware_tested": false,
+    "phone_vendor_modules_tested": false
+  },
+  "sources": {
+    "archive": "ChatGPTKernel-0.1.0-rc5-sources.tar.zst",
+    "sha256": "3559b47d1fea259ce63cd408ff3b1981a79d2d4957521ad485f8d68eb864403a",
+    "entries": 77010,
+    "all_contents_types_modes_and_symlink_targets_match": true,
+    "component_entries": {
+      ".cache/linux": 76070,
+      ".cache/kernelsu": 765,
+      ".cache/baseband-guard": 22
+    },
+    "entries_manifest_sha256": "e3c1205473179d14baa0f094d5749921a93adbf75a98b21405be8445d9fd4981"
+  },
+  "audit": {
+    "version": "0.1.0-rc5",
+    "source_archive": "ChatGPTKernel-0.1.0-rc5-sources.tar.zst",
+    "source_archive_sha256": "3559b47d1fea259ce63cd408ff3b1981a79d2d4957521ad485f8d68eb864403a",
+    "zip": "ChatGPTKernel-0.1.0-rc5-topaz-tapas-A13-KSU.zip",
+    "zip_sha256": "0d419065b704c276e12055a0ddb0d1a4126893d898b2fa0032f07b161dfaa4cc",
+    "release_tests": {
+      "source_root": "/work/.cache/linux",
+      "tests_run": 93,
+      "files": {
+        "test_ci_resources.py": 8,
+        "test_backup.py": 4,
+        "test_manual_boot_backup.py": 6,
+        "test_source_acquisition.py": 5,
+        "test_schedhorizon_tunables.py": 5,
+        "test_schedhorizon_frequency.py": 12,
+        "test_mglru_accounting.py": 4,
+        "test_ssg_safety.py": 3,
+        "test_ssg_request_capacity.py": 3,
+        "test_mglru_reclaim.py": 6,
+        "test_binder_async_quota.py": 5,
+        "test_cpufreq_start_serialization.py": 4,
+        "test_f2fs_range_safety.py": 6,
+        "test_mglru_cache_protection.py": 10,
+        "test_mglru_cma.py": 6,
+        "test_diagnostic.py": 4,
+        "test_diagnostic_runtime_details.py": 2
+      },
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "scope": "host unit and regression checks; no device validation"
+    },
+    "source_audit_sha256": "dbf157541ebd9a6cc7adbfc139585891a6c19fb72b484a33dffba6b02f249fc7",
+    "all_required_checks_passed": true
+  },
+  "compiled_watermark_scale_factor": 10,
+  "actual_ikconfig_matches_effective_config": true,
+  "effective_config_sha256": "c3d43db9a52f7aeda6168c70197278e27ca9b165a76d93e53875849cf39f93ba",
+  "btf_warnings": [
+    "filp_close",
+    "should_failslab",
+    "vfs_getattr"
+  ],
+  "resource_plan": {
+    "extra_swap_gib": 28,
+    "extra_swap_bytes": 30064771072,
+    "workspace_free_after_swap_bytes": 20168318976,
+    "docker_free_after_swap_bytes": 20168306688,
+    "minimum_workspace_free_bytes": 16106127360,
+    "minimum_memory_swap_bytes": 38654705664,
+    "planned_memory_swap_bytes_including_startup": 39728447488,
+    "interpretation": "Capacity plan for a monitored attempt; no guarantee of successful linking."
+  },
+  "build_container_resources": {
+    "observed_at_epoch": 1793522778,
+    "cpu_count": 2,
+    "host_mem_total_bytes": 8317935616,
+    "host_swap_total_bytes": 33285988352,
+    "available_ram_bytes": 7037120512,
+    "available_swap_bytes": 33285988352,
+    "available_swap_capacity_limit_bytes": null,
+    "available_memory_swap_bytes": 40323108864,
+    "workspace_free_bytes": 19611009024,
+    "cgroup_limits": [],
+    "minimum_memory_swap_bytes": 38654705664,
+    "minimum_workspace_free_bytes": 16106127360,
+    "interpretation": "Capacity preflight only; swap can be slow and successful linking is not guaranteed."
+  },
+  "full_lto_link": {
+    "elapsed": "52:14.72",
+    "maximum_resident_set_kbytes": 7296304,
+    "major_page_faults": 7795634,
+    "file_system_inputs": 179721040,
+    "file_system_outputs": 4848848,
+    "interpretation": "GNU time peak resident physical memory; not peak virtual memory or total RAM+swap. The completed run involved substantial paging and I/O."
+  },
+  "download_verification": {
+    "workflow": "scripts/ci-publish.sh at source_commit",
+    "checksum_listed_files": 34,
+    "checksum_ok_events": 68,
+    "every_listed_file_checked_twice": true,
+    "phases": [
+      "initial dist check",
+      "download all draft release assets; recheck SHA256SUMS and compare its bytes before publication"
+    ],
+    "core_ci_audits_match_release_digests": true
+  },
+  "hardware_validation": {
+    "boot": false,
+    "phone_vendor_modules": false,
+    "performance": false,
+    "temperature": false
+  },
+  "documentation_snapshot": "Documents inside the audited assets reflect the pre-publication source commit. Later repository documentation records completion without replacing the audited binaries. The kernel build uses collector v6 and 93 tests; the independently published CPU module uses collector v7 and 33 tests."
+}
+

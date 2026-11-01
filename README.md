@@ -1,38 +1,41 @@
-# ChatGPT Kernel — rc5 en preparación; rc4 publicada
+# ChatGPT Kernel — rc5 publicada
 
-**Módulo KernelSU publicado:** [Descargar ChatGPT Fluidez Memoria — 16 KB](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733/ChatGPT-Fluidez-Memoria-0.1.0-rc1-KSU.zip) · [SHA256SUMS](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733/SHA256SUMS) · [Instrucciones](modules/chatgpt-fluidez-memoria/INSTRUCCIONES.txt). Instala desde KernelSU y reinicia. Acción pausa/restaura o reactiva y guarda un informe. Conserva tus módulos y las protecciones térmicas; no requiere flashear otro kernel. Pasaron 23 pruebas y se verificó la descarga de sus cinco assets; todavía no hay mejora medida en el teléfono. [Evidencia](docs/fluidez-module-release.json). El repositorio es privado: inicia sesión con la cuenta que tiene acceso.
+Kernel experimental para **Redmi Note 12 4G TAPAS/topaz y Android 13**. Conserva la ROM, los módulos necesarios, KernelSU/ReSukiSU y las protecciones térmicas. La LineageOS 20 del usuario es la referencia; otras ROM A13 requieren comprobación real.
 
-**Módulo CPU publicado:** [Descargar ChatGPT CPU Respuesta — 25 KB](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310/ChatGPT-CPU-Respuesta-0.1.0-rc1-KSU.zip) · [SHA256SUMS](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310/SHA256SUMS) · [Instrucciones](modules/chatgpt-cpu-respuesta/INSTRUCCIONES.txt). Piloto WALT condicionado al valor real de la tasa, sin cambiar límites o GPU. Acción recoge tres minutos de CPU/GPU/memoria sin alternar el perfil. Pasaron 33 pruebas y se verificó la descarga de sus cinco assets. [Evidencia](docs/cpu-respuesta-release.json). Falta medir el efecto en el teléfono.
+**[Descargar rc5 — 25,2 MB](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ChatGPTKernel-0.1.0-rc5-topaz-tapas-A13-KSU.zip)** · [SHA256SUMS](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/SHA256SUMS) · [Entrega, fuentes y logs](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824)
 
-**Estado de desarrollo:** rc5 añade dos correcciones de rendimiento de memoria y el recolector v6. Todavía no hay ZIP rc5 publicado; los enlaces de descarga siguientes corresponden a rc4. [Revisión y evaluación pendiente](docs/community-review-rc5.md).
+SHA256 del ZIP: `0d419065b704c276e12055a0ddb0d1a4126893d898b2fa0032f07b161dfaa4cc`.
 
-Kernel experimental para **Redmi Note 12 4G TAPAS/topaz y Android 13**. Conserva la ROM, los módulos necesarios y las protecciones térmicas. La LineageOS 20 del usuario sigue siendo la referencia de uso; la compatibilidad con otras ROM A13 requiere comprobación real.
+[Actions 41290063824](https://github.com/elpapu-exe/Cloude/actions/runs/41290063824) completó la compilación ARM64 con Full LTO/O2, CFI, Shadow Call Stack, BTF y MODVERSIONS. Pasaron **93 pruebas sin omisiones**, los **15.543 exports/CRC** coincidieron con R10 y se auditaron las **77.010 entradas del archivo final de fuentes**. Los 35 assets se descargaron y verificaron antes de publicar. **rc5 aún no se probó en el teléfono: no hay mejora de fluidez, ANR o temperatura medida.** [Evidencia](docs/ci-build-result-rc5.json).
 
-**rc4 compilada, auditada y publicada.** [Descargar ZIP — 25,2 MB](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783/ChatGPTKernel-0.1.0-rc4-topaz-tapas-A13-KSU.zip) · [SHA256SUMS](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783/SHA256SUMS) · [Entrega y fuentes](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783). El repositorio es privado: usa la cuenta de GitHub con acceso.
+[Instalación, respaldo y recuperación](docs/installation.md) · [Prueba breve](docs/testing.md) · [Compilación en Actions](docs/build.md) · [Revisión de los cambios](docs/community-review-rc5.md)
 
-SHA256 del ZIP: `069f0fa1b59b39767597f40f78988f3a5aeaef70df468b2a8bc825c412f42265`. [Actions 40663572783](https://github.com/elpapu-exe/Cloude/actions/runs/40663572783) completó 71 pruebas sin omisiones, comparación de los 15.543 exports/CRC con R10 y auditoría de las 76.992 entradas del archivo final de fuentes. Los 35 assets se descargaron y verificaron antes de publicar. **Un informe del teléfono ya identifica rc4 arrancada; estabilidad prolongada y rendimiento siguen sin validación.** [Resultado completo](docs/ci-build-result-rc4.json).
+## Cambios de rc5 respecto a rc4
 
-[Revisión internacional y decisiones](docs/community-review-rc4.md) · [Compilación en Actions](docs/build.md) · [Instalación y recuperación](docs/installation.md) · [Comparación de cinco minutos](docs/testing.md)
+- MGLRU: proteger mejor la caché reutilizada, conservar referencias saturadas y restaurar el estado apropiado al volver a cargar páginas expulsadas.
+- Reclaim: retirar el filtro CMA que podía prolongar recorridos en LRU clásico y provocar promociones improductivas en MGLRU. Se conservan las restricciones de zona y aislamiento.
+- Recolector v6: identificar drivers/tasas reales de CPU, GPU, almacenamiento, CMA y presión de memoria. Los resultados upstream pertenecen a otros escenarios; no son una medición de este TAPAS.
 
-## Cambios de rc4 respecto a rc3-rebuild1
+La configuración efectiva difiere de rc4 solo en LOCALVERSION. Se mantienen MGLRU activo y `watermark_scale_factor=10` como inicializador, modificable por la ROM. Se conservan las correcciones anteriores de KProfiles, Horizon, SSG, Binder y F2FS. El gobernador observado en el teléfono es WALT cargado desde vendor; las correcciones de Horizon actúan al seleccionar Horizon.
 
-- MGLRU: evitar el desbordamiento del contador de escaneo al reintentar páginas y omitir VMA especiales en el recorrido vecino de PTE.
-- Binder: completar la comprobación de cuota asíncrona para no rechazar una petición que sí cabe en el espacio restante.
-- CPUfreq: serializar el inicio de schedutil y Horizon con las escrituras de sus límites de tasa. **Schedutil sigue por defecto.**
-- F2FS: propagar el error del segundo writeback de `collapse_range` y comprobar solapamiento después de expandir una longitud cero en `MOVE_RANGE`. Solo actúan en los caminos afectados de F2FS.
+## Módulo CPU y captura de tres minutos
 
-El parche 0016 restaura el inicializador **`watermark_scale_factor=10`**, valor de la base, en lugar del 64 experimental de rc3-rebuild1. No se había medido una ventaja general de 64 para TAPAS/A13. La ROM puede modificar el valor tras arrancar; volver a 10 tampoco garantiza mayor fluidez.
+**[Descargar ChatGPT CPU Respuesta — 25 KB](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310/ChatGPT-CPU-Respuesta-0.1.0-rc1-KSU.zip)** · [Instrucciones](modules/chatgpt-cpu-respuesta/INSTRUCCIONES.txt) · [Hashes y fuentes](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310) · [Evidencia](docs/cpu-respuesta-release.json).
 
-Se conservan MGLRU activo, la configuración real embebida, los arreglos anteriores de KProfiles/Horizon/SSG y las integraciones históricas de root. No se cambian tamaño o compresor de zRAM, LMKD, swappiness, frecuencias, voltajes o límites térmicos. CFI, Full LTO/O2, Shadow Call Stack, BTF y MODVERSIONS siguen siendo obligatorios. No se atribuyen los ANR a una causa concreta sin evidencia del dispositivo.
+Instala su ZIP desde KernelSU y reinicia. Reduce un 25% la espera WALT `up_rate_limit_us` únicamente cuando su valor está entre 20001 y 100000 µs y los controles se identifican sin ambigüedad. Es una elección experimental; con tasas habituales de 500/1000/2000 µs no cambia nada. Se aplica una vez al arrancar y conserva cambios posteriores de otros controladores. No supone una CPU un 25% más rápida.
 
-## Entrega anterior disponible
+**Acción recoge 180 segundos de logs** con el recolector v7 sin alternar el perfil. Usa TikTok y cambia entre tus apps, conservando WhatsApp y módulos. Comparte el TXT de Descargas cuando aparezca `TEST FINISHED`. Pasaron 33 pruebas y se verificaron los cinco assets. Falta medir el efecto real.
 
-La versión **0.1.0-rc3-rebuild1** ya fue compilada y publicada por [Actions 40633724058](https://github.com/elpapu-exe/Cloude/actions/runs/40633724058). Es la versión anterior, no el binario rc3 histórico que quedó inaccesible:
+GPU, frecuencias/límites, voltajes, térmicas, zRAM y LMKD conservan su gestión habitual. [SmartPack y persistencia de los 3 GiB](docs/smartpack.md). Para la primera comparación del kernel conserva los mismos ajustes; el módulo CPU es una prueba independiente.
 
-[ZIP anterior — 25,2 MB](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058/ChatGPTKernel-0.1.0-rc3-rebuild1-topaz-tapas-A13-KSU.zip) · [SHA256SUMS anterior](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058/SHA256SUMS) · [Publicación y fuentes](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058) · [Evidencia de esa compilación](docs/ci-build-result.json)
+## Entregas anteriores y procedencia
 
-SHA256 del ZIP anterior: `4ecb0febfb9a284c3b624bab7e404ccc205941c69bf3a275312407d1267c2d55`. El repositorio es privado: utiliza la cuenta de GitHub que tiene acceso. Esta entrega anterior tampoco tiene una prueba de arranque confirmada en el teléfono del usuario; sus validaciones no se transfieren a rc4.
+- [rc4](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783): identificada arrancada en los informes; no hay comparación controlada de rendimiento. [Resultado propio](docs/ci-build-result-rc4.json).
+- [rc3-rebuild1](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc3-rebuild1-a01d67ebe63f-40633724058): reconstrucción nueva; el binario rc3 histórico no se recuperó. [Resultado propio](docs/ci-build-result.json).
+- [Módulo Fluidez Memoria](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733): independiente, sin cambios. Su Acción pausa/reactiva y guarda snapshots; difiere de Acción del módulo CPU. [Instrucciones](modules/chatgpt-fluidez-memoria/INSTRUCCIONES.txt).
 
-rc4 se compiló desde `0640e8f41412eba3b66ce3b353735897dc322842`; los cambios posteriores de documentación no cambian ese binario. Los avisos BTF efectivos son `filp_close`, `should_failslab` y `vfs_getattr`. `downloads/` conserva el binario histórico rc1 y sus metadatos; el recolector actual está en `downloads/chatgpt-kernel-logs.sh`.
+rc5 corresponde al commit `9c81476ba0a6ffc452d5fdb5463cf5cebf128ad9`. Sus assets mantienen los documentos del snapshot previo a publicar; esta documentación posterior registra la entrega sin reemplazar sus binarios. El recolector v7 y las 33 pruebas del módulo CPU pertenecen a su ejecución independiente.
 
-Base Linux 5.15.216 / Zepharo R10 `d246c8c17548bb1a2756092cabf34d11eedcde8c`, ReSukiSU histórico `7e92d45e` (35142), BBG `a54e0dc6` y candidato SUSFS 2.3.0 `7af04b08`. La procedencia exacta del SUSFS de R10 sigue sin demostrarse. Los pines están en `config/sources.lock.json`; las fuentes correspondientes grandes se distribuyen como assets y no se añaden al historial Git normal.
+Base Linux 5.15.216 / Zepharo R10 `d246c8c17548bb1a2756092cabf34d11eedcde8c`, ReSukiSU histórico `7e92d45e` (35142), BBG `a54e0dc6` y candidato SUSFS 2.3.0 `7af04b08`. La procedencia exacta del SUSFS de R10 sigue sin demostrarse. Las fuentes grandes se distribuyen como assets, fuera del historial Git normal.
+
+**Repositorio privado:** inicia sesión con la cuenta de GitHub que tiene acceso para descargar.

@@ -1,6 +1,6 @@
 # Candidata rc5: rendimiento de memoria y evaluación pendiente
 
-Estado: **fuentes en preparación; no hay ZIP rc5 publicado**. Los informes ya identifican rc4 en el teléfono. La causa de la percepción de empeoramiento sigue sin demostrarse. La entrega anterior [rc4](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc4-0640e8f41412-40663572783) conserva sus hashes, fuentes y resultados. Sus auditorías no se transfieren a esta candidata.
+Estado: **rc5 compilada, auditada y publicada** en [su entrega propia](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824). Pasaron 93 pruebas sin omisiones, los 15.543 exports/CRC coincidieron con R10 y se auditaron las 77.010 entradas del archivo final de fuentes. Los 35 assets se descargaron y verificaron antes de publicar. [Evidencia de esta ejecución](ci-build-result-rc5.json). Los informes del teléfono identifican rc4; rc5 aún requiere prueba de arranque y rendimiento. La causa de la percepción de empeoramiento sigue sin demostrarse.
 
 ## Cambios seleccionados
 
@@ -26,12 +26,14 @@ La elección de swappiness o del readahead de swap depende del coste relativo de
 - MGLRU-FG y la serie moderna de swappiness cambian contratos de contadores y promoción. No se importan como un conjunto de tweaks para probar suerte.
 - Las advertencias sobre PSI y swapcache del dossier de memoria son candidatos separados de contabilidad o integridad, no mejoras de FPS demostradas.
 
-Se conservan ROM, módulos necesarios, WhatsApp, protecciones térmicas, CFI, Full LTO/O2, SCS, BTF y MODVERSIONS. Antes de publicar siguen siendo obligatorias la compilación ARM64 completa, igualdad de exports/CRC con R10, IKCONFIG real, auditoría del archivo final de fuentes y descarga verificada de todos los assets. La evaluación en hardware requerirá comparar registros y uso semejante antes y después.
+Se conservan ROM, módulos necesarios, WhatsApp, protecciones térmicas, CFI, Full LTO/O2, SCS, BTF y MODVERSIONS. La compilación ARM64, comparación de exports/CRC con R10, IKCONFIG real, auditoría del archivo final de fuentes y descarga verificada terminaron en la ejecución propia de rc5. La evaluación en hardware requiere comparar registros y uso semejante antes y después.
 
 ## Comprobaciones locales
 
-Pasaron 93 pruebas obligatorias sin omisiones sobre `.cache/linux`. La reaplicación de los 18 parches produjo los 40 archivos finales esperados; los árboles preparados Linux/KSU/BBG coinciden con el snapshot en contenido, tipos y destinos literales de enlaces. La configuración difiere de rc4 solo en LOCALVERSION; la compilación completa y la comparación de ABI del binario nuevo siguen pendientes.
+Pasaron 93 pruebas obligatorias sin omisiones sobre `.cache/linux`. La reaplicación de los 18 parches produjo los 40 archivos finales esperados; los árboles preparados Linux/KSU/BBG coinciden con el snapshot en contenido, tipos y destinos literales de enlaces. La configuración difiere de rc4 solo en LOCALVERSION; la compilación completa y la comparación de ABI también finalizaron correctamente en Actions.
 
-La compilación incremental ARM64 de objetos (`descend -j2`) terminó sin errores en 45 segundos; recompiló los archivos afectados y reutilizó los demás objetos. No ejecutó Image/Full LTO ni valida un ZIP. [Medición y hashes](ci-object-measurement-rc5.json). Se mantiene el último marcador automático de compilación en rc4: rc5 todavía no se ha solicitado a Actions.
+La medición incremental previa de objetos (`descend -j2`) terminó en 45 segundos, sin ejecutar Image/Full LTO. [Medición histórica](ci-object-measurement-rc5.json). Después, [Actions 41290063824](https://github.com/elpapu-exe/Cloude/actions/runs/41290063824) compiló los objetos en 19 min 6 s y completó Full LTO/Image en 52 min 15 s, conservando las protecciones. El binario corresponde al commit `9c81476ba0a6ffc452d5fdb5463cf5cebf128ad9`.
 
 Una segunda observación sí incluye varias horas del mismo arranque, con presión de memoria y un cambio de zRAM de 2 a 3 GiB, además de límites CPU distintos. Confirma que el margen se aplicó y se retiró, pero no constituye una comparación controlada de su efecto. La identificación del controlador de zRAM es necesaria para evitar superponer perfiles; no se considera este archivo una repetición equivocada de la captura inicial.
+
+El usuario identifica SmartPack como controlador de los 3 GiB. [Orientación sobre su persistencia](smartpack.md). El módulo CPU y su recolector v7 se publicaron de forma independiente: [resultado](cpu-respuesta-release.json). El kernel entregado incluye el recolector v6 y sus 93 pruebas; los documentos dentro de sus assets conservan el estado del commit previo a la publicación. Esta revisión posterior registra el resultado sin modificar los binarios auditados.

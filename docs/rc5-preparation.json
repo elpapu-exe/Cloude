@@ -1,6 +1,6 @@
 {
   "version": "0.1.0-rc5",
-  "status": "Full LTO Actions build requested; Image and release audits pending",
+  "status": "Published; full ARM64/LTO, tests, ABI, final source archive and downloaded assets verified",
   "base_release_commit": "0640e8f41412eba3b66ce3b353735897dc322842",
   "new_patches": [
     "0017-mglru-protect-frequently-reused-page-cache.patch",
@@ -26,9 +26,9 @@
   "phone_kernel_version": "5.15.216-ChatGPTKernel-0.1.0-rc4, identified in user reports",
   "phone_performance": "Module histories include a same-boot4h22m interval with memory/IOpressure; zRAM changed2to3GiB and CPU policy limits changed, so no controlled benefit attribution",
   "github_actions_requested_for_rc5": true,
-  "new_image_compiled": false,
-  "new_exports_crcs_verified": false,
-  "next": "Complete the single requested protected Full LTO build, verify all artifacts and downloaded release assets; hardware performance still requires evaluation.",
+  "new_image_compiled": true,
+  "new_exports_crcs_verified": true,
+  "next": "Evaluate boot, functions and performance on the phone with the same settings and required modules.",
   "object_compile": {
     "target": "descend",
     "jobs": 2,
@@ -41,5 +41,7 @@
     "source_pins_sha256": "f2972b2d283b3ca354f04fda8d740e31de3f8a572b910c16ab662d2e50b73153",
     "evidence": "ci-object-measurement-rc5.json"
   },
-  "zram_controller": "User confirms manual SmartPack setting to3GiB; resets after reboot"
+  "zram_controller": "User confirms manual SmartPack setting to3GiB; resets after reboot",
+  "result": "ci-build-result-rc5.json",
+  "release_url": "https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824"
 }

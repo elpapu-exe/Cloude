@@ -12,7 +12,7 @@ El usuario no necesita compilar en Windows. El perfil del runner estándar es un
 
 La primera receta falló antes de compilar con 32 GiB de swap adicional y un margen conservador de 45 GiB de disco. El runner privado observado tenía 7,75 GiB de RAM y un solo volumen raíz de 71,6 GiB, compartido con `/mnt`. Aquel margen de 45 GiB no procedía de un pico de disco medido del kernel.
 
-Se midió posteriormente la fase completa de objetos ARM64: 2.985 objetos, `out/` de 1,073 GiB y entradas de 1,996 GiB, sin enlace global. [Medición, presupuesto y límites](ci-object-measurement.md). El perfil `hosted_compact` de `config/ci-resources.json` permite probar con 15 GiB libres después de swap, manteniendo 2 GiB de reserva vigilada. Los tres ELF grandes del enlace aún no se han medido; el ensayo puede detenerse por espacio, memoria o tiempo.
+Se midió posteriormente la fase completa de objetos ARM64: 2.985 objetos, `out/` de 1,073 GiB y entradas de 1,996 GiB, sin enlace global. [Medición, presupuesto y límites](ci-object-measurement.md). El perfil `hosted_compact` de `config/ci-resources.json` permite probar con 15 GiB libres después de swap, manteniendo 2 GiB de reserva vigilada. La rc5 completó el enlace con este perfil; otros intentos siguen sujetos a las comprobaciones de espacio, memoria y tiempo.
 
 Solo en runners Linux desechables de GitHub se eliminan rutas concretas de SDKs que este build C dentro del contenedor no utiliza. El inventario antes/después registra el espacio realmente recuperado. Se utiliza `/usr/bin/python3`; no se eliminan los runtimes internos del runner. Se podan únicamente imágenes Docker sin contenedores antes de obtener la imagen fijada. No se borran volúmenes Docker.
 
@@ -30,8 +30,10 @@ Después de verificar imagen/configuración/ABI, se ejecutan las 93 regresiones 
 
 La prerelease se crea como borrador con tag único. Se vuelven a descargar todos sus archivos, se comprueban sus hashes y solo entonces se publica. El tar de fuentes se conserva como asset y artefacto, fuera del historial Git normal. Las fuentes comprimidas excluyen `.git`; la receta obtiene las historias originales fijadas necesarias para reconstruir, especialmente la de KSU.
 
-`0.1.0-rc5` está en preparación; rc4 es la entrega publicada anterior. Una compilación y sus auditorías no certifican arranque, estabilidad, temperatura ni fluidez en TAPAS.
+`0.1.0-rc5` está [publicada y verificada](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824); rc4 conserva su entrega anterior. [Resultado propio](ci-build-result-rc5.json). Una compilación y sus auditorías no certifican arranque, estabilidad, temperatura ni fluidez en TAPAS.
 
 ## Ejecución completada
 
 El perfil compacto terminó correctamente en el [run 40633724058](https://github.com/elpapu-exe/Cloude/actions/runs/40633724058), desde a01d67ebe63f98a705c068ea735f9ae87848b35c. Se crearon 28 GiB de swap adicional y quedaron 19.439.857.664 bytes de trabajo tras provisionarla. La fase de objetos duró 27 min 40 s y Full LTO/Image 44 min. Se completaron las auditorías y la publicación con descarga verificada. Los [resultados](ci-build-result.json) registran los recursos observados; el éxito de esta carga no garantiza otras configuraciones ni elimina la validación del teléfono.
+
+La rc5 completó objetos en 19 min 6 s y Full LTO/Image en 52 min 15 s, con dos CPU, aproximadamente 7,75 GiB de RAM y 28 GiB de swap adicional. Pasaron 93 pruebas, ABI y auditoría final de fuentes; se verificaron los 35 assets descargados antes de publicar. Las 33 pruebas y el recolector v7 del módulo CPU pertenecen a su ejecución independiente.

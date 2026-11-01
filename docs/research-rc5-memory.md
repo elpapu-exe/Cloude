@@ -1,6 +1,6 @@
 # rc5: revisión de memoria después de rc4
 
-El usuario describe el comportamiento actual como similar o quizá peor, aclara que la percepción es incierta y prepara una captura del recolector. La versión instalada todavía debe confirmarse en ese informe. **No hay todavía registros nuevos que identifiquen la causa ni una mejora de rendimiento medida.** Los cambios de este documento son propuestas implementadas en fuentes para revisión; no sustituyen la evaluación necesaria para elegir otra compilación de Actions o una entrega nueva. La autorización del usuario para continuar el desarrollo y compilar ya existe. La configuración candidata solo cambia LOCALVERSION; no se modifican watermark, compresor/tamaño de zRAM o políticas de LMKD.
+Los informes identifican rc4 en el teléfono, WALT activo y presión de memoria en un intervalo del mismo arranque de unas 4 h 22 min. También cambian el tamaño de zRAM y límites CPU; el usuario identifica SmartPack como gestor de los 3 GiB. Esos datos no permiten atribuir la percepción de empeoramiento a una causa concreta. **La rc5 ya fue compilada y publicada con sus propias auditorías; su rendimiento en el teléfono sigue sin medirse.** [Evidencia de entrega](ci-build-result-rc5.json). La configuración solo cambia LOCALVERSION respecto a rc4; se conservan watermark, compresor/tamaño de zRAM y políticas de LMKD.
 
 ## Diferencia de watermark que debe comprobarse en runtime
 
