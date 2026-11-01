@@ -1,0 +1,78 @@
+ChatGPT CPU Respuesta v0.1.0-rc1 — prueba experimental
+KernelSU/ReSukiSU; Redmi Note 12 4G TAPAS/topaz, Android 13, kernel 5.15 ARM64
+
+INSTALAR
+KernelSU > Modulos > Instalar desde almacenamiento > ZIP de ChatGPT CPU Respuesta.
+Reinicia. El servicio espera de forma limitada a que Android termine de arrancar,
+espera 15 segundos adicionales y revisa una sola vez los controles admitidos.
+No deja un daemon ni insiste contra la ROM u otros modulos.
+
+QUE PUEDE CAMBIAR
+Solo up_rate_limit_us del gobernador WALT, si el nodo es identificable, no ambiguo
+y su valor actual esta entre 20001 y 100000 microsegundos. Aplica el 75% redondeado
+hacia arriba: por ejemplo, 30000 -> 22500 us. El umbral de 20 ms y el recorte del
+25% son una eleccion experimental, no valores optimos publicados ni una mejora
+comprobada de TikTok. Si ya usa 500, 1000 o 2000 us, no cambia nada; tampoco cambia
+valores de 0 a 20000 ni mayores a 100000 us.
+
+Puede permitir responder antes a una subida de demanda, a costa de mas cambios
+de frecuencia y consumo. No modifica down_rate_limit_us, frecuencias minimas o
+maximas, gobernador, voltajes, termicas, GPU, ROM, WhatsApp ni otros modulos.
+No modifica memoria, MGLRU, watermark, LMKD o zRAM. La configuracion manual de
+SmartPack no se guarda ni se recrea mediante este modulo. El modulo de memoria
+es independiente y conserva su propio estado de pausa.
+
+ALCANCE Y SEGURIDAD DE LOS CONTROLES
+Soporta policy0 y policy4. Si aparece otra policy, no aplica ni restaura controles.
+Un nodo global WALT solo se utiliza si todas las
+politicas identificadas siguen en WALT y no hay scopes contradictorios. Si varias
+rutas identifican el mismo control, se modifica una sola vez. Se captura el plan
+completo antes de escribir, se guarda el original antes del cambio y se comprueba
+la lectura posterior. No se escribe ninguna ruta tomada del registro.
+
+La restauracion requiere el mismo arranque, nodo/politica con la misma identidad,
+el mismo gobernador y un valor actual igual al que aplico el modulo. Se conserva
+cualquier cambio posterior de la ROM u otro modulo. Sysfs no proporciona una
+operacion atomica de comparacion y escritura: una carrera con otro controlador
+root sigue siendo posible. No se imponen valores de forma permanente.
+
+ACCION SOLO RECOGE LOGS DURANTE 180 SEGUNDOS
+La opcion Accion NO pausa, reactiva ni cambia el perfil. Inicia la copia exacta del
+recolector general del proyecto durante tres minutos. Usa TikTok y cambia entre
+apps con WhatsApp y tus modulos habituales. Comparte el TXT de Descargas cuando
+aparezca TEST FINISHED. No sube archivos automaticamente. Si ya hay un recolector
+en curso, espera a que termine; no necesitas repetir una captura que ya comenzaste.
+
+PAUSAR Y RESTAURAR AHORA
+  su -c 'sh /data/adb/modules/chatgpt_cpu_respuesta/bin/control.sh restore'
+La pausa persiste al reiniciar. Si notas peor respuesta o mas consumo, dejalo
+pausado. Desactivar en el Manager por si solo no restaura inmediatamente:
+desactivalo y reinicia para que kernel/ROM establezcan sus valores normales.
+
+REACTIVAR
+  su -c 'sh /data/adb/modules/chatgpt_cpu_respuesta/bin/control.sh apply'
+No acumula recortes del 25% si se ejecuta repetidamente. Para alternar por CLI
+puedes usar toggle en lugar de apply; Accion sigue siendo solo el recolector.
+
+ESTADO E INFORME PRIVADO DEL PERFIL
+  su -c 'sh /data/adb/modules/chatgpt_cpu_respuesta/bin/control.sh status'
+  su -c 'sh /data/adb/modules/chatgpt_cpu_respuesta/bin/control.sh report'
+report exporta el historial de decisiones a Download/ChatGPT-CPU-Respuesta-*.txt;
+no sustituye el TXT de tres minutos del recolector. Estado privado:
+/data/adb/chatgpt-cpu-respuesta/, fuera del directorio actualizado por KernelSU.
+Una actualizacion conserva el original del arranque y no lo reemplaza por un
+valor ya reducido. Un arranque nuevo no restaura snapshots de arranques anteriores.
+
+RETIRAR
+Usa restore para retirar efectos ahora, o desactiva/desinstala y reinicia. El
+Manager puede ejecutar uninstall.sh durante el siguiente arranque. Se conservan
+registros no resueltos si cambiaron las identidades o los valores. Ante un error
+de escritura/almacenamiento o un bloqueo interrumpido, conserva los informes y
+reinicia con este modulo desactivado. No borra otros modulos ni modifica boot.
+
+LIMITES
+No se promete mas FPS ni eliminar los tirones. No hay un ajuste GPU en esta
+version: primero hay que identificar su driver y controles reales. Las pruebas
+de scripts y empaquetado no sustituyen una comparacion en el telefono. La interfaz
+del Manager puede mostrar exito aunque una escritura haya fallado; consulta
+status, la lectura posterior y los mensajes del registro.

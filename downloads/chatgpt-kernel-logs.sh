@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# ChatGPT Kernel diagnostic v6. Read-only diagnostics; one shareable text file.
+# ChatGPT Kernel diagnostic v7. Read-only diagnostics; one shareable text file.
 # No network access, tuning, cache clearing, app closing or automatic upload.
 PATH=/system/bin:/system/xbin:/vendor/bin:/product/bin
 export PATH
@@ -56,7 +56,7 @@ governor_tunables() {
 }
 gpu_configuration() {
   heading 'GPU configuration snapshots (read only; driver reports, not measured throughput)'
-  for gpu_field in gpu_model gpuclk min_gpuclk max_gpuclk; do
+  for gpu_field in gpu_model gpuclk min_gpuclk max_gpuclk idle_timer force_clk_on force_bus_on force_rail_on; do
     printf 'KGSL %s: ' "$gpu_field"; detail_value "/sys/class/kgsl/kgsl-3d0/$gpu_field"
   done
   for gpu_scope in /sys/class/kgsl/kgsl-3d0/devfreq /sys/class/devfreq/*; do
@@ -149,6 +149,27 @@ runtime_hardware() {
       /sys/fs/cgroup/"$cpu_group"/cpu.uclamp.max; do
       printf '%s: ' "$group_file"; detail_value "$group_file"
     done
+  done
+}
+own_module_profiles() {
+  heading "ChatGPT module profiles $1 (read only; pause marker is not activity proof)"
+  for profile_path in /data/adb/chatgpt-fluidez-memoria /data/adb/chatgpt-cpu-respuesta; do
+    printf '%s:\n' "${profile_path##*/}"
+    if [ ! -d "$profile_path" ] || [ -L "$profile_path" ]; then
+      printf 'NA\n'
+      continue
+    fi
+    if [ -f "$profile_path/paused" ] && [ ! -L "$profile_path/paused" ]; then
+      printf 'pause_marker: present\n'
+    else
+      printf 'pause_marker: absent\n'
+    fi
+    if [ -f "$profile_path/history.log" ] && [ ! -L "$profile_path/history.log" ]; then
+      printf 'Own profile history (last 100 lines):\n'
+      bounded tail -n 100 "$profile_path/history.log"
+    else
+      printf 'Own profile history: NA\n'
+    fi
   done
 }
 cleanup() {
@@ -298,6 +319,7 @@ finish_logs() {
   done
   heading 'Selected kernel errors since boot (max 100 lines)'
   bounded dmesg | grep -iE 'unknown symbol|disagrees about version|invalid module|CFI failure|kernel BUG|Oops:|out of memory|allocation failure' | tail -n 100
+  own_module_profiles END
   heading "TEST FINISHED: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   printf 'No phone settings were changed and no files were uploaded.\n'
 }
@@ -311,7 +333,7 @@ if [ "${1:-}" = --worker ]; then
   trap 'exit 130' 1 2 15
   START_EPOCH=$(date +%s)
   START_LOGCAT=$(date '+%m-%d %H:%M:%S.000')
-  heading 'ChatGPT Kernel diagnostic v6'
+  heading 'ChatGPT Kernel diagnostic v7'
   printf 'Start UTC: '; date -u '+%Y-%m-%dT%H:%M:%SZ'
   printf 'Duration target: %s seconds; samples every %s seconds. Sleep may extend wall time.\n' "$DURATION" "$INTERVAL"
   uname -a
@@ -345,6 +367,7 @@ if [ "${1:-}" = --worker ]; then
       printf '%s\n' "$zone" >> "$LOCK/thermal-paths"; count=$((count + 1));;
     esac
   done
+  own_module_profiles BEGIN
   configuration
   runtime_hardware
   io_configuration BEGIN

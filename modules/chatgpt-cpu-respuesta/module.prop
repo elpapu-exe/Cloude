@@ -1,0 +1,6 @@
+id=chatgpt_cpu_respuesta
+name=ChatGPT CPU Respuesta
+version=v0.1.0-rc1
+versionCode=1
+author=ChatGPT Kernel project
+description=Prueba CPU reversible para TAPAS Android 13: reduce un 25% solo una espera WALT de subida mayor a 20 ms. Accion recoge logs durante 180 s. Sin ajustes GPU ni frecuencias.

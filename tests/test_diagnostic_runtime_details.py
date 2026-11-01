@@ -40,6 +40,9 @@ class RuntimeDetailTests(unittest.TestCase):
                 'proc/meminfo': 'MemTotal: 123 kB\nCmaTotal: 16384 kB\nCmaFree: 2048 kB\n',
                 'proc/vmstat': 'kswapd_low_wmark_hit_quickly 12\nkswapd_high_wmark_hit_quickly 34\n',
                 'proc/stat': 'cpu 1 2 3 4\n',
+                'data/adb/chatgpt-cpu-respuesta/history.log': 'APPLIED policy0: 40000 -> 30000\n',
+                'data/adb/chatgpt-cpu-respuesta/paused': '',
+                'data/adb/unrelated-private-module/history.log': 'PRIVATE_OTHER_MODULE_DATA\n',
                 'sys/class/power_supply/battery/temp': '350\n',
             } if populated else {}
             for name, value in fixtures.items():
@@ -50,13 +53,13 @@ class RuntimeDetailTests(unittest.TestCase):
             source = (ROOT / 'scripts/chatgpt-kernel-logs.sh').read_text()
             source = source[:source.index('[ "$(id -u)" = 0 ]')]
             source = source.replace('PATH=/system/bin:/system/xbin:/vendor/bin:/product/bin', 'PATH=/usr/bin:/bin')
-            for prefix in ('/sys/', '/proc/', '/dev/cpuset/', '/dev/cpuctl/'):
+            for prefix in ('/sys/', '/proc/', '/dev/cpuset/', '/dev/cpuctl/', '/data/adb/'):
                 source = source.replace(prefix, str(sandbox / prefix.strip('/')) + '/')
             thermal = sandbox / 'thermal-paths'
             thermal.write_text('')
             # settings is unrelated to these fixtures and has no host equivalent.
             source += '\nsettings() { printf "NA\\n"; }\n'
-            source += f'LOCK="{sandbox}"\nconfiguration\nruntime_hardware\nio_configuration BEGIN\nio_configuration END\nsnapshot fixture\n'
+            source += f'LOCK="{sandbox}"\nown_module_profiles BEGIN\nconfiguration\nruntime_hardware\nio_configuration BEGIN\nio_configuration END\nsnapshot fixture\n'
             script = sandbox / 'details.sh'
             script.write_text(source)
             result = subprocess.run(['/bin/sh', str(script)], text=True, capture_output=True, timeout=10)
@@ -79,9 +82,9 @@ class RuntimeDetailTests(unittest.TestCase):
                          'kswapd_low_wmark_hit_quickly 12', 'kswapd_high_wmark_hit_quickly 34',
                          'sda scheduler: none mq-deadline [ssg]', 'sda hardware queue count: 2',
                          'mmcblk0 hardware queue count: 1', 'sda 12 800 4 20 1600 8 1 13 17',
-                         'dm-0 30 2000 8 40 3000 15 0 23 25', 'Block I/O BEGIN', 'Block I/O END'):
+                         'dm-0 30 2000 8 40 3000 15 0 23 25', 'Block I/O BEGIN', 'Block I/O END', 'APPLIED policy0: 40000 -> 30000', 'pause_marker: present'):
             self.assertIn(expected, output)
-        for forbidden in ('0xffff', 'PRIVATE_TASK_MEMBERSHIP', 'bad$module', 'loop0'):
+        for forbidden in ('0xffff', 'PRIVATE_TASK_MEMBERSHIP', 'bad$module', 'loop0', 'PRIVATE_OTHER_MODULE_DATA'):
             self.assertNotIn(forbidden, output)
 
     def test_absent_optional_interfaces_report_na(self):
@@ -90,6 +93,27 @@ class RuntimeDetailTests(unittest.TestCase):
         self.assertIn('cpu.uclamp.min: NA', output)
         self.assertIn('name bytes refs\nNA', output)
         self.assertNotIn('0xffff', output)
+
+
+    def test_profile_history_symlink_is_not_followed(self):
+        with tempfile.TemporaryDirectory(prefix='profile-history-') as directory:
+            sandbox = Path(directory)
+            private = sandbox / 'private'
+            private.write_text('PRIVATE_HISTORY_TARGET\n')
+            profile = sandbox / 'data/adb/chatgpt-cpu-respuesta'
+            profile.mkdir(parents=True)
+            (profile / 'history.log').symlink_to(private)
+            source = (ROOT / 'scripts/chatgpt-kernel-logs.sh').read_text()
+            source = source[:source.index('[ "$(id -u)" = 0 ]')]
+            source = source.replace('PATH=/system/bin:/system/xbin:/vendor/bin:/product/bin', 'PATH=/usr/bin:/bin')
+            source = source.replace('/data/adb/', str(sandbox / 'data/adb') + '/')
+            script = sandbox / 'profile.sh'
+            script.write_text(source + '\nown_module_profiles BEGIN\n')
+            result = subprocess.run(['/bin/sh', str(script)], text=True, capture_output=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn('PRIVATE_HISTORY_TARGET', result.stdout)
+            self.assertIn('Own profile history: NA', result.stdout)
+            self.assertEqual(private.read_text(), 'PRIVATE_HISTORY_TARGET\n')
 
 
 if __name__ == '__main__':

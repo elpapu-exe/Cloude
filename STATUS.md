@@ -49,3 +49,7 @@ El nuevo archivo conserva el historial anterior y añade un intervalo del mismo 
 ## Compilación rc5 solicitada
 
 El usuario confirma que configuró los 3 GiB con SmartPack y que debe repetirlo después de reiniciar. Se solicita una única ejecución completa de rc5 con los dos arreglos MM ya revisados; no se añaden tamaños de zRAM ni límites CPU/GPU al kernel. Las validaciones previas mantienen 93 pruebas y replay18parches. El módulo se desarrolla aparte y no dispara otra compilación del kernel. La entrega nueva solo se enlaza después de terminar y comprobar la descarga real.
+
+## Módulo CPU y captura integrada
+
+Se prepara ChatGPT CPU Respuesta 0.1.0-rc1, independiente del módulo de memoria. Solo reduce un 25% la espera WALT up_rate_limit_us de 20001–100000µs cuando el ámbito y la identidad de nodos/políticas son inequívocos. Las tasas menores se conservan. No modifica GPU, relojes/límites, down_rate_limit_us, térmicas, zRAM o módulos personales. SmartPack es el gestor de los 3 GiB. Pasan 26 pruebas del perfil y siete del recolector v7; las tres suites también pasan fuera del checkout usando solo archivos del ZIP de fuentes. Acción ejecuta el recolector durante 180 segundos; no alterna el perfil. La mejora real sigue sin medición.

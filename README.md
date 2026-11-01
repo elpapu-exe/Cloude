@@ -2,6 +2,8 @@
 
 **Módulo KernelSU publicado:** [Descargar ChatGPT Fluidez Memoria — 16 KB](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733/ChatGPT-Fluidez-Memoria-0.1.0-rc1-KSU.zip) · [SHA256SUMS](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733/SHA256SUMS) · [Instrucciones](modules/chatgpt-fluidez-memoria/INSTRUCCIONES.txt). Instala desde KernelSU y reinicia. Acción pausa/restaura o reactiva y guarda un informe. Conserva tus módulos y las protecciones térmicas; no requiere flashear otro kernel. Pasaron 23 pruebas y se verificó la descarga de sus cinco assets; todavía no hay mejora medida en el teléfono. [Evidencia](docs/fluidez-module-release.json). El repositorio es privado: inicia sesión con la cuenta que tiene acceso.
 
+**Módulo CPU en preparación:** [ChatGPT CPU Respuesta](modules/chatgpt-cpu-respuesta/README.md), un piloto WALT condicionado al valor real de su tasa. Acción recoge tres minutos de CPU/GPU/memoria sin cambiar el perfil. Sus fuentes y 33 pruebas están listas; todavía no hay enlace de descarga publicado.
+
 **Estado de desarrollo:** rc5 añade dos correcciones de rendimiento de memoria y el recolector v6. Todavía no hay ZIP rc5 publicado; los enlaces de descarga siguientes corresponden a rc4. [Revisión y evaluación pendiente](docs/community-review-rc5.md).
 
 Kernel experimental para **Redmi Note 12 4G TAPAS/topaz y Android 13**. Conserva la ROM, los módulos necesarios y las protecciones térmicas. La LineageOS 20 del usuario sigue siendo la referencia de uso; la compatibilidad con otras ROM A13 requiere comprobación real.
