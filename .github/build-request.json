@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0-rc4",
-  "request": "rc4-reviewed-upstream-fixes-20261028",
-  "purpose": "Build and audit six targeted upstream corrections, with baseline reclaim watermark restored, preserving thermal and security configuration."
+  "version": "0.1.0-rc5",
+  "request": "rc5-reviewed-cache-cma-runtime-pressure-20261101",
+  "purpose": "One protected Full LTO build of the two reviewed reclaim corrections after device reports confirmed active MGLRU and persistent memory pressure; preserve thermal/security and existing vendor modules. SmartPack remains the zRAM controller."
 }

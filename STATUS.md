@@ -45,3 +45,7 @@ La captura se identifica como rc4, con MGLRU activo antes del módulo y WALT sel
 ## Segunda observación del teléfono
 
 El nuevo archivo conserva el historial anterior y añade un intervalo del mismo arranque de unas 4 h 22 min. Los contadores PSI indican presión durante ese tiempo; no es una captura exclusiva del arranque. El margen era 64 en ambos extremos antes de su restauración a 1. La zRAM0 pasó de 2 a 3 GiB lógicos y retrocedieron contadores propios del dispositivo, coherente con una reinicialización; el módulo publicado no la redimensiona. El límite máximo observado de CPU también cambió. Estos cambios y la carga desconocida impiden atribuir beneficio o perjuicio al margen. No hubo incremento de oom_kill durante el intervalo, lo que no descarta terminaciones LMKD o ANR. No se ha publicado el informe original ni los identificadores de arranque. El próximo dato necesario es qué herramienta o servicio cambió la zRAM; no se solicita otra vez el mismo informe ni se añaden perfiles a ciegas.
+
+## Compilación rc5 solicitada
+
+El usuario confirma que configuró los 3 GiB con SmartPack y que debe repetirlo después de reiniciar. Se solicita una única ejecución completa de rc5 con los dos arreglos MM ya revisados; no se añaden tamaños de zRAM ni límites CPU/GPU al kernel. Las validaciones previas mantienen 93 pruebas y replay18parches. El módulo se desarrolla aparte y no dispara otra compilación del kernel. La entrega nueva solo se enlaza después de terminar y comprobar la descarga real.

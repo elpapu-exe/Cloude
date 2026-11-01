@@ -29,7 +29,7 @@ if gh release view "$CHATGPT_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; t
 fi
 CHATGPT_NOTES="$(mktemp)"
 {
-  printf 'Candidata experimental %s, sucesora de rc3-rebuild1; no es el binario rc3 perdido.\n\n' "$CHATGPT_VERSION"
+  printf 'Candidata experimental %s; resultado nuevo con fuentes y validaciones de esta ejecucion.\n\n' "$CHATGPT_VERSION"
   printf 'Compilada por GitHub Actions desde el commit `%s`.\n\n' "$GITHUB_SHA"
   printf 'Compilación ARM64, configuración y auditorías de fuentes/artefactos completadas. Sin validación de arranque, rendimiento o temperatura en el teléfono.\n\n'
   cat docs/release-notes.md

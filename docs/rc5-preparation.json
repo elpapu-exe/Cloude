@@ -1,6 +1,6 @@
 {
   "version": "0.1.0-rc5",
-  "status": "source candidate; no rc5 Image, ZIP or release yet",
+  "status": "Full LTO Actions build requested; Image and release audits pending",
   "base_release_commit": "0640e8f41412eba3b66ce3b353735897dc322842",
   "new_patches": [
     "0017-mglru-protect-frequently-reused-page-cache.patch",
@@ -25,10 +25,10 @@
   "thermal_or_security_reductions": false,
   "phone_kernel_version": "5.15.216-ChatGPTKernel-0.1.0-rc4, identified in user reports",
   "phone_performance": "Module histories include a same-boot4h22m interval with memory/IOpressure; zRAM changed2to3GiB and CPU policy limits changed, so no controlled benefit attribution",
-  "github_actions_requested_for_rc5": false,
+  "github_actions_requested_for_rc5": true,
   "new_image_compiled": false,
   "new_exports_crcs_verified": false,
-  "next": "Identify the zRAM controller before choosing more runtime changes. The two reviewed MM patches remain candidates; no new Full LTO build has been requested.",
+  "next": "Complete the single requested protected Full LTO build, verify all artifacts and downloaded release assets; hardware performance still requires evaluation.",
   "object_compile": {
     "target": "descend",
     "jobs": 2,
@@ -40,5 +40,6 @@
     "effective_config_sha256": "c3d43db9a52f7aeda6168c70197278e27ca9b165a76d93e53875849cf39f93ba",
     "source_pins_sha256": "f2972b2d283b3ca354f04fda8d740e31de3f8a572b910c16ab662d2e50b73153",
     "evidence": "ci-object-measurement-rc5.json"
-  }
+  },
+  "zram_controller": "User confirms manual SmartPack setting to3GiB; resets after reboot"
 }

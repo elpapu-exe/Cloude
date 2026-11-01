@@ -1,6 +1,6 @@
-# ChatGPT Kernel 0.1.0-rc5 — en preparación
+# ChatGPT Kernel 0.1.0-rc5
 
-Fuentes candidatas para Redmi Note 12 4G TAPAS/topaz y Android 13. No hay ZIP rc5 publicado todavía ni una mejora de rendimiento medida en el teléfono. La entrega anterior rc4 permanece disponible con sus propios hashes.
+Candidata experimental para Redmi Note 12 4G TAPAS/topaz y Android 13. Los resultados de compilación, ABI, imagen y fuentes deben corresponder al manifest y los registros de esta ejecución. Falta medir arranque, estabilidad y rendimiento de rc5 en el teléfono. La entrega anterior rc4 conserva sus propios hashes.
 
 Cambios respecto a rc4:
 
@@ -14,4 +14,6 @@ Las pruebas de helpers reales verifican contratos de las correcciones, no FPS, b
 
 Antes de instalar una entrega verificada, guarda el boot funcional fuera del teléfono y consulta la guía de instalación/recuperación. La comparación conserva TikTok oficial, WhatsApp y los módulos del usuario.
 
-Comprobaciones locales: 93 pruebas obligatorias sin fallos ni omisiones y reaplicación exacta de 18 parches sobre 40 archivos finales, con snapshots Linux/KSU/BBG coincidentes. El enlace Full LTO, la comparación de exports/CRC del nuevo binario y la evaluación en hardware siguen pendientes.
+Comprobaciones locales: 93 pruebas obligatorias sin fallos ni omisiones y reaplicación exacta de 18 parches sobre 40 archivos finales, con snapshots Linux/KSU/BBG coincidentes. La publicación exige además Image/Full LTO, comparación de exports/CRC y auditorías finales en su propia ejecución; el manifest entregado registra esos resultados. La evaluación en hardware sigue pendiente.
+
+Los informes reales identifican rc4 con MGLRU activo y WALT seleccionado desde vendor. SmartPack configuró manualmente 3 GiB de zRAM. Esta entrega conserva la gestión de zRAM en la ROM/SmartPack y no reconstruye módulos vendor ni fuerza frecuencias. Para comparar, conserva la misma configuración y los módulos necesarios; no sumes perfiles nuevos durante la primera prueba.
