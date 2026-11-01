@@ -2,7 +2,7 @@
 
 Entrega anterior: **0.1.0-rc4, compilada y publicada mediante GitHub Actions**.
 
-Candidata en preparación: **0.1.0-rc5**. Se adaptan 0017/0018 de protección de caché MGLRU y retirada del filtro CMA. El usuario prepara una captura para confirmar versión y presión real; su percepción de empeoramiento todavía es incierta. Pasaron 93 regresiones sin omisiones, la recompilación ARM64 incremental de objetos y el replay exacto de 18 parches. No hay compilación completa ni enlace de descarga rc5. [Preparación verificable](docs/rc5-preparation.json). [Revisión](docs/community-review-rc5.md).
+Candidata en preparación: **0.1.0-rc5**. Se adaptan 0017/0018 de protección de caché MGLRU y retirada del filtro CMA. El primer informe identifica rc4, pero solo observa unos 15 segundos del primer minuto de arranque. Falta una captura de uso estable para escoger ajustes. Pasaron 93 regresiones sin omisiones, la recompilación ARM64 incremental de objetos y el replay exacto de 18 parches. No hay compilación completa ni enlace de descarga rc5. [Preparación verificable](docs/rc5-preparation.json). [Revisión](docs/community-review-rc5.md).
 
 ## Trabajo de rc4
 
@@ -30,10 +30,14 @@ rc3-rebuild1 fue una reconstrucción nueva a partir de rc1 y del resumen registr
 
 ## Pendiente
 
-Comprobar arranque, funciones básicas, root/módulos, notificaciones de WhatsApp y la [prueba de cinco minutos](docs/testing.md). Ni rc4 ni rc3-rebuild1 tienen una prueba de arranque confirmada en este teléfono. La experiencia favorable histórica corresponde a una versión anterior.
+El informe identifica rc4 arrancada. Faltan funciones básicas, estabilidad prolongada, root/módulos, notificaciones de WhatsApp y una captura de uso estable con el recolector. rc3-rebuild1 sigue sin una prueba de arranque confirmada. La experiencia favorable histórica corresponde a una versión anterior.
 
 ## Módulo de memoria
 
-Se publicó ChatGPT Fluidez Memoria0.1.0-rc1 para KernelSU/ReSukiSU, TAPAS/topaz Android13 y kernel5.15 ARM64. Tiene dos ajustes experimentales: activar el coreMGLRU cuando estaba desactivado y elevar watermark hasta64 si era menor. El usuario aún no entregó un informe que demuestre causa o mejora. Conserva ROM, módulos, térmicas y seguridad. Pasaron 23 pruebas de scripts reales con fixtures Android, incluidas restauración, cambios de terceros, reinicio/actualización, escrituras fallidas, máscara inválida y pausa persistente; no sustituyen rendimiento en hardware. Su workflow y publicación son independientes del kernel y no solicitan una compilación rc5.
+Se publicó ChatGPT Fluidez Memoria0.1.0-rc1 para KernelSU/ReSukiSU, TAPAS/topaz Android13 y kernel5.15 ARM64. Tiene dos ajustes experimentales: activar el coreMGLRU cuando estaba desactivado y elevar watermark hasta64 si era menor. El primer informe confirma el cambio y la restauración del valor de control, pero su intervalo de arranque no demuestra causa ni mejora. Conserva ROM, módulos, térmicas y seguridad. Pasaron 23 pruebas de scripts reales con fixtures Android, incluidas restauración, cambios de terceros, reinicio/actualización, escrituras fallidas, máscara inválida y pausa persistente; no sustituyen rendimiento en hardware. Su workflow y publicación son independientes del kernel y no solicitan una compilación rc5.
 
 [Entrega del módulo](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-fluidez-0.1.0-rc1-717b18174da0-41151064733), [Actions41151064733](https://github.com/elpapu-exe/Cloude/actions/runs/41151064733), commit `717b18174da04859413c8936ce2f193d10e82593`. Los jobs build/publish terminaron SUCCESS, pasaron23pruebas sin omisiones y el publicador descargó los5assets y comprobó los4archivos de SHA256SUMS dos veces (8OK). ZIP instalable:16.236bytes; SHA256 `90832f5a97d9090004fd49c6565be969b4a36ca70f1e47385c2cb9ef675d03c3`. [Manifest de evidencia](docs/fluidez-module-release.json). La mejora real en el dispositivo sigue sin medirse. La fuente rc5 y su compilación de kernel completa continúan pendientes del informe; esta entrega no ha solicitado otro build del kernel.
+
+## Primera observación del teléfono
+
+La captura se identifica como rc4, con MGLRU activo antes del módulo y WALT seleccionado en ambas políticas. Solo abarca aproximadamente 15 segundos del primer minuto de arranque; el margen pasó de 1 a 64 y volvió a 1 tras unos nueve segundos. Hay presión y tráfico de memoria, pero no una comparación estable del perfil. La capacidad lógica de zRAM es 2 GiB y su consumo físico es una magnitud distinta. La batería no basta para diagnosticar limitación térmica de CPU/SoC. No se publicó el archivo original ni identificadores de arranque. El siguiente paso es una captura de 180 segundos después de estabilizar el arranque, conservando módulos/WhatsApp y sin más cambios. Se corrigió el descarte de WALT basado únicamente en la configuración GKI; su receta vendor y el gobernador observado contradicen esa inferencia.

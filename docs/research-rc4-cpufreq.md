@@ -65,8 +65,12 @@ exports/CRC y la prueba corta de logs del teléfono antes de atribuir mejoras.
 ## Cambios examinados que no se importan
 
 - WALT e input-boost: `CONFIG_SCHED_WALT` está desactivado en la configuración
-  efectiva; `kernel/sched/Makefile` excluye todo `walt/`. Sus correcciones no
-  actuarían en la candidata actual.
+  del Image GKI. Eso excluye WALT de ese Image, pero **no demuestra que esté
+  inactivo en el teléfono**: el vendor puede cargarlo como módulo. La receta
+  `arch/arm64/configs/vendor/topaz_GKI.config` establece `CONFIG_SCHED_WALT=m`
+  y `modules.list.msm.topaz` incluye `sched-walt.ko`. El gobernador `walt`
+  apareció seleccionado en una captura posterior de rc4. Recompilar solamente
+  el Image no actualiza ese módulo vendor conservado por el instalador.
 - [3bff8f8e95fd](https://github.com/torvalds/linux/commit/3bff8f8e95fdc6ad19c8a1a8f87029094747e4bf),
   overflow de conversión de `rate_limit_us`: afecta a aritmética de 32 bits;
   esta compilación ARM64 utiliza `NSEC_PER_USEC` de tipo long de 64 bits.
@@ -80,3 +84,7 @@ exports/CRC y la prueba corta de logs del teléfono antes de atribuir mejoras.
 
 La investigación se limita a fuentes primarias y a los caminos presentes en
 esta configuración; no constituye una revisión de todas las ramas comunitarias.
+
+## Corrección a partir de la observación en ejecución
+
+La captura identifica rc4 y muestra `walt` en ambas políticas. La conclusión anterior de inactividad basada solo en la configuración GKI era demasiado amplia. `walt.c` registra hooks y llama a `waltgov_register()`; `cpufreq_walt.c` registra el gobernador mediante `cpufreq_register_governor`, que exporta GKI. El módulo binario exacto todavía no se ha identificado. Mientras esté seleccionado WALT, los cambios específicos de schedutil/Horizon no controlan esas políticas; las correcciones comunes de memoria/Binder/F2FS siguen siendo independientes. No se debe habilitar otro WALT en el Image ni modificar módulos vendor sin revisar su receta, identidad y ABI.
