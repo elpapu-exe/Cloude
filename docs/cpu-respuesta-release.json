@@ -1,0 +1,78 @@
+{
+  "project": "ChatGPT CPU Respuesta",
+  "version": "0.1.0-rc1",
+  "source_commit": "7b0a51d49a6b78fb1d653b9539b3afc6f5b26bfc",
+  "run_id": 41291184310,
+  "run_url": "https://github.com/elpapu-exe/Cloude/actions/runs/41291184310",
+  "jobs": [
+    {
+      "name": "build",
+      "id": 124802613440,
+      "conclusion": "success"
+    },
+    {
+      "name": "publish",
+      "id": 124802690922,
+      "conclusion": "success"
+    }
+  ],
+  "release": {
+    "url": "https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310",
+    "tag": "chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310",
+    "draft": false,
+    "prerelease": true,
+    "assets": [
+      {
+        "name": "build-manifest.json",
+        "bytes": 3162,
+        "sha256": "2fc224d13798b1ce2360e4af598ab95f37e27379fbf060acfc6f80d8b90ab121",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310/build-manifest.json"
+      },
+      {
+        "name": "ChatGPT-CPU-Respuesta-0.1.0-rc1-KSU.zip",
+        "bytes": 24960,
+        "sha256": "0a0070959d330c901860a876305640c9c099a53e6fda2d9135fb007fe4e07a90",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310/ChatGPT-CPU-Respuesta-0.1.0-rc1-KSU.zip"
+      },
+      {
+        "name": "ChatGPT-CPU-Respuesta-0.1.0-rc1-sources.zip",
+        "bytes": 52193,
+        "sha256": "27847608a2062f5d41ca8b0ce1981ab71a2d33b0f072c220e68c6e3703c783dc",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310/ChatGPT-CPU-Respuesta-0.1.0-rc1-sources.zip"
+      },
+      {
+        "name": "SHA256SUMS",
+        "bytes": 378,
+        "sha256": "96d42639722929998f014805fabce02abea0435975184a3984daef8fee482ff4",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310/SHA256SUMS"
+      },
+      {
+        "name": "tests.log",
+        "bytes": 5809,
+        "sha256": "a6ae6672e468c86d29912d7fb7e939280704ddecdf08a237c9e8da29f4825199",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310/tests.log"
+      }
+    ]
+  },
+  "validation": {
+    "tests_run": 33,
+    "suites": {
+      "test_cpu_respuesta_module.py": 26,
+      "test_diagnostic.py": 4,
+      "test_diagnostic_runtime_details.py": 3
+    },
+    "skips": 0,
+    "zip_crc_and_contents": true,
+    "sources_archive_complete_for_three_suites": true,
+    "downloaded_assets_and_checksums_compared": true,
+    "checksum_files": 4,
+    "checksum_ok_events": 8,
+    "hardware_tested": false,
+    "performance_measured": false
+  },
+  "parameters": {
+    "walt.up_rate_limit_us": "if20001..100000us, ceil(0.75 * original), only on unambiguous active WALT controls",
+    "gpu": "read-only diagnostic; no tuning",
+    "zram": "unchanged; SmartPack remains controller"
+  }
+}
