@@ -1,5 +1,7 @@
 # Investigación de reposo con rc5
 
+**Primer informe analizado:** hubo 12 min 37 s de suspensión en 21 min 43 s y la batería pasó de 40 a 37 °C. Aparecen fallos de suspensión de Wi-Fi, temporizadores pendientes y bloqueos parciales Android. [Resultados y límites](suspend-result-20261103.md). La captura inicial siguiente conserva su contexto histórico.
+
 La captura recibida identifica `5.15.216-ChatGPTKernel-0.1.0-rc5`, 13 h 26 min 57 s de uptime y 8 min 57 s de deep sleep indicado por la aplicación, aproximadamente 1,1% acumulado. La batería muestra 44 °C y descarga instantánea de 307 mA, con la pantalla encendida para la captura. La carga 6,90 incluye tareas ejecutables y esperas no interrumpibles; no es un porcentaje CPU. Tampoco conocemos cuánto tiempo estuvo apagada la pantalla. La zRAM mostrada es de 2047 MiB lógicos.
 
 Esto confirma arranque de una versión identificada como rc5 y justifica investigar reposo/consumo. No demuestra la causa, la identidad binaria exacta instalada ni una regresión causal frente a otro kernel. Los resultados de compilación históricos conservan su alcance original.
@@ -31,7 +33,7 @@ Doze y suspensión del kernel son estados distintos. El diagnóstico no fuerza e
 
 Los parches 0017 y 0018 no añaden temporizadores ni wakelocks. La protección de caché puede modificar el equilibrio de reclaim/swap bajo presión; no se descarta un efecto indirecto sin medir. El módulo CPU aplica una vez y termina; solo acorta la espera WALT si registró un cambio válido. El módulo de memoria puede mantener watermark=64. No hay evidencia para responsabilizar a LSPosed u otro módulo concreto.
 
-Se validaron casos de prueba con Android simulado: clocks y reinicio, interfaces ausentes, filtros de datos, escritura/lectura fallidas, almacenamiento bloqueado, captura repetida, symlinks y concurrencia. Las pruebas del host no sustituyen el primer informe real.
+Se validaron casos de prueba con Android simulado: clocks y reinicio, interfaces ausentes, filtros de datos, escritura/lectura fallidas, almacenamiento bloqueado, captura repetida, symlinks y concurrencia. El primer informe real confirma la coherencia entre relojes y SuspendInfo; no certifica todos los dispositivos ni identifica por sí solo una causa raíz.
 
 Referencias primarias:
 

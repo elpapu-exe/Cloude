@@ -1,6 +1,6 @@
 # ChatGPT Kernel — rc5 publicada
 
-**Reposo en investigación:** una captura identifica rc5 con batería a 44 °C y muy poca suspensión acumulada. Falta medir un intervalo con pantalla apagada; no se ha identificado la causa. [Medidas reversibles y diagnóstico de dos pulsaciones](docs/suspend-investigation.md).
+**Reposo en investigación:** el primer informe registra 12 min 37 s de suspensión en 21 min 43 s, batería de 40 a 37 °C y eventos de Wi-Fi/temporizadores/bloqueos Android. Falta aislar sus responsables. [Resultados](docs/suspend-result-20261103.md) · [Diagnóstico de dos pulsaciones](docs/suspend-investigation.md).
 
 Kernel experimental para **Redmi Note 12 4G TAPAS/topaz y Android 13**. Conserva la ROM, los módulos necesarios, KernelSU/ReSukiSU y las protecciones térmicas. La LineageOS 20 del usuario es la referencia; otras ROM A13 requieren comprobación real.
 
