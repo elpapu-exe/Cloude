@@ -1,0 +1,19 @@
+ChatGPT Reposo Diagnóstico 0.1.0-rc1
+
+Instala el ZIP KSU desde KernelSU/ReSukiSU. Si no aparece Acción,
+reinicia una vez y vuelve al módulo. No hay servicio ni tarea de arranque.
+
+1. Desconecta el cargador y pulsa Acción una vez. Espera a que termine:
+   esa pulsación inicia la captura.
+2. Apaga la pantalla y deja el teléfono quieto unos diez minutos.
+   Conserva WhatsApp y los módulos que necesitas.
+3. Enciende la pantalla y pulsa Acción otra vez para finalizar.
+   El recolector indicará un TXT guardado en /sdcard/Download.
+
+No queda ningún proceso esperando entre pulsaciones. No usa daemon,
+temporizador ni wakelock, y no cambia ajustes de memoria, CPU/GPU,
+suspensión, seguridad o protecciones térmicas. No sube datos.
+
+Solo escribe el estado privado de la captura y el informe local.
+Revisa el TXT antes de compartirlo: puede contener datos de uso.
+Las fuentes y los hashes acompañan la publicación del módulo.

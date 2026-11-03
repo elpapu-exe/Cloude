@@ -1,12 +1,14 @@
 # ChatGPT Kernel — rc5 publicada
 
+**Reposo en investigación:** una captura identifica rc5 con batería a 44 °C y muy poca suspensión acumulada. Falta medir un intervalo con pantalla apagada; no se ha identificado la causa. [Medidas reversibles y diagnóstico de dos pulsaciones](docs/suspend-investigation.md).
+
 Kernel experimental para **Redmi Note 12 4G TAPAS/topaz y Android 13**. Conserva la ROM, los módulos necesarios, KernelSU/ReSukiSU y las protecciones térmicas. La LineageOS 20 del usuario es la referencia; otras ROM A13 requieren comprobación real.
 
 **[Descargar rc5 — 25,2 MB](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/ChatGPTKernel-0.1.0-rc5-topaz-tapas-A13-KSU.zip)** · [SHA256SUMS](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824/SHA256SUMS) · [Entrega, fuentes y logs](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824)
 
 SHA256 del ZIP: `0d419065b704c276e12055a0ddb0d1a4126893d898b2fa0032f07b161dfaa4cc`.
 
-[Actions 41290063824](https://github.com/elpapu-exe/Cloude/actions/runs/41290063824) completó la compilación ARM64 con Full LTO/O2, CFI, Shadow Call Stack, BTF y MODVERSIONS. Pasaron **93 pruebas sin omisiones**, los **15.543 exports/CRC** coincidieron con R10 y se auditaron las **77.010 entradas del archivo final de fuentes**. Los 35 assets se descargaron y verificaron antes de publicar. **rc5 aún no se probó en el teléfono: no hay mejora de fluidez, ANR o temperatura medida.** [Evidencia](docs/ci-build-result-rc5.json).
+[Actions 41290063824](https://github.com/elpapu-exe/Cloude/actions/runs/41290063824) completó la compilación ARM64 con Full LTO/O2, CFI, Shadow Call Stack, BTF y MODVERSIONS. Pasaron **93 pruebas sin omisiones**, los **15.543 exports/CRC** coincidieron con R10 y se auditaron las **77.010 entradas del archivo final de fuentes**. Los 35 assets se descargaron y verificaron antes de publicar. **Una captura del teléfono identifica rc5 arrancada; la mejora de fluidez o ANR sigue sin medirse y se investiga reposo/temperatura.** [Evidencia](docs/ci-build-result-rc5.json).
 
 [Instalación, respaldo y recuperación](docs/installation.md) · [Prueba breve](docs/testing.md) · [Compilación en Actions](docs/build.md) · [Revisión de los cambios](docs/community-review-rc5.md)
 

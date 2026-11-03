@@ -1,0 +1,73 @@
+name: Build and deliver suspend diagnostic
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chatgpt-kernel-download]
+    paths:
+      - modules/chatgpt-reposo-diagnostico/**
+      - scripts/chatgpt-suspend-logs.sh
+      - scripts/package-reposo-diagnostic.py
+      - scripts/publish-reposo-diagnostic.sh
+      - tests/test_suspend_diagnostic.py
+      - .github/workflows/reposo-diagnostic.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reposo-diagnostic-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            /modules/chatgpt-reposo-diagnostico/
+            /scripts/chatgpt-suspend-logs.sh
+            /scripts/package-reposo-diagnostic.py
+            /scripts/publish-reposo-diagnostic.sh
+            /tests/test_suspend_diagnostic.py
+            /.github/workflows/reposo-diagnostic.yml
+            /.gitignore
+          sparse-checkout-cone-mode: false
+      - name: Test canonical collector and audit module ZIPs and checksums
+        run: python3 scripts/package-reposo-diagnostic.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reposo-diagnostic-${{ github.sha }}
+          path: dist/reposo-diagnostic/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            /scripts/publish-reposo-diagnostic.sh
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: reposo-diagnostic-${{ github.sha }}
+          path: dist/reposo-diagnostic/
+      - name: Upload draft, download and verify every file, then publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/publish-reposo-diagnostic.sh

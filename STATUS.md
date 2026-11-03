@@ -1,5 +1,7 @@
 # Estado y continuación
 
+**Observación posterior: reposo/temperatura.** Una captura identifica rc5 arrancada, batería a 44 °C y 8 min 57 s de suspensión indicada entre 13 h 26 min 57 s de uptime. No conocemos el tiempo de pantalla apagada ni la causa. Se prepara un diagnóstico independiente de dos pulsaciones sin proceso entre ellas; no se solicitan otro kernel ni más tweaks. [Investigación y pasos](docs/suspend-investigation.md). La validación de compilación siguiente conserva su alcance histórico.
+
 **0.1.0-rc5 compilada, auditada y publicada** por [Actions 41290063824](https://github.com/elpapu-exe/Cloude/actions/runs/41290063824), desde `9c81476ba0a6ffc452d5fdb5463cf5cebf128ad9`. [Entrega](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824) · [Evidencia completa](docs/ci-build-result-rc5.json).
 
 ZIP: 25,216,619 bytes; SHA256 `0d419065b704c276e12055a0ddb0d1a4126893d898b2fa0032f07b161dfaa4cc`. Fuentes tar.zst: 195,383,642 bytes; SHA256 `3559b47d1fea259ce63cd408ff3b1981a79d2d4957521ad485f8d68eb864403a`. Se conservan como assets, fuera del historial Git normal.
@@ -25,7 +27,7 @@ ChatGPT CPU Respuesta 0.1.0-rc1: [entrega](https://github.com/elpapu-exe/Cloude/
 
 Los informes identifican rc4, MGLRU activo y WALT seleccionado desde vendor. El primero dura unos 15 segundos al arrancar. El segundo contiene unas 4 h 22 min del mismo arranque con presión de memoria/IO, cambios de zRAM de 2 a 3 GiB y límites CPU diferentes. No permite atribuir una mejora o regresión a un parámetro concreto. El usuario identifica SmartPack como gestor de zRAM; [persistencia](docs/smartpack.md). Los informes originales y sus identificadores no se publicaron.
 
-**Pendiente en el teléfono:** arranque y funciones básicas de rc5, root/módulos, WhatsApp, estabilidad, fluidez y temperatura. Una captura de tres minutos con Acción del módulo CPU mantiene el perfil actual, WhatsApp y los módulos necesarios. El módulo es opcional; para comparar kernels mantén los mismos ajustes. [Procedimiento](docs/testing.md).
+**Pendiente en el teléfono:** comprobación de funciones básicas de rc5, root/módulos, WhatsApp, estabilidad, fluidez y temperatura. La captura posterior identifica rc5 arrancada. Una captura de tres minutos con Acción del módulo CPU mantiene el perfil actual, WhatsApp y los módulos necesarios. El módulo es opcional; para comparar kernels mantén los mismos ajustes. [Procedimiento](docs/testing.md).
 
 ## Historia conservada
 

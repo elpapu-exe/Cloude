@@ -1,0 +1,6 @@
+id=chatgpt_reposo_diagnostico
+name=ChatGPT Reposo Diagnóstico
+version=v0.1.0-rc1
+versionCode=1
+author=ChatGPT Kernel project
+description=Acción inicia o finaliza una captura de reposo y guarda un TXT en Descargas. Sin servicio, wakelock ni cambios de ajustes.
