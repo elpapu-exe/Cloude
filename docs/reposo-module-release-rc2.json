@@ -1,0 +1,109 @@
+{
+  "project": "ChatGPT Reposo Diagnóstico",
+  "version": "0.1.0-rc2",
+  "source_commit": "9d6ab6d12c08dcf1c74e170e394a58af4c0317d7",
+  "run_id": 41702509577,
+  "run_url": "https://github.com/elpapu-exe/Cloude/actions/runs/41702509577",
+  "jobs": [
+    {
+      "name": "build",
+      "id": 126149167755,
+      "conclusion": "success"
+    },
+    {
+      "name": "publish",
+      "id": 126149609582,
+      "conclusion": "success"
+    }
+  ],
+  "release": {
+    "url": "https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-reposo-diagnostico-0.1.0-rc2-9d6ab6d12c08-41702509577",
+    "tag": "chatgpt-reposo-diagnostico-0.1.0-rc2-9d6ab6d12c08-41702509577",
+    "draft": false,
+    "prerelease": true,
+    "assets": [
+      {
+        "name": "build-manifest.json",
+        "bytes": 2806,
+        "sha256": "78765aa7369510a4f11dc7b080edd7173ad83ab5e4bea90357cc39c5a4245078",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc2-9d6ab6d12c08-41702509577/build-manifest.json"
+      },
+      {
+        "name": "ChatGPT-Reposo-Diagnostico-0.1.0-rc2-KSU.zip",
+        "bytes": 16399,
+        "sha256": "cc18cb085e979c6a4b3613d5eb006b3a20db54d56a6ed9d51ddfad3716fc2e35",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc2-9d6ab6d12c08-41702509577/ChatGPT-Reposo-Diagnostico-0.1.0-rc2-KSU.zip"
+      },
+      {
+        "name": "ChatGPT-Reposo-Diagnostico-0.1.0-rc2-sources.zip",
+        "bytes": 27751,
+        "sha256": "b85d934b309a2fe88a16405740e0f39896118294e047131a172892d2f22a673f",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc2-9d6ab6d12c08-41702509577/ChatGPT-Reposo-Diagnostico-0.1.0-rc2-sources.zip"
+      },
+      {
+        "name": "SHA256SUMS",
+        "bytes": 388,
+        "sha256": "3b727e1e8445493226b43ca1612b7ff963df95f9bbd3fa06c2b67ff23c173593",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc2-9d6ab6d12c08-41702509577/SHA256SUMS"
+      },
+      {
+        "name": "tests.log",
+        "bytes": 3647,
+        "sha256": "11d1954a7c32a7be9bfc4cff32a2da769432073ca2e3a199d8bb1a2748739739",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc2-9d6ab6d12c08-41702509577/tests.log"
+      }
+    ]
+  },
+  "validation": {
+    "tests_run": 21,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "canonical_collector_bytes_match": true,
+    "zip_audit": {
+      "crc": true,
+      "closed_member_list": true,
+      "file_bytes": true,
+      "modes": true
+    },
+    "source_zip_runs_suite_independently": true,
+    "downloaded_assets_and_checksums_compared": true,
+    "checksum_files": 4,
+    "checksum_ok_events": 8,
+    "hardware_tested": false,
+    "diagnostic_only": true
+  },
+  "runtime": {
+    "invocation": "bin/collect.sh auto",
+    "daemon": false,
+    "boot_scripts": false,
+    "timer": false,
+    "wakelock": false,
+    "device_tunable_writes": false,
+    "network_upload": false,
+    "private_state_directory": "/data/adb/chatgpt-reposo-diagnostico",
+    "report_directory": "/sdcard/Download"
+  },
+  "collector": {
+    "canonical_source": "scripts/chatgpt-suspend-logs.sh",
+    "installed_path": "bin/collect.sh",
+    "sha256": "0e203754383b1bf811e9d7b72fc2f792f286b82a7ae189219f60c8731975d859",
+    "identical_bytes_verified": true
+  },
+  "new_readers": [
+    "Userspace CPU time before output cap; selected kernel processes",
+    "Network setting flags and interface byte counters; no IP or SSID",
+    "Relevant module names, sizes, reference counts; no addresses",
+    "Selected human batterystats UID wake time and package mapping",
+    "Summed wakeup alarm counts per UID/package; no alarm tag export",
+    "Separate bounded rings for freezer outcomes and wake-abort messages"
+  ],
+  "limits": [
+    "No tuning or kernel build",
+    "Network flags alone do not prove active default transport",
+    "Shared UID and overlapping wake times require careful attribution",
+    "Not every native timerfd can be assigned through batterystats",
+    "Only --charged human reader; no --checkin consumption or -c history"
+  ]
+}
+

@@ -1,6 +1,6 @@
 # Estado y continuación
 
-**Segundo informe analizado:** 433,48 s de suspensión en 985,88 s; batería 38 → 38 °C. No aumentaron ICNSS/WLAN, pero sí fallos de freeze y abortos etiquetados con la última fuente QRTR. Watermark cambió a 64 y memoria ya no figura pausado, impidiendo atribuir todo a la red. Se prepara diagnóstico rc2 de atribución, sin ajustes ni nuevo kernel. [Comparación](docs/suspend-comparison-20261103.md).
+**Segundo informe analizado:** 433,48 s de suspensión en 985,88 s; batería 38 → 38 °C. No aumentaron ICNSS/WLAN, pero sí fallos de freeze y abortos etiquetados con la última fuente QRTR. Watermark cambió a 64 y memoria ya no figura pausado, impidiendo atribuir todo a la red. Se publicó diagnóstico rc2 de atribución con 21 pruebas y descarga verificada, sin ajustes ni nuevo kernel. [Comparación](docs/suspend-comparison-20261103.md).
 
 **Primer informe de reposo analizado:** suspensión real de 757,35 s en 1303,09 s, consistente con SuspendInfo; batería 40 → 37 °C. Registra nueve fallos ICNSS, despertares Wi-Fi, temporizadores pendientes y unos ocho minutos agregados de bloqueo parcial Android sin propietario histórico identificado. CPU Respuesta está desactivado, memoria pausado. [Resultado y siguiente comparación](docs/suspend-result-20261103.md). No se modificó ni solicitó otro kernel para este análisis.
 
@@ -41,6 +41,10 @@ Este checkout comenzó desde el remoto 4fc1ad554ac54ffce0a6792ca6d85f67435e8a86,
 
 Los documentos dentro de los assets son el snapshot del commit compilado. La actualización posterior de documentación conserva los binarios auditados y no solicita otra compilación.
 
-## Diagnóstico de reposo publicado
+## Diagnóstico inicial rc1 de reposo publicado
 
 [Entrega](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-reposo-diagnostico-0.1.0-rc1-4f9bb7003ac2-41673413289), commit `4f9bb7003ac29435fd314b74d41b3530a1e90518`, [Actions41673413289](https://github.com/elpapu-exe/Cloude/actions/runs/41673413289). Build y publish terminaron SUCCESS; 16 pruebas sin omisiones, fuente ZIP comprobada también de forma independiente, cinco assets descargados y cuatro hashes comprobados dos veces. ZIP 14613 bytes, SHA256 `a1bad7a9f41afc230dd130fe37c2521925dcc7cdc2025f4ae81eecde1472007f`. [Resultado](docs/reposo-module-release.json). No tiene servicio ni tareas de arranque, temporizadores o wakelocks. Su primer informe real ya fue analizado; los relojes coinciden con SuspendInfo y la causa de los despertares sigue en investigación.
+
+## Diagnóstico rc2 publicado
+
+[Entrega](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-reposo-diagnostico-0.1.0-rc2-9d6ab6d12c08-41702509577), commit `9d6ab6d12c08dcf1c74e170e394a58af4c0317d7`, [Actions41702509577](https://github.com/elpapu-exe/Cloude/actions/runs/41702509577). Build/publish SUCCESS, 21 pruebas sin omisiones; source ZIP ejecutado de forma independiente; cinco assets descargados y cuatro hashes comprobados dos veces. ZIP 16399 bytes, SHA256 `cc18cb085e979c6a4b3613d5eb006b3a20db54d56a6ed9d51ddfad3716fc2e35`. [Resultado](docs/reposo-module-release-rc2.json). Incluye atribución UID, totales de alarmas sin tags y mensajes del freezer separados; mantiene cero procesos entre capturas y no cambia parámetros del teléfono. No hubo nueva compilación del kernel.
