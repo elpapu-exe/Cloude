@@ -1,5 +1,7 @@
 # Estado y continuación
 
+**Segundo informe analizado:** 433,48 s de suspensión en 985,88 s; batería 38 → 38 °C. No aumentaron ICNSS/WLAN, pero sí fallos de freeze y abortos etiquetados con la última fuente QRTR. Watermark cambió a 64 y memoria ya no figura pausado, impidiendo atribuir todo a la red. Se prepara diagnóstico rc2 de atribución, sin ajustes ni nuevo kernel. [Comparación](docs/suspend-comparison-20261103.md).
+
 **Primer informe de reposo analizado:** suspensión real de 757,35 s en 1303,09 s, consistente con SuspendInfo; batería 40 → 37 °C. Registra nueve fallos ICNSS, despertares Wi-Fi, temporizadores pendientes y unos ocho minutos agregados de bloqueo parcial Android sin propietario histórico identificado. CPU Respuesta está desactivado, memoria pausado. [Resultado y siguiente comparación](docs/suspend-result-20261103.md). No se modificó ni solicitó otro kernel para este análisis.
 
 **Observación posterior: reposo/temperatura.** Una captura identifica rc5 arrancada, batería a 44 °C y 8 min 57 s de suspensión indicada entre 13 h 26 min 57 s de uptime. No conocemos el tiempo de pantalla apagada ni la causa. Se publicó un diagnóstico independiente de dos pulsaciones sin proceso entre ellas, con 16 pruebas y descarga verificada; no se solicitó otro kernel. [Investigación y pasos](docs/suspend-investigation.md). La validación de compilación siguiente conserva su alcance histórico.

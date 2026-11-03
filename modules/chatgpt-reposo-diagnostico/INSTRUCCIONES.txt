@@ -1,7 +1,11 @@
-ChatGPT Reposo Diagnóstico 0.1.0-rc1
+ChatGPT Reposo Diagnóstico 0.1.0-rc2
 
 Instala el ZIP KSU desde KernelSU/ReSukiSU. Si no aparece Acción,
 reinicia una vez y vuelve al módulo. No hay servicio ni tarea de arranque.
+
+rc2 recoge también actividad de procesos y, cuando se pueden leer,
+alarmas, wakelocks y UID, además del estado de red. Una lectura no
+disponible queda indicada; un contador aislado no demuestra la causa.
 
 1. Desconecta el cargador y pulsa Acción una vez. Espera a que termine:
    esa pulsación inicia la captura.
@@ -15,5 +19,6 @@ temporizador ni wakelock, y no cambia ajustes de memoria, CPU/GPU,
 suspensión, seguridad o protecciones térmicas. No sube datos.
 
 Solo escribe el estado privado de la captura y el informe local.
-Revisa el TXT antes de compartirlo: puede contener datos de uso.
+Revisa el TXT antes de compartirlo: puede contener procesos, paquetes,
+UID, alarmas, wakelocks, estado de red y datos de uso del teléfono.
 Las fuentes y los hashes acompañan la publicación del módulo.

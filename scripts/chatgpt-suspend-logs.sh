@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# ChatGPT Reposo diagnostic v1: two snapshots, no process between them.
+# ChatGPT Reposo diagnostic v2: two snapshots, no process between them.
 # Reads only system interfaces. Writes only its private state and a Download TXT.
 PATH=/system/bin:/system/xbin:/vendor/bin:/product/bin
 export PATH
@@ -39,6 +39,101 @@ own_profiles() {
     if [ -f "/data/adb/modules/$id/disable" ]; then printf '%s: Manager disable marker present\n' "$id"; fi
   done
 }
+process_activity() {
+  heading 'Userspace and selected kernel CPU times (names only; no arguments; percentages may be lifetime averages)'
+  # Kernel threads precede most apps by PID. Do not let a prefix cap hide the apps.
+  limited ps -A -o PID,STAT,PCPU,TIME,NAME | awk '
+    NR==1 && $1=="PID" {print; next}
+    $1 !~ /^[0-9]+$/ {next}
+    $5 ~ /^\[/ {
+      if ($5 ~ /^\[(kswapd|kcompactd|qrtr|cnss)/ && kernels++<12) print
+      next
+    }
+    users++ < 300 {print}
+    END {if (!users) print "NA: userspace process rows unavailable"}
+  '
+}
+network_activity() {
+  heading 'Network configuration flags (preferences, not proof of the active default transport)'
+  for key in wifi_on mobile_data airplane_mode_on; do
+    printf '%s: ' "$key"
+    flag=$(limited settings get global "$key")
+    case "$flag" in 0|1|2|3) printf '%s\n' "$flag";; *) printf 'NA\n';; esac
+  done
+  heading 'Wireless/mobile interface byte counters (no IP, SSID or hardware addresses)'
+  limited cat /proc/net/dev | awk '
+    {name=$1; sub(/:$/,"",name)}
+    name ~ /^(wlan[0-9]+|rmnet[a-zA-Z0-9_]*|ccmni[0-9]+|pdp[0-9]+)$/ && $2 ~ /^[0-9]+$/ && $10 ~ /^[0-9]+$/ {
+      print name,"rx_bytes",$2,"tx_bytes",$10; rows++
+    }
+    END {if (!rows) print "NA: matching interface counters unavailable"}
+  '
+  heading 'Relevant loaded module names, sizes and references (not proof of exact module sources)'
+  limited cat /proc/modules | awk '
+    $1 ~ /^(qrtr|icnss|cnss|qmi|glink|wlan|walt|msm_kgsl)[A-Za-z0-9_]*$/ && $2 ~ /^[0-9]+$/ && $3 ~ /^-?[0-9]+$/ {print $1,$2,$3; rows++}
+    END {if (!rows) print "NA: matching module rows unavailable"}
+  '
+}
+battery_accounting() {
+  heading 'Battery accounting and UID totals (same accounting period required; no alarm tags or history)'
+  # Use the human --charged reader. --checkin may consume a completed checkin
+  # file on Android 13; -c includes history. Neither is used here.
+  limited dumpsys batterystats --charged | awk '
+    function valid_duration(s, test) {
+      test=s
+      gsub(/actual background partial|actual partial|blamed partial|full|window|draw|realtime/,"",test)
+      gsub(/[0-9dhms,. ]/,"",test)
+      return test=="" && s ~ /[0-9]/
+    }
+    NR>25000 {print "NA: battery accounting reader truncated"; exit}
+    /^[[:space:]]*(Start clock time:|System starts:|Time on battery:|Time on battery screen off:|Total run time:|Screen on:|Screen off:|Interactive:|Device light doze:|Device full doze:)/ {print; next}
+    /^  [^[:space:]].*:$/ {
+      uid=""; pkg=""
+      if ($0 ~ /^  ([0-9]+|u[0-9]+[asi][0-9]+):$/) {
+        uid=$1; sub(/:$/,"",uid); uidrows++
+      }
+      next
+    }
+    uid!="" && /^    TOTAL wake: / {
+      text=$0; sub(/^    TOTAL wake: /,"",text)
+      if (length(text)<350 && valid_duration(text) && wakes++<300) print "uid_wakelock",uid,text
+      next
+    }
+    /^    Apk / {
+      pkg=""
+      if (uid!="" && $0 ~ /^    Apk [A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+:$/) {
+        pkg=$2; sub(/:$/,"",pkg)
+        if (packages++<400) print "uid_package",uid,pkg
+      }
+      next
+    }
+    uid!="" && pkg!="" && /^      Wakeup alarm / && $NF=="times" && $(NF-1) ~ /^[0-9]+$/ {
+      key=uid SUBSEP pkg
+      if (!(key in alarms) && alarmkeys++>=400) next
+      alarms[key]+=$(NF-1); next
+    }
+    END {
+      for (key in alarms) {split(key,p,SUBSEP); printf "uid_wakeup_alarm_count %s %s %.0f\n",p[1],p[2],alarms[key]}
+      if (!uidrows) print "NA: UID accounting format unavailable; no zero usage inferred"
+      print "Selected cumulative UID rows only; overlapping UID wakelocks must not be added as elapsed time."
+    }
+  '
+}
+kernel_suspend_details() {
+  heading 'Freezer outcomes and wake-abort details (separate bounded rings; since boot, may predate interval)'
+  limited dmesg | awk '
+    /Freezing of tasks (aborted|failed)|tasks refusing to freeze/ {outcomes[nout%60]=$0; nout++}
+    /Last active Wakeup Source|Pending Wakeup Sources|Callback failed on/ {events[nevent%80]=$0; nevent++}
+    END {
+      print "Freezer outcome summaries (last 60):"
+      for(i=(nout>60?nout-60:0);i<nout;i++) print outcomes[i%60]
+      if(!nout) print "NA: no freezer outcome summaries available in retained messages"
+      print "Wake-abort detail messages (last 80):"
+      for(i=(nevent>80?nevent-80:0);i<nevent;i++) print events[i%80]
+      if(!nevent) print "NA: no wake-abort details available in retained messages"
+    }
+  '
+}
 clock_sample() {
   # uptime includes suspend. timer_list's header uses ktime_get() (monotonic).
   # Only the first eight lines are read; timer addresses/owners are not exported.
@@ -69,8 +164,8 @@ capture() {
   value /sys/kernel/mm/lru_gen/enabled
   value /sys/block/zram0/disksize
   value /sys/block/zram0/mm_stat
-  heading 'Process names and CPU time only; no arguments or task stacks'
-  limited ps -A -o PID,STAT,PCPU,TIME,NAME | sed -n '1,400p;400q'
+  process_activity
+  network_activity
   heading 'CPU and GPU controls (read only)'
   for policy in /sys/devices/system/cpu/cpufreq/policy*; do
     [ -d "$policy" ] || continue
@@ -111,8 +206,8 @@ capture() {
   if [ -n "$projection_selected" ]; then printf '%s\n' "$projection_selected"; else printf 'NA: service unavailable or unrecognized format; no absence inferred.\n'; fi
   heading 'Wireless display flags only (do not include display names or network addresses)'
   limited dumpsys display | grep -E '^[[:space:]]*m(WifiDisplayOn|WifiDisplayEnabled|WifiDisplayConnected|RemoteDisplayConnected)=(true|false)$' | sed -n '1,12p;12q'
-  heading 'Battery accounting totals (may reset on charge/reboot; compare matching accounting periods only)'
-  limited dumpsys batterystats --charged | grep -E '^[[:space:]]*(Start clock time:|System starts:|Time on battery:|Time on battery screen off:|Total run time:|Screen on:|Screen off:|Interactive:|Device light doze:|Device full doze:)' | sed -n '1,35p;35q'
+  battery_accounting
+  kernel_suspend_details
   heading 'Selected suspend/freeze/thermal kernel messages since boot (may predate interval)'
   limited dmesg | grep -iE 'PM: suspend|suspend entry|suspend exit|suspend.*fail|suspend.*abort|active wakeup|wakeup.*reason|freezing.*fail|tasks refusing|thermal.*(critical|shutdown)|watchdog.*(lockup|bark)' | tail -n 100
   own_profiles
@@ -184,7 +279,7 @@ for file in START.boot START.uptime START.mono; do [ -f "$STATE/$file" ] || fail
 OUTPUT="$DOWNLOADS/ChatGPT-Reposo-$(date -u '+%Y%m%d-%H%M%S')-$$.txt"
 (set -C; : > "$OUTPUT") 2>/dev/null || fail 'Output already exists or cannot be created. Baseline preserved.'
 {
-  heading 'ChatGPT Reposo diagnostic v1' &&
+  heading 'ChatGPT Reposo diagnostic v2' &&
   printf 'Two snapshots; no collector process, alarms or wake locks between them. No settings changed.\n' &&
   cat "$STATE/pending.txt" &&
   capture END &&

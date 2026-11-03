@@ -2,6 +2,8 @@
 
 **Primer informe analizado:** hubo 12 min 37 s de suspensión en 21 min 43 s y la batería pasó de 40 a 37 °C. Aparecen fallos de suspensión de Wi-Fi, temporizadores pendientes y bloqueos parciales Android. [Resultados y límites](suspend-result-20261103.md). La captura inicial siguiente conserva su contexto histórico.
 
+**Segundo informe:** 7 min 13 s de suspensión en 16 min 26 s (44%), batería 38 → 38 °C. No aumentan los fallos ICNSS/WLAN, pero sí los abortos y fallos de freeze; además watermark cambió de 1 a 64. [Comparación y límites](suspend-comparison-20261103.md). Se prepara rc2 del diagnóstico con atribución por UID y mejor conservación de mensajes, sin cambios de kernel ni ajustes del teléfono.
+
 La captura recibida identifica `5.15.216-ChatGPTKernel-0.1.0-rc5`, 13 h 26 min 57 s de uptime y 8 min 57 s de deep sleep indicado por la aplicación, aproximadamente 1,1% acumulado. La batería muestra 44 °C y descarga instantánea de 307 mA, con la pantalla encendida para la captura. La carga 6,90 incluye tareas ejecutables y esperas no interrumpibles; no es un porcentaje CPU. Tampoco conocemos cuánto tiempo estuvo apagada la pantalla. La zRAM mostrada es de 2047 MiB lógicos.
 
 Esto confirma arranque de una versión identificada como rc5 y justifica investigar reposo/consumo. No demuestra la causa, la identidad binaria exacta instalada ni una regresión causal frente a otro kernel. Los resultados de compilación históricos conservan su alcance original.

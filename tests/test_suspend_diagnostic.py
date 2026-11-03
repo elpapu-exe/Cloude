@@ -18,6 +18,8 @@ class Phone:
             'proc/timer_list': 'Timer List Version: v0.9\nnow at 100000000000 nsecs\nPRIVATE_TIMER_ADDRESS_OWNER\n',
             'proc/stat': 'cpu 1 2 3 4 5 6 7 8\nprocs_running 1\nprocs_blocked 2\n',
             'proc/loadavg': '6.90 6.86 6.69 9/3174 7436\n',
+            'proc/net/dev': 'Inter-| Receive | Transmit\n wlan0: 100 1 0 0 0 0 0 0 200 2 0 0 0 0 0 0\n rmnet_data0: 300 3 0 0 0 0 0 0 400 4 0 0 0 0 0 0\n',
+            'proc/modules': 'qrtr 100000 4 - Live 0xffff01234567\nicnss2 200000 3 - Live 0xffff12345678\nunrelated_private_module 3000 2 - Live 0xffff23456789\n',
             'proc/meminfo': 'MemAvailable: 900000 kB\nSwapTotal: 2097148 kB\nSwapFree: 600000 kB\n',
             'proc/vmstat': 'pgscan_direct 5\npswpin 10\npswpout 20\n',
             'proc/pressure/cpu': 'some avg10=1.00 total=100\n',
@@ -43,6 +45,7 @@ class Phone:
             'id': 'printf "0\\n"',
             'stat': 'printf "0\\n"',
             'getprop': 'printf "fixture\\n"',
+            'settings': 'case "$3" in wifi_on) printf "0\\n";; mobile_data) printf "1\\n";; *) printf "0\\n";; esac',
             'ps': 'printf "PID STAT %%CPU TIME NAME\\n10 S 3 00:00:10 fixture.app\\n"',
             'dmesg': 'printf "[100.0] PM: suspend entry (deep)\\n[100.1] fixture unrelated secret\\n"',
             'dumpsys': '''case "$1" in
@@ -51,7 +54,8 @@ suspend_control_internal) printf "Suspend stats: success=12 fail=2\\nfixture_wak
 deviceidle) printf "  mState=ACTIVE\\n  mLightState=INACTIVE\\n  SECRET_IDLE_WHITELIST\\n";;
 media_projection) printf "MEDIA PROJECTION MANAGER (dumpsys media_projection)\\nMedia Projection: \\n(fixture.caster, uid=10042): TYPE_SCREEN_CAPTURE\\nPRIVATE_PROJECTION_TOKEN\\n";;
 display) printf "  mWifiDisplayOn=true\\n  PRIVATE_DISPLAY_NAME_MAC\\n";;
-batterystats) printf "  Time on battery: 10m realtime, 5m uptime\\n  Screen on: 1m\\n  SECRET_BATTERY_APP_CONTENT\\n";;
+batterystats) [ "$2" = --charged ] || exit 99
+printf "  Time on battery: 10m realtime, 5m uptime\\n  Screen on: 1m\\n  SECRET_BATTERY_APP_CONTENT\\n  u0a42:\\n    TOTAL wake: 1m 2s 3ms actual partial, 4s actual background partial realtime\\n    Apk fixture.app:\\n      Wakeup alarm PRIVATE_ALARM_TAG:https://private.example/account: 7 times\\n      Wakeup alarm PRIVATE_SECOND_ALARM: 2 times\\n    Apk private@email.invalid:\\n      Wakeup alarm PRIVATE_INVALID_PACKAGE_ALARM: 100 times\\n  baduid:\\n    TOTAL wake: 100m actual partial realtime\\n";;
 esac''',
             'sleep': 'printf "FORBIDDEN sleep\\n" >&2; exit 99',
         }
@@ -114,9 +118,9 @@ class SuspendDiagnosticTests(unittest.TestCase):
         self.assertIn('TEST FINISHED', second.stdout)
         report = p.report()
         self.assertIn('580.00 seconds (96.7% of interval)', report)
-        for expected in ('440', '-307000', 'fixture_wakeup', 'success=12 fail=2', 'mWakefulness=Awake', 'fixture_tag', 'Time on battery:', 'Screen on:', 'APPLIED policy0', '6.90', '(fixture.caster, uid=10042): TYPE_SCREEN_CAPTURE', 'mWifiDisplayOn=true'):
+        for expected in ('440', '-307000', 'fixture_wakeup', 'success=12 fail=2', 'mWakefulness=Awake', 'fixture_tag', 'Time on battery:', 'Screen on:', 'APPLIED policy0', '6.90', '(fixture.caster, uid=10042): TYPE_SCREEN_CAPTURE', 'mWifiDisplayOn=true', 'uid_wakelock u0a42 1m 2s 3ms actual partial', 'uid_package u0a42 fixture.app', 'uid_wakeup_alarm_count u0a42 fixture.app 9', 'wifi_on: 0', 'mobile_data: 1', 'wlan0 rx_bytes 100 tx_bytes 200', 'rmnet_data0 rx_bytes 300 tx_bytes 400', 'qrtr 100000 4', 'icnss2 200000 3'):
             self.assertIn(expected, report)
-        for private in ('PRIVATE_TIMER_ADDRESS_OWNER', 'PRIVATE_OTHER_MODULE', 'SECRET_POWER_OTHER_SECTION', 'SECRET_POWER_TAIL', 'SECRET_IDLE_WHITELIST', 'SECRET_BATTERY_APP_CONTENT', 'PRIVATE_PROJECTION_TOKEN', 'PRIVATE_DISPLAY_NAME_MAC', 'boot-A', 'FORBIDDEN sleep'):
+        for private in ('PRIVATE_TIMER_ADDRESS_OWNER', 'PRIVATE_OTHER_MODULE', 'SECRET_POWER_OTHER_SECTION', 'SECRET_POWER_TAIL', 'SECRET_IDLE_WHITELIST', 'SECRET_BATTERY_APP_CONTENT', 'PRIVATE_PROJECTION_TOKEN', 'PRIVATE_DISPLAY_NAME_MAC', 'PRIVATE_ALARM_TAG', 'PRIVATE_SECOND_ALARM', 'PRIVATE_INVALID_PACKAGE_ALARM', 'private@email.invalid', '100m actual partial', '0xffff', 'unrelated_private_module', 'boot-A', 'FORBIDDEN sleep'):
             self.assertNotIn(private, report)
         self.assertFalse((p.state / 'pending.txt').exists())
         self.assertFalse((p.state / 'lock').exists())
@@ -257,6 +261,62 @@ class SuspendDiagnosticTests(unittest.TestCase):
         report = p.report()
         self.assertIn('NA: service unavailable or unrecognized format; no absence inferred.', report)
         self.assertNotIn('PRIVATE_OR_UNRECOGNIZED_PROJECTION', report)
+
+    def test_userspace_remains_visible_after_many_kernel_threads(self):
+        p = self.phone()
+        p.put('bin/ps', '#!/bin/sh\nprintf "PID STAT %%CPU TIME NAME\\n"\ni=1\nwhile [ "$i" -le 450 ]; do printf "%s I 0 00:00:00 [kworker/fixture]\\n" "$i"; i=$((i+1)); done\nprintf "5000 S 2 00:00:10 fixture.background.app\\n"\n').chmod(0o755)
+        p.run()
+        p.advance()
+        p.run()
+        report=p.report()
+        self.assertIn('fixture.background.app',report)
+        self.assertNotIn('[kworker/fixture]',report)
+
+    def test_unrecognized_uid_totals_are_not_exported_as_valid_accounting(self):
+        p=self.phone()
+        p.put('bin/dumpsys', '#!/bin/sh\nif [ "$1" = batterystats ]; then printf "  u0a42:\\n    TOTAL wake: PRIVATE_ACCOUNT_TEXT\\n    Apk bad@email.invalid:\\n      Wakeup alarm PRIVATE_ALARM: 500 times\\n"; fi\n').chmod(0o755)
+        p.run()
+        p.advance()
+        p.run()
+        report=p.report()
+        for private in ('PRIVATE_ACCOUNT_TEXT','bad@email.invalid','PRIVATE_ALARM'):
+            self.assertNotIn(private,report)
+        self.assertNotIn('uid_wakelock u0a42',report)
+        self.assertNotIn('uid_wakeup_alarm_count u0a42',report)
+
+    def test_missing_network_readers_report_na_not_connected_or_disconnected(self):
+        p=self.phone()
+        p.put('bin/settings','#!/bin/sh\nprintf "PRIVATE_OR_UNKNOWN_SETTING\\n"\n').chmod(0o755)
+        (p.root/'proc/net/dev').unlink()
+        (p.root/'proc/modules').unlink()
+        p.run()
+        p.advance()
+        p.run()
+        report=p.report()
+        self.assertIn('wifi_on: NA',report)
+        self.assertIn('mobile_data: NA',report)
+        self.assertIn('NA: matching interface counters unavailable',report)
+        self.assertIn('NA: matching module rows unavailable',report)
+        self.assertNotIn('PRIVATE_OR_UNKNOWN_SETTING',report)
+
+    def test_freezer_summary_survives_later_pm_message_flood(self):
+        p=self.phone()
+        body='#!/bin/sh\nprintf "[100.0] Freezing of tasks aborted after 0.015 seconds\\n[101.0] Freezing of tasks failed after 0.500 seconds (1 tasks refusing to freeze, wq_busy=0):\\n"\ni=1\nwhile [ "$i" -le 120 ]; do printf "[102.0] PM: suspend entry (s2idle)\\n[102.1] PM: suspend exit\\n[102.2] Abort: Last active Wakeup Source: qrtr_ws\\n"; i=$((i+1)); done\n'
+        p.put('bin/dmesg',body).chmod(0o755)
+        p.run()
+        p.advance()
+        p.run()
+        report=p.report()
+        self.assertIn('Freezing of tasks aborted after 0.015 seconds',report)
+        self.assertIn('Freezing of tasks failed after 0.500 seconds',report)
+
+    def test_uid_accounting_absence_is_explicit_without_using_checkin(self):
+        p=self.phone()
+        p.put('bin/dumpsys','#!/bin/sh\nif [ "$1" = batterystats ]; then [ "$2" = --charged ] || exit 99; printf "Unknown battery format\\n"; fi\n').chmod(0o755)
+        p.run()
+        p.advance()
+        p.run()
+        self.assertIn('NA: UID accounting format unavailable; no zero usage inferred',p.report())
 
     def test_module_action_contract_and_no_boot_service(self):
         module = ROOT / 'modules/chatgpt-reposo-diagnostico'
