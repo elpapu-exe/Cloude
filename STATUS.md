@@ -1,6 +1,6 @@
 # Estado y continuación
 
-**Observación posterior: reposo/temperatura.** Una captura identifica rc5 arrancada, batería a 44 °C y 8 min 57 s de suspensión indicada entre 13 h 26 min 57 s de uptime. No conocemos el tiempo de pantalla apagada ni la causa. Se prepara un diagnóstico independiente de dos pulsaciones sin proceso entre ellas; no se solicitan otro kernel ni más tweaks. [Investigación y pasos](docs/suspend-investigation.md). La validación de compilación siguiente conserva su alcance histórico.
+**Observación posterior: reposo/temperatura.** Una captura identifica rc5 arrancada, batería a 44 °C y 8 min 57 s de suspensión indicada entre 13 h 26 min 57 s de uptime. No conocemos el tiempo de pantalla apagada ni la causa. Se publicó un diagnóstico independiente de dos pulsaciones sin proceso entre ellas, con 16 pruebas y descarga verificada; no se solicitó otro kernel. [Investigación y pasos](docs/suspend-investigation.md). La validación de compilación siguiente conserva su alcance histórico.
 
 **0.1.0-rc5 compilada, auditada y publicada** por [Actions 41290063824](https://github.com/elpapu-exe/Cloude/actions/runs/41290063824), desde `9c81476ba0a6ffc452d5fdb5463cf5cebf128ad9`. [Entrega](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-kernel-0.1.0-rc5-9c81476ba0a6-41290063824) · [Evidencia completa](docs/ci-build-result-rc5.json).
 
@@ -36,3 +36,7 @@ Los informes identifican rc4, MGLRU activo y WALT seleccionado desde vendor. El 
 Este checkout comenzó desde el remoto 4fc1ad554ac54ffce0a6792ca6d85f67435e8a86, rama chatgpt-kernel-download; main no existía. El commit rc2 local y rc3 sin publicar no se recuperaron. El entorno anterior no se borró ni sobrescribió. rc3-rebuild1 fue una reconstrucción nueva. KSU utiliza su historia original completa para conservar 35142; no se fabricó un historial Git.
 
 Los documentos dentro de los assets son el snapshot del commit compilado. La actualización posterior de documentación conserva los binarios auditados y no solicita otra compilación.
+
+## Diagnóstico de reposo publicado
+
+[Entrega](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-reposo-diagnostico-0.1.0-rc1-4f9bb7003ac2-41673413289), commit `4f9bb7003ac29435fd314b74d41b3530a1e90518`, [Actions41673413289](https://github.com/elpapu-exe/Cloude/actions/runs/41673413289). Build y publish terminaron SUCCESS; 16 pruebas sin omisiones, fuente ZIP comprobada también de forma independiente, cinco assets descargados y cuatro hashes comprobados dos veces. ZIP 14613 bytes, SHA256 `a1bad7a9f41afc230dd130fe37c2521925dcc7cdc2025f4ae81eecde1472007f`. [Resultado](docs/reposo-module-release.json). No tiene servicio ni tareas de arranque, temporizadores o wakelocks. Su primera captura real sigue pendiente.

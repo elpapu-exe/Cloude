@@ -24,7 +24,7 @@ La configuración efectiva difiere de rc4 solo en LOCALVERSION. Se mantienen MGL
 
 **[Descargar ChatGPT CPU Respuesta — 25 KB](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310/ChatGPT-CPU-Respuesta-0.1.0-rc1-KSU.zip)** · [Instrucciones](modules/chatgpt-cpu-respuesta/INSTRUCCIONES.txt) · [Hashes y fuentes](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-cpu-respuesta-0.1.0-rc1-7b0a51d49a6b-41291184310) · [Evidencia](docs/cpu-respuesta-release.json).
 
-Instala su ZIP desde KernelSU y reinicia. Reduce un 25% la espera WALT `up_rate_limit_us` únicamente cuando su valor está entre 20001 y 100000 µs y los controles se identifican sin ambigüedad. Es una elección experimental; con tasas habituales de 500/1000/2000 µs no cambia nada. Se aplica una vez al arrancar y conserva cambios posteriores de otros controladores. No supone una CPU un 25% más rápida.
+Durante la investigación de reposo, si ya lo instalaste, desactiva CPU Respuesta y reinicia conservando los demás módulos necesarios. Su comportamiento experimental es el siguiente: reduce un 25% la espera WALT `up_rate_limit_us` únicamente cuando su valor está entre 20001 y 100000 µs y los controles se identifican sin ambigüedad. Es una elección experimental; con tasas habituales de 500/1000/2000 µs no cambia nada. Se aplica una vez al arrancar y conserva cambios posteriores de otros controladores. No supone una CPU un 25% más rápida.
 
 **Acción recoge 180 segundos de logs** con el recolector v7 sin alternar el perfil. Usa TikTok y cambia entre tus apps, conservando WhatsApp y módulos. Comparte el TXT de Descargas cuando aparezca `TEST FINISHED`. Pasaron 33 pruebas y se verificaron los cinco assets. Falta medir el efecto real.
 

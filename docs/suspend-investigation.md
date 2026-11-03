@@ -14,7 +14,7 @@ Si rc5 sigue funcionando peor o calentándose en reposo después de reiniciar, p
 
 ## Un TXT, dos pulsaciones
 
-El nuevo módulo **ChatGPT Reposo Diagnóstico** contiene exclusivamente un recolector. Su instalación y uso se documentan en [INSTRUCCIONES.txt](../modules/chatgpt-reposo-diagnostico/INSTRUCCIONES.txt). La descarga solo se enlaza después de completar y verificar su propia publicación.
+El nuevo módulo **ChatGPT Reposo Diagnóstico** contiene exclusivamente un recolector. Su instalación y uso se documentan en [INSTRUCCIONES.txt](../modules/chatgpt-reposo-diagnostico/INSTRUCCIONES.txt). **[Descargar ZIP — 14,6 KB](https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc1-4f9bb7003ac2-41673413289/ChatGPT-Reposo-Diagnostico-0.1.0-rc1-KSU.zip)** · [Hashes y fuentes](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-reposo-diagnostico-0.1.0-rc1-4f9bb7003ac2-41673413289) · [Evidencia](reposo-module-release.json). Publicado por Actions después de 16 pruebas sin omisiones y de descargar y verificar sus cinco assets. No hay mejora de reposo medida todavía; el módulo sirve para obtener evidencia.
 
 1. Instálalo desde KernelSU. Reinicia una vez si el Manager aún no muestra Acción. No hay scripts de arranque, servicios ni ajustes del teléfono.
 2. Con el cargador y USB desconectados, pulsa **Acción** y espera **START SAVED**. Al terminar, el recolector sale por completo.

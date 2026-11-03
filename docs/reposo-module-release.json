@@ -1,0 +1,94 @@
+{
+  "project": "ChatGPT Reposo Diagnóstico",
+  "version": "0.1.0-rc1",
+  "source_commit": "4f9bb7003ac29435fd314b74d41b3530a1e90518",
+  "run_id": 41673413289,
+  "run_url": "https://github.com/elpapu-exe/Cloude/actions/runs/41673413289",
+  "jobs": [
+    {
+      "name": "build",
+      "id": 126047499962,
+      "conclusion": "success"
+    },
+    {
+      "name": "publish",
+      "id": 126047681729,
+      "conclusion": "success"
+    }
+  ],
+  "release": {
+    "url": "https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-reposo-diagnostico-0.1.0-rc1-4f9bb7003ac2-41673413289",
+    "tag": "chatgpt-reposo-diagnostico-0.1.0-rc1-4f9bb7003ac2-41673413289",
+    "draft": false,
+    "prerelease": true,
+    "assets": [
+      {
+        "name": "build-manifest.json",
+        "bytes": 2806,
+        "sha256": "e21383adc88cbd652c350b10b49e39a03e818c2f2c4e4d608ce2a4a2fc7907b8",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc1-4f9bb7003ac2-41673413289/build-manifest.json"
+      },
+      {
+        "name": "ChatGPT-Reposo-Diagnostico-0.1.0-rc1-KSU.zip",
+        "bytes": 14613,
+        "sha256": "a1bad7a9f41afc230dd130fe37c2521925dcc7cdc2025f4ae81eecde1472007f",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc1-4f9bb7003ac2-41673413289/ChatGPT-Reposo-Diagnostico-0.1.0-rc1-KSU.zip"
+      },
+      {
+        "name": "ChatGPT-Reposo-Diagnostico-0.1.0-rc1-sources.zip",
+        "bytes": 24647,
+        "sha256": "41b1c31e97340361702b75d5caa02e12f33847f880f77ea0aa09de09aaf81766",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc1-4f9bb7003ac2-41673413289/ChatGPT-Reposo-Diagnostico-0.1.0-rc1-sources.zip"
+      },
+      {
+        "name": "SHA256SUMS",
+        "bytes": 388,
+        "sha256": "9b4a0a0b68f3ba9265c2c314662df3937cd457aab3d6a985e09793cd1d54191a",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc1-4f9bb7003ac2-41673413289/SHA256SUMS"
+      },
+      {
+        "name": "tests.log",
+        "bytes": 2753,
+        "sha256": "fa702f1dc5bf6d60d29219b7a290b6ad5c0201b65a183892f1a198bcfa3f4cda",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc1-4f9bb7003ac2-41673413289/tests.log"
+      }
+    ]
+  },
+  "validation": {
+    "tests_run": 16,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "zip_audit": {
+      "crc": true,
+      "closed_member_list": true,
+      "file_bytes": true,
+      "modes": true
+    },
+    "canonical_collector_bytes_match": true,
+    "downloaded_assets_and_checksums_compared": true,
+    "checksum_files": 4,
+    "checksum_ok_events": 8,
+    "hardware_tested": false,
+    "diagnostic_only": true,
+    "source_archive_includes_independent_test_suite": true
+  },
+  "runtime": {
+    "invocation": "bin/collect.sh auto",
+    "daemon": false,
+    "boot_scripts": false,
+    "timer": false,
+    "wakelock": false,
+    "device_tunable_writes": false,
+    "network_upload": false,
+    "private_state_directory": "/data/adb/chatgpt-reposo-diagnostico",
+    "report_directory": "/sdcard/Download"
+  },
+  "collector": {
+    "canonical_source": "scripts/chatgpt-suspend-logs.sh",
+    "installed_path": "bin/collect.sh",
+    "sha256": "a367948c0f2249bdd1c128ebe65b3757a571e4be1a7ae079bf96ccd62e7107b1",
+    "identical_bytes_verified": true
+  }
+}
+
