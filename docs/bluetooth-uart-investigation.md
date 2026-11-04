@@ -31,6 +31,8 @@ Los valores ausentes no se sustituyen por un valor predeterminado. Las propiedad
 
 ## Captura breve, mismo módulo
 
+Rc3 [publicado y verificado](https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-reposo-diagnostico-0.1.0-rc3-8c6010416a2e-41903620910): 31 pruebas, cinco assets descargados y comprobados; [evidencia](reposo-module-release-rc3.json). Aún no se ha probado este nuevo lector en el teléfono.
+
 Actualizar Reposo Diagnóstico a rc3 y reiniciar si el Manager lo requiere. Mantener los perfiles experimentales CPU Respuesta/Fluidez Memoria desactivados, Wi-Fi/datos para WhatsApp y los módulos personales necesarios.
 
 1. Con cargador/USB desconectados, encender Bluetooth **sin conectar accesorios** y esperar aproximadamente un minuto.

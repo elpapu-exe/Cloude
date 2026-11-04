@@ -1,0 +1,108 @@
+{
+  "project": "ChatGPT Reposo Diagnóstico",
+  "version": "0.1.0-rc3",
+  "source_commit": "8c6010416a2e03b5e5bb8b069a04b21e2aa058a9",
+  "run_id": 41903620910,
+  "run_url": "https://github.com/elpapu-exe/Cloude/actions/runs/41903620910",
+  "jobs": [
+    {
+      "name": "build",
+      "id": 126832286808,
+      "conclusion": "success"
+    },
+    {
+      "name": "publish",
+      "id": 126832429493,
+      "conclusion": "success"
+    }
+  ],
+  "release": {
+    "url": "https://github.com/elpapu-exe/Cloude/releases/tag/chatgpt-reposo-diagnostico-0.1.0-rc3-8c6010416a2e-41903620910",
+    "tag": "chatgpt-reposo-diagnostico-0.1.0-rc3-8c6010416a2e-41903620910",
+    "draft": false,
+    "prerelease": true,
+    "assets": [
+      {
+        "name": "build-manifest.json",
+        "bytes": 2806,
+        "sha256": "a3091fadd36cdeb33420fab348115b4457c80d9f17c1fc5966aae37034a44155",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc3-8c6010416a2e-41903620910/build-manifest.json"
+      },
+      {
+        "name": "ChatGPT-Reposo-Diagnostico-0.1.0-rc3-KSU.zip",
+        "bytes": 19165,
+        "sha256": "3ac9beab630c5e46378ab7634abb81257b679a5e4d14cf683618a8f536478642",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc3-8c6010416a2e-41903620910/ChatGPT-Reposo-Diagnostico-0.1.0-rc3-KSU.zip"
+      },
+      {
+        "name": "ChatGPT-Reposo-Diagnostico-0.1.0-rc3-sources.zip",
+        "bytes": 33263,
+        "sha256": "de5f36f0b7760b8deeb6da0bbf3450c8e2a3cde56acfc5adc994dd15a56ecfab",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc3-8c6010416a2e-41903620910/ChatGPT-Reposo-Diagnostico-0.1.0-rc3-sources.zip"
+      },
+      {
+        "name": "SHA256SUMS",
+        "bytes": 388,
+        "sha256": "3f055a7381d34d39d553aa51658e887bcabae78486c94cc6f0bbad8fd1019903",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc3-8c6010416a2e-41903620910/SHA256SUMS"
+      },
+      {
+        "name": "tests.log",
+        "bytes": 5507,
+        "sha256": "67167a9f292083f8db7e63e85a772ca3611e952ed0757088eee9ef4db74c2b2e",
+        "url": "https://github.com/elpapu-exe/Cloude/releases/download/chatgpt-reposo-diagnostico-0.1.0-rc3-8c6010416a2e-41903620910/tests.log"
+      }
+    ]
+  },
+  "validation": {
+    "tests_run": 31,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "canonical_collector_bytes_match": true,
+    "zip_audit": {
+      "crc": true,
+      "closed_member_list": true,
+      "file_bytes": true,
+      "modes": true
+    },
+    "source_zip_runs_suite_independently": true,
+    "downloaded_assets_and_checksums_compared": true,
+    "checksum_files": 4,
+    "checksum_ok_events": 8,
+    "hardware_tested": false,
+    "diagnostic_only": true
+  },
+  "runtime": {
+    "invocation": "bin/collect.sh auto",
+    "daemon": false,
+    "boot_scripts": false,
+    "timer": false,
+    "wakelock": false,
+    "device_tunable_writes": false,
+    "network_upload": false,
+    "private_state_directory": "/data/adb/chatgpt-reposo-diagnostico",
+    "report_directory": "/sdcard/Download"
+  },
+  "collector": {
+    "canonical_source": "scripts/chatgpt-suspend-logs.sh",
+    "installed_path": "bin/collect.sh",
+    "sha256": "0144a48863d2d4a22a285e1a5271886d7f9bbe796b12034bbad49bc03e2720ca",
+    "identical_bytes_verified": true
+  },
+  "new_readers": [
+    "Fixed Bluetooth/vendor/sleep property allowlist and Bluetooth/BLE scan flags",
+    "Validated Bluetooth adapter state and GATT numeric scanner rows; raw dump and peer identifiers not exported",
+    "DT aliases and ttyHS device/driver paths",
+    "Retained UART runtime PM, wakeup state and zero-byte DT boolean presence",
+    "Loaded UART module identity and hashes of candidates in fixed module paths",
+    "Bounded symlink-only descriptor probe in named Bluetooth processes; no UART opened"
+  ],
+  "limits": [
+    "No kernel build or tuning; actual UART driver/HAL cause remains unproven",
+    "Image disables SERIAL_MSM_GENI; vendor module identity requires phone report",
+    "Missing or unrecognized data is unavailable, not a default value",
+    "BLE registrations, counters and open TTY descriptors do not prove a runtime PM vote",
+    "Brief Bluetooth on/off capture compares states; deep-sleep percentage is not a test outcome here"
+  ]
+}
