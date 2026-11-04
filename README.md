@@ -1,6 +1,6 @@
 # ChatGPT Kernel — rc5 publicada
 
-**Reposo en investigación:** el cuarto informe incluye casi doce horas y carga completa, con una fuente kernel UART activa prácticamente todo el intervalo. La contabilidad de aplicaciones se reinició; no se atribuye ese periodo a Picsart. [Hallazgo UART y siguiente comprobación](docs/suspend-result-uart.md) · [Diagnóstico de dos pulsaciones](docs/suspend-investigation.md).
+**Reposo recuperado en la última prueba:** 92,5% del intervalo suspendido, batería 40 → 38 °C y fuente UART inactiva. Falta confirmar la acción que liberó esa fuente antes de atribuir la causa o proponer una corrección permanente. [Resultado medido](docs/suspend-result-uart-released.md) · [Diagnóstico](docs/suspend-investigation.md).
 
 Kernel experimental para **Redmi Note 12 4G TAPAS/topaz y Android 13**. Conserva la ROM, los módulos necesarios, KernelSU/ReSukiSU y las protecciones térmicas. La LineageOS 20 del usuario es la referencia; otras ROM A13 requieren comprobación real.
 

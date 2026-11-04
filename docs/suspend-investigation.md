@@ -1,5 +1,7 @@
 # Investigación de reposo con rc5
 
+**Quinto informe: mejora medida.** UART permanece inactivo, el sistema suspende 898,70 s de 971,25 s (92,5%) y la batería pasa de 40 a 38 °C. El periodo contable se conserva. [Resultado y límites](suspend-result-uart-released.md). Falta confirmar qué cambio exacto liberó UART; no se atribuye automáticamente a Bluetooth. Se conserva el recolector y no se solicita otra compilación.
+
 **Cuarto informe:** intervalo de casi doce horas con carga 18 → 100%, reinicio de batterystats y una fuente UART activa prácticamente todo el tramo. Los siete minutos de Picsart al inicio son históricos y no se atribuyen a esta noche. [Hallazgo UART, límites y prueba específica](suspend-result-uart.md). Se mantiene el recolector existente; no se aplican bloqueadores de wakelocks ni cambios de kernel.
 
 **Tercer informe, con rc2 del diagnóstico:** solo 11,29 s de suspensión en 620,58 s, batería 40 → 41 °C y captura iniciada a los 62 s del arranque. Picsart es la mayor atribución nueva de bloqueo parcial de aplicación; el usuario confirmó que no lo utilizaba. [Datos, límites y cambio específico](suspend-result-picsart.md). Los dos perfiles experimentales ya están desactivados y no se necesita otra versión del recolector para comprobar esta aplicación.
