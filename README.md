@@ -1,6 +1,6 @@
 # ChatGPT Kernel — rc5 publicada
 
-**Reposo en investigación:** el tercer informe registra 1,8% de suspensión tras arrancar y atribuye a Picsart la mayor actividad nueva de bloqueo parcial, sin que el usuario lo utilizara. Es el siguiente candidato a aislar; persisten abortos con etiqueta QRTR y no hay causa única demostrada. [Hallazgos y ajuste específico](docs/suspend-result-picsart.md) · [Diagnóstico de dos pulsaciones](docs/suspend-investigation.md).
+**Reposo en investigación:** el cuarto informe incluye casi doce horas y carga completa, con una fuente kernel UART activa prácticamente todo el intervalo. La contabilidad de aplicaciones se reinició; no se atribuye ese periodo a Picsart. [Hallazgo UART y siguiente comprobación](docs/suspend-result-uart.md) · [Diagnóstico de dos pulsaciones](docs/suspend-investigation.md).
 
 Kernel experimental para **Redmi Note 12 4G TAPAS/topaz y Android 13**. Conserva la ROM, los módulos necesarios, KernelSU/ReSukiSU y las protecciones térmicas. La LineageOS 20 del usuario es la referencia; otras ROM A13 requieren comprobación real.
 

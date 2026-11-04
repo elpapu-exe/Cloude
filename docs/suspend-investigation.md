@@ -1,5 +1,7 @@
 # Investigación de reposo con rc5
 
+**Cuarto informe:** intervalo de casi doce horas con carga 18 → 100%, reinicio de batterystats y una fuente UART activa prácticamente todo el tramo. Los siete minutos de Picsart al inicio son históricos y no se atribuyen a esta noche. [Hallazgo UART, límites y prueba específica](suspend-result-uart.md). Se mantiene el recolector existente; no se aplican bloqueadores de wakelocks ni cambios de kernel.
+
 **Tercer informe, con rc2 del diagnóstico:** solo 11,29 s de suspensión en 620,58 s, batería 40 → 41 °C y captura iniciada a los 62 s del arranque. Picsart es la mayor atribución nueva de bloqueo parcial de aplicación; el usuario confirmó que no lo utilizaba. [Datos, límites y cambio específico](suspend-result-picsart.md). Los dos perfiles experimentales ya están desactivados y no se necesita otra versión del recolector para comprobar esta aplicación.
 
 **Primer informe analizado:** hubo 12 min 37 s de suspensión en 21 min 43 s y la batería pasó de 40 a 37 °C. Aparecen fallos de suspensión de Wi-Fi, temporizadores pendientes y bloqueos parciales Android. [Resultados y límites](suspend-result-20261103.md). La captura inicial siguiente conserva su contexto histórico.
