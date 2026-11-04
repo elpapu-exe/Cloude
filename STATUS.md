@@ -1,5 +1,7 @@
 # Estado y continuación
 
+**Tercer informe rc2 analizado:** 11,29 s suspendido en 620,58 s, batería 40 → 41 °C; comienza a los 62 s del arranque. Perfiles CPU/memoria desactivados, watermark 1. Batterystats atribuye a Picsart 7 min de actual partial/background, la mayor atribución nueva; el usuario no lo utilizaba. Hay límites de contabilidad frente al agregado nativo y abortos QRTR concurrentes. El siguiente cambio es restringir únicamente Picsart y comprobar con el recolector existente, conservando WhatsApp y módulos necesarios. [Resultado](docs/suspend-result-picsart.md). No se cambió el kernel ni se añadió otro módulo.
+
 **Segundo informe analizado:** 433,48 s de suspensión en 985,88 s; batería 38 → 38 °C. No aumentaron ICNSS/WLAN, pero sí fallos de freeze y abortos etiquetados con la última fuente QRTR. Watermark cambió a 64 y memoria ya no figura pausado, impidiendo atribuir todo a la red. Se publicó diagnóstico rc2 de atribución con 21 pruebas y descarga verificada, sin ajustes ni nuevo kernel. [Comparación](docs/suspend-comparison-20261103.md).
 
 **Primer informe de reposo analizado:** suspensión real de 757,35 s en 1303,09 s, consistente con SuspendInfo; batería 40 → 37 °C. Registra nueve fallos ICNSS, despertares Wi-Fi, temporizadores pendientes y unos ocho minutos agregados de bloqueo parcial Android sin propietario histórico identificado. CPU Respuesta está desactivado, memoria pausado. [Resultado y siguiente comparación](docs/suspend-result-20261103.md). No se modificó ni solicitó otro kernel para este análisis.

@@ -1,5 +1,7 @@
 # Investigación de reposo con rc5
 
+**Tercer informe, con rc2 del diagnóstico:** solo 11,29 s de suspensión en 620,58 s, batería 40 → 41 °C y captura iniciada a los 62 s del arranque. Picsart es la mayor atribución nueva de bloqueo parcial de aplicación; el usuario confirmó que no lo utilizaba. [Datos, límites y cambio específico](suspend-result-picsart.md). Los dos perfiles experimentales ya están desactivados y no se necesita otra versión del recolector para comprobar esta aplicación.
+
 **Primer informe analizado:** hubo 12 min 37 s de suspensión en 21 min 43 s y la batería pasó de 40 a 37 °C. Aparecen fallos de suspensión de Wi-Fi, temporizadores pendientes y bloqueos parciales Android. [Resultados y límites](suspend-result-20261103.md). La captura inicial siguiente conserva su contexto histórico.
 
 **Segundo informe:** 7 min 13 s de suspensión en 16 min 26 s (44%), batería 38 → 38 °C. No aumentan los fallos ICNSS/WLAN, pero sí los abortos y fallos de freeze; además watermark cambió de 1 a 64. [Comparación y límites](suspend-comparison-20261103.md). Se publicó rc2 del diagnóstico con atribución por UID y mejor conservación de mensajes, sin cambios de kernel ni ajustes del teléfono.
