@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PROJECT = ROOT / 'modules/chatgpt-reposo-diagnostico'
 COLLECTOR = ROOT / 'scripts/chatgpt-suspend-logs.sh'
 DIST = ROOT / 'dist/reposo-diagnostic'
-VERSION = '0.1.0-rc2'
+VERSION = '0.1.0-rc3'
 NAME = 'ChatGPT-Reposo-Diagnostico-' + VERSION
 DATE = (2026, 11, 3, 0, 0, 0)
 SOURCE_INPUTS = (
@@ -62,7 +62,7 @@ def main():
     assert (ROOT / 'tests/test_suspend_diagnostic.py').is_file(), 'Required collector test missing'
     props = dict(line.split('=', 1) for line in module_files['module.prop'].read_text().splitlines())
     assert props['id'] == 'chatgpt_reposo_diagnostico' and props['version'] == 'v' + VERSION
-    assert props['versionCode'] == '2' and props['name'] == 'ChatGPT Reposo Diagnóstico'
+    assert props['versionCode'] == '3' and props['name'] == 'ChatGPT Reposo Diagnóstico'
     for path in (*PROJECT.glob('*.sh'), COLLECTOR):
         subprocess.run(['sh', '-n', str(path)], check=True)
     test = subprocess.run([

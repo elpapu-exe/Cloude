@@ -23,7 +23,7 @@ El USB permanece inactivo y no añade actividad. Comparado con el END del inform
 
 Los motivos con la etiqueta de última fuente QRTR permanecen en 33. La lectura wakeup_count vuelve a entregar números y se reanudan los intentos de suspensión. Esto refuerza la relación entre liberar la fuente UART y recuperar el reposo.
 
-El informe no registra el estado Bluetooth ni identifica por sí solo la acción o el cliente que soltó UART. Se solicitó confirmar si apagar Bluetooth fue el único cambio de configuración. Sin esa respuesta no se afirma que Bluetooth sea la causa demostrada, ni que deba permanecer desactivado permanentemente.
+El informe no registra por sí solo el estado Bluetooth. Posteriormente el usuario confirmó que apagarlo fue el único cambio y que estaba encendido sin accesorios conectados. Esto refuerza la asociación Bluetooth/UART/reposo en este teléfono; todavía falta identificar el defecto interno o cliente que retiene el puerto. [Siguiente fase y captura breve](bluetooth-uart-investigation.md). No se exige que permanezca apagado permanentemente.
 
 ## Aplicaciones y eventos residuales
 
@@ -37,4 +37,4 @@ El contador de carga baja 24000 µAh, aproximadamente 89 mA medios si mantiene s
 
 ## Continuación
 
-Conservar provisionalmente la configuración que produjo este resultado, WhatsApp y los módulos personales necesarios. Confirmar qué acción liberó UART antes de proponer una corrección permanente. No se necesita otro recolector ni una nueva compilación para esta confirmación. Si se confirma la participación de Bluetooth, su uso y el accesorio conectado importan para distinguir una actividad legítima de un problema de gestión de energía. No se ha aplicado un parche de Bluetooth/UART.
+Conservar provisionalmente la configuración que produjo este resultado, WhatsApp y los módulos personales necesarios. La confirmación del usuario ya llegó; el siguiente dato necesario es la identidad y estado runtime del módulo UART y su cliente. Se prepara una ampliación pasiva del recolector existente para esa lectura, sin recompilar Image ni aplicar un parche de Bluetooth/UART.

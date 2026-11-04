@@ -1,6 +1,6 @@
 id=chatgpt_reposo_diagnostico
 name=ChatGPT Reposo Diagnóstico
-version=v0.1.0-rc2
-versionCode=2
+version=v0.1.0-rc3
+versionCode=3
 author=ChatGPT Kernel project
 description=Acción inicia o finaliza una captura de reposo y guarda un TXT en Descargas. Sin servicio, wakelock ni cambios de ajustes.

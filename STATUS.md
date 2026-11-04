@@ -1,5 +1,7 @@
 # Estado y continuación
 
+**Confirmación del usuario:** apagar Bluetooth fue el único cambio de la prueba con 92,5% de reposo; antes estaba encendido sin dispositivos conectados. Se prepara rc3 del diagnóstico existente para leer enlace TTY/UART, runtime PM, módulo vendor, propiedades fijas y descriptores de clientes. No se fuerza un clock-off ni se modifica Image: falta identificar el componente real. [Fase actual](docs/bluetooth-uart-investigation.md).
+
 **Quinto informe: reposo recuperado en esta prueba.** 898,70 s suspendido de 971,25 s (92,5%), temperatura 40 → 38 °C. UART y USB inactivos sin nueva actividad; QRTR no añade abortos y se reanudan los intentos de suspensión. El periodo de aplicaciones no se reinició. Falta confirmar qué cambio liberó UART, sin atribuir automáticamente a Bluetooth ni declarar una reparación permanente. [Resultado](docs/suspend-result-uart-released.md). No se cambió ni compiló otro kernel/módulo para este análisis.
 
 **Cuarto informe analizado:** casi doce horas, batería 18 → 100% y reinicio de batterystats. UART `4a8c000.qcom,qup_uart` permanece Active y añade 42735,633 s de actividad; USB añade 42703,192 s durante la carga. No aumentan intentos/fallos de suspensión. El total HAL de sueño es inválido. Se investiga el cliente UART, con Bluetooth como hipótesis pendiente de confirmación; no se atribuye la noche a datos UID de otro periodo. [Resultado](docs/suspend-result-uart.md). No se cambió ni compiló otro kernel o módulo.

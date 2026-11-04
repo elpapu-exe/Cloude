@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# ChatGPT Reposo diagnostic v2: two snapshots, no process between them.
+# ChatGPT Reposo diagnostic v3: two snapshots, no process between them.
 # Reads only system interfaces. Writes only its private state and a Download TXT.
 PATH=/system/bin:/system/xbin:/vendor/bin:/product/bin
 export PATH
@@ -73,6 +73,157 @@ network_activity() {
     $1 ~ /^(qrtr|icnss|cnss|qmi|glink|wlan|walt|msm_kgsl)[A-Za-z0-9_]*$/ && $2 ~ /^[0-9]+$/ && $3 ~ /^-?[0-9]+$/ {print $1,$2,$3; rows++}
     END {if (!rows) print "NA: matching module rows unavailable"}
   '
+}
+bt_text() {
+  printf '%s: ' "$1"
+  if [ -r "$1" ]; then
+    limited cat "$1" | tr '\000' '\n' | sed -n '1,6p;6q'
+  else printf 'NA\n'; fi
+}
+bt_link() {
+  printf '%s: ' "$1"
+  if [ -e "$1" ]; then
+    bt_link_target=$(limited readlink -f "$1")
+    if [ "$?" -eq 0 ] && [ -n "$bt_link_target" ]; then printf '%s\n' "$bt_link_target"; else printf 'NA\n'; fi
+  else printf 'NA\n'; fi
+}
+bluetooth_manager_summary() {
+  heading 'Bluetooth manager state and supported GATT scan rows (peer names/addresses omitted)'
+  # Android 13/Lineage 20 format. Raw Bluetooth dump is never saved or exported.
+  limited dumpsys bluetooth_manager | awk '
+    NR>20000 {print "NA: Bluetooth manager reader truncated"; exit}
+    /^Bluetooth Status$/ {status=1; next}
+    status && /^$/ {status=0}
+    status && /^  enabled: (true|false)$/ {print "adapter_enabled",$2; states++; next}
+    status && /^  state: [A-Z_]+$/ {print "adapter_state",$2; states++; next}
+    /^[[:space:]]*GATT Scanner Map[[:space:]]*$/ {scan=1; section=1; app=""; next}
+    scan && /^[[:space:]]*GATT .* Map[[:space:]]*$/ {scan=0; app=""; next}
+    scan && /^[^[:space:]]/ {scan=0; app=""; next}
+    scan && /^  [^[:space:]].*:[[:space:]]*$/ && $0 !~ /^  (Last [0-9]+ scans|Ongoing scans)[[:space:]]*:/ {scan=0; app=""; next}
+    scan && /^  [^[:space:]]+([[:space:]]+\(Registered\))?$/ {
+      app=""; name=$0; sub(/^  /,"",name); sub(/ \(Registered\)$/, "",name)
+      if(name ~ /^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+$/ && apps++<128) {
+        app=name; print "BLE scanner package",app
+      } else if(name !~ /^android[.]uid[.][A-Za-z_]+:[0-9]+$/) {
+        scan=0
+      }
+      next
+    }
+    scan && app!="" && /^  LE scans \(started\/stopped\)[[:space:]]*:/ && $NF ~ /^[0-9]+$/ && $(NF-2) ~ /^[0-9]+$/ {
+      print "BLE scan counts",app,"started",$(NF-2),"stopped",$NF; next
+    }
+    scan && app!="" && /^  Scan time in ms \(active\/suspend\/total\)[[:space:]]*:/ && $NF ~ /^[0-9]+$/ && $(NF-2) ~ /^[0-9]+$/ && $(NF-4) ~ /^[0-9]+$/ {
+      print "BLE scan time_ms",app,"active",$(NF-4),"suspended",$(NF-2),"total",$NF; next
+    }
+    scan && app!="" && /^  Ongoing scans[[:space:]]*:$/ {print "BLE ongoing scan section observed",app; next}
+    END {
+      if(!states) print "NA: Bluetooth adapter state format unavailable"
+      if(!section || !apps) print "NA: supported BLE scanner attribution unavailable; no absence inferred"
+      print "Scan rows may include historical registration/counters; they do not prove the source of a UART vote."
+    }
+  '
+}
+bluetooth_runtime() {
+  heading 'Bluetooth flags and fixed property allowlist (read only; missing is not a default value)'
+  for bt_key in bluetooth_on ble_scan_always_enabled; do
+    bt_flag=$(limited settings get global "$bt_key")
+    printf '%s: ' "$bt_key"
+    case "$bt_flag" in 0|1|2|3) printf '%s\n' "$bt_flag";; *) printf 'NA\n';; esac
+  done
+  # Never dump all properties: Bluetooth name/address keys can identify peers.
+  for bt_property in ro.vendor.build.fingerprint ro.vendor.build.version.release \
+    ro.vendor.build.security_patch ro.vendor.bluetooth.soc qcom.bluetooth.soc \
+    vendor.qcom.bluetooth.soc persist.vendor.qcom.bluetooth.soc \
+    ro.bluetooth.library_name persist.service.bdroid.sibs \
+    persist.vendor.service.bdroid.sibs persist.bluetooth.btsnooplogmode \
+    persist.vendor.service.bdroid.soclog persist.vendor.qcom.bluetooth.soclog \
+    persist.vendor.qcom.bluetooth.disable_ibs persist.vendor.bluetooth.disable_ibs \
+    init.svc.vendor.qti.bluetooth-1-0 init.svc.vendor.qti.bluetooth-1-1 \
+    init.svc.vendor.bluetooth-1-0; do
+    bt_prop_value=$(limited getprop "$bt_property")
+    printf '%s: %s\n' "$bt_property" "${bt_prop_value:-NA}"
+  done
+  heading 'UART alias and TTY mappings (hardware paths only; no UART device is opened)'
+  for bt_index in 0 1 2 3; do bt_text "/sys/firmware/devicetree/base/aliases/hsuart$bt_index"; done
+  bt_tty_count=0
+  for bt_tty in /sys/class/tty/ttyHS*; do
+    [ -d "$bt_tty" ] || continue
+    bt_tty_count=$((bt_tty_count+1)); [ "$bt_tty_count" -le 8 ] || break
+    bt_link "$bt_tty/device"
+    bt_link "$bt_tty/device/of_node"
+    bt_link "$bt_tty/device/driver"
+  done
+  [ "$bt_tty_count" -gt 0 ] || printf 'NA: ttyHS sysfs mappings unavailable\n'
+  heading 'Retained UART runtime power, firmware node and loaded driver (read only)'
+  bt_uart_count=0
+  for bt_uart in /sys/bus/platform/devices/*4a8c000*; do
+    [ -d "$bt_uart" ] || continue
+    bt_uart_count=$((bt_uart_count+1)); [ "$bt_uart_count" -le 4 ] || break
+    printf 'UART path: %s\n' "$bt_uart"
+    bt_link "$bt_uart/driver"
+    bt_link "$bt_uart/driver/module"
+    for bt_field in runtime_status control runtime_active_time runtime_suspended_time \
+      autosuspend_delay_ms runtime_usage wakeup wakeup_active wakeup_active_count wakeup_total_time_ms; do
+      value "$bt_uart/power/$bt_field"
+    done
+    bt_text "$bt_uart/of_node/compatible"
+    printf 'DT qcom,auto-suspend-disable: '
+    if [ -d "$bt_uart/of_node" ] && [ -r "$bt_uart/of_node/compatible" ]; then
+      if [ -e "$bt_uart/of_node/qcom,auto-suspend-disable" ]; then printf 'present\n'; else printf 'absent\n'; fi
+    else printf 'NA: firmware node unavailable\n'; fi
+    bt_module=
+    if [ -d "$bt_uart/driver/module" ]; then bt_module=$(limited readlink -f "$bt_uart/driver/module"); fi
+    case "$bt_module" in /sys/module/*) :;; *) bt_module=;; esac
+    if [ -n "$bt_module" ]; then
+      for bt_field in version srcversion taint; do value "$bt_module/$bt_field"; done
+      bt_module_name=${bt_module##*/}
+      case "$bt_module_name" in ''|*[!A-Za-z0-9_]*) printf 'NA: module filename unlisted\n';;
+        *)
+          bt_binary_count=0
+          for bt_modules_dir in /vendor_dlkm/lib/modules /vendor/lib/modules /system_dlkm/lib/modules /system/lib/modules; do
+            bt_binary="$bt_modules_dir/$bt_module_name.ko"
+            [ -r "$bt_binary" ] && [ -f "$bt_binary" ] || continue
+            bt_binary_count=$((bt_binary_count+1))
+            printf 'Candidate module SHA256 (not source provenance proof): '
+            limited sha256sum "$bt_binary"
+          done
+          [ "$bt_binary_count" -gt 0 ] || printf 'NA: module binary not exposed at checked paths\n';;
+      esac
+    fi
+  done
+  [ "$bt_uart_count" -gt 0 ] || printf 'NA: retained UART node unavailable\n'
+  heading 'TTY descriptors seen in named Bluetooth candidates (bounded; no match does not prove port closed)'
+  # Read symlink targets only, never the device or fd contents, cmdline, sockets,
+  # peer addresses, RX/TX buffers, or Bluetooth packet logs.
+  limited sh -c '
+    owner_ps_output=$(ps -A -o PID,NAME 2>/dev/null)
+    if [ "$?" -ne 0 ] || [ -z "$owner_ps_output" ]; then
+      printf "NA: candidate process reader unavailable\n"
+      exit 1
+    fi
+    printf "%s\n" "$owner_ps_output" | {
+    while read -r owner_pid owner_name rest; do
+      case "$owner_pid" in ""|*[!0-9]*) continue;; esac
+      case "$owner_name" in *bluetooth*|*wcnss_filter*|*hciattach*|*bt_vendor*) :;; *) continue;; esac
+      case "$owner_name" in *[!A-Za-z0-9_.:@+-]*) continue;; esac
+      candidate_count=$((candidate_count+1)); [ "$candidate_count" -le 8 ] || break
+      seen=0; fd_count=0
+      for owner_fd in /proc/"$owner_pid"/fd/*; do
+        [ -L "$owner_fd" ] || continue
+        fd_count=$((fd_count+1)); [ "$fd_count" -le 512 ] || break
+        owner_target=$(readlink "$owner_fd" 2>/dev/null)
+        case "$owner_target" in /dev/ttyHS[0-9]|/dev/ttyHS[0-9][0-9])
+          printf "TTY owner candidate: %s %s %s\n" "$owner_pid" "$owner_name" "$owner_target"
+          seen=$((seen+1));;
+        esac
+      done
+      [ "$seen" -gt 0 ] || printf "No TTY descriptor observed: %s %s (absent, closed, or access denied)\n" "$owner_pid" "$owner_name"
+    done
+    [ "${candidate_count:-0}" -gt 0 ] || printf "NA: no named Bluetooth candidates observed; owner unknown\n"
+    }
+  '
+  printf 'TTY candidate probe exit status: %s (nonzero may mean incomplete scan)\n' "$?"
+  bluetooth_manager_summary
 }
 battery_accounting() {
   heading 'Battery accounting and UID totals (same accounting period required; no alarm tags or history)'
@@ -166,6 +317,7 @@ capture() {
   value /sys/block/zram0/mm_stat
   process_activity
   network_activity
+  bluetooth_runtime
   heading 'CPU and GPU controls (read only)'
   for policy in /sys/devices/system/cpu/cpufreq/policy*; do
     [ -d "$policy" ] || continue
@@ -279,7 +431,7 @@ for file in START.boot START.uptime START.mono; do [ -f "$STATE/$file" ] || fail
 OUTPUT="$DOWNLOADS/ChatGPT-Reposo-$(date -u '+%Y%m%d-%H%M%S')-$$.txt"
 (set -C; : > "$OUTPUT") 2>/dev/null || fail 'Output already exists or cannot be created. Baseline preserved.'
 {
-  heading 'ChatGPT Reposo diagnostic v2' &&
+  heading 'ChatGPT Reposo diagnostic v3' &&
   printf 'Two snapshots; no collector process, alarms or wake locks between them. No settings changed.\n' &&
   cat "$STATE/pending.txt" &&
   capture END &&

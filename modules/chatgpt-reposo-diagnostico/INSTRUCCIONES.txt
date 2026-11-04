@@ -1,18 +1,29 @@
-ChatGPT Reposo Diagnóstico 0.1.0-rc2
+ChatGPT Reposo Diagnóstico 0.1.0-rc3
 
-Instala el ZIP KSU desde KernelSU/ReSukiSU. Si no aparece Acción,
-reinicia una vez y vuelve al módulo. No hay servicio ni tarea de arranque.
+Esta captura breve compara estados Bluetooth/UART; su porcentaje de reposo
+no se utiliza para evaluar deep sleep porque se opera con la pantalla encendida.
 
-rc2 recoge también actividad de procesos y, cuando se pueden leer,
-alarmas, wakelocks y UID, además del estado de red. Una lectura no
-disponible queda indicada; un contador aislado no demuestra la causa.
+Actualiza el ZIP KSU desde KernelSU/ReSukiSU. Reinicia si el gestor lo
+requiere para aplicar la actualización. Si no aparece Acción, reinicia
+una vez y vuelve al módulo. No hay servicio ni tarea de arranque.
 
-1. Desconecta el cargador y pulsa Acción una vez. Espera a que termine:
-   esa pulsación inicia la captura.
-2. Apaga la pantalla y deja el teléfono quieto unos diez minutos.
-   Conserva WhatsApp y los módulos que necesitas.
-3. Enciende la pantalla y pulsa Acción otra vez para finalizar.
+rc3 añade lecturas de UART, gestión de energía, parámetros del módulo
+Bluetooth y posibles procesos asociados. Mantiene procesos, alarmas,
+wakelocks, UID y estado de red. Una lectura no disponible queda indicada;
+un nombre o contador aislado no demuestra la causa del consumo.
+
+Deja desactivados los perfiles experimentales ChatGPT de CPU y memoria
+durante esta investigación. Conserva Wi-Fi, WhatsApp y tus módulos.
+
+1. Desconecta el cargador. Activa Bluetooth SIN conectar accesorios
+   y espera un minuto.
+2. Pulsa Acción para iniciar y espera a que termine esa pulsación.
+3. Desactiva Bluetooth, espera unos diez segundos y pulsa Acción
+   otra vez para finalizar de inmediato.
    El recolector indicará un TXT guardado en /sdcard/Download.
+
+Para esta fase NO hace falta esperar diez minutos ni apagar la pantalla:
+se comparan estados de Bluetooth y UART.
 
 No queda ningún proceso esperando entre pulsaciones. No usa daemon,
 temporizador ni wakelock, y no cambia ajustes de memoria, CPU/GPU,

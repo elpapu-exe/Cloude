@@ -64,7 +64,9 @@ esac''',
             p.chmod(0o755)
         source = (ROOT / 'scripts/chatgpt-suspend-logs.sh').read_text()
         source = source.replace('PATH=/system/bin:/system/xbin:/vendor/bin:/product/bin', f'PATH={self.bins}:/usr/bin:/bin')
-        prefixes = [('/data/adb/', 'data/adb/'), ('/sdcard/Download', 'Download'), ('/proc/', 'proc/'), ('/sys/', 'sys/')]
+        prefixes = [('/data/adb/', 'data/adb/'), ('/sdcard/Download', 'Download'), ('/proc/', 'proc/'), ('/sys/', 'sys/'),
+                    ('/vendor_dlkm/lib/modules', 'vendor_dlkm/lib/modules'), ('/vendor/lib/modules', 'vendor/lib/modules'),
+                    ('/system_dlkm/lib/modules', 'system_dlkm/lib/modules'), ('/system/lib/modules', 'system/lib/modules')]
         # /proc/sys is one path, not a nested replacement of the /sys root.
         for i, (prefix, _) in enumerate(prefixes):
             source = source.replace(prefix, f'@@FIXTURE_ROOT_{i}@@')
@@ -104,6 +106,33 @@ class SuspendDiagnosticTests(unittest.TestCase):
         d = tempfile.TemporaryDirectory(prefix='suspend-phone-')
         self.addCleanup(d.cleanup)
         return Phone(d.name)
+
+    def bluetooth_fixture(self,p):
+        uart=p.root/'sys/bus/platform/devices/4a8c000.qcom,qup_uart'
+        driver=p.root/'sys/bus/platform/drivers/msm_geni_serial'
+        module=p.root/'sys/module/msm_geni_serial'
+        node=p.root/'sys/firmware/devicetree/base/soc/uart@4a8c000'
+        for d in (uart,driver,module,node): d.mkdir(parents=True,exist_ok=True)
+        (uart/'driver').symlink_to(driver)
+        (driver/'module').symlink_to(module)
+        (uart/'of_node').symlink_to(node)
+        tty=p.root/'sys/class/tty/ttyHS0';tty.mkdir(parents=True)
+        (tty/'device').symlink_to(uart)
+        p.put('sys/firmware/devicetree/base/aliases/hsuart0','/soc/uart@4a8c000\0')
+        p.put('sys/firmware/devicetree/base/soc/uart@4a8c000/compatible','qcom,msm-geni-serial-hs\0')
+        for field,value in {'runtime_status':'active','control':'auto','runtime_active_time':'1000','runtime_suspended_time':'200','autosuspend_delay_ms':'150','runtime_usage':'1','wakeup':'enabled','wakeup_active':'1','wakeup_active_count':'2','wakeup_total_time_ms':'1000'}.items():
+            p.put('sys/bus/platform/devices/4a8c000.qcom,qup_uart/power/'+field,value+'\n')
+        for field,value in {'version':'fixture-v1','srcversion':'ABCDEF012345','taint':''}.items():
+            p.put('sys/module/msm_geni_serial/'+field,value+'\n')
+        p.put('vendor_dlkm/lib/modules/msm_geni_serial.ko','FIXTURE_MODULE_BYTES\n')
+        p.put('bin/settings','#!/bin/sh\ncase "$3" in bluetooth_on) printf "1\\n";; *) printf "0\\n";; esac\n').chmod(0o755)
+        p.put('bin/ps','#!/bin/sh\nif [ "$3" = PID,NAME ]; then printf "PID NAME\\n250 vendor.qti.bluetooth@1.0-service\\n251 unrelated.app\\n"; else printf "PID STAT %%CPU TIME NAME\\n250 S 1 00:00:02 vendor.qti.bluetooth@1.0-service\\n"; fi\n').chmod(0o755)
+        for pid in ('250','251'):
+            fd=p.root/f'proc/{pid}/fd';fd.mkdir(parents=True)
+            (fd/'0').symlink_to('/dev/ttyHS0')
+            (fd/'1').symlink_to('/sdcard/PRIVATE_PHOTO_OR_PEER_DATA')
+            p.put(f'proc/{pid}/cmdline','PRIVATE_PROCESS_ARGUMENTS\0PRIVATE_ACCOUNT\0')
+        return uart,driver,module,node
 
     def test_two_taps_exit_and_measure_clock_difference_without_tuning(self):
         p = self.phone()
@@ -297,6 +326,7 @@ class SuspendDiagnosticTests(unittest.TestCase):
         self.assertIn('mobile_data: NA',report)
         self.assertIn('NA: matching interface counters unavailable',report)
         self.assertIn('NA: matching module rows unavailable',report)
+        self.assertIn('NA: no named Bluetooth candidates observed; owner unknown',report)
         self.assertNotIn('PRIVATE_OR_UNKNOWN_SETTING',report)
 
     def test_freezer_summary_survives_later_pm_message_flood(self):
@@ -317,6 +347,129 @@ class SuspendDiagnosticTests(unittest.TestCase):
         p.advance()
         p.run()
         self.assertIn('NA: UID accounting format unavailable; no zero usage inferred',p.report())
+
+    def test_bluetooth_runtime_mapping_hash_and_selected_descriptor_owners(self):
+        import hashlib
+        p=self.phone();uart,driver,module,node=self.bluetooth_fixture(p)
+        originals={f:f.read_bytes() for top in ('sys','proc','vendor_dlkm') for f in (p.root/top).rglob('*') if f.is_file() and not f.is_symlink()}
+        p.run('start')
+        for f,before in originals.items(): self.assertEqual(f.read_bytes(),before,str(f))
+        p.put('sys/bus/platform/devices/4a8c000.qcom,qup_uart/power/runtime_status','suspended\n')
+        p.put('sys/bus/platform/devices/4a8c000.qcom,qup_uart/power/runtime_usage','0\n')
+        p.put('bin/settings','#!/bin/sh\nprintf "0\\n"\n').chmod(0o755)
+        (p.root/'proc/250/fd/0').unlink()
+        p.advance()
+        updated={f:f.read_bytes() for f in originals}
+        p.run('finish')
+        for f,before in updated.items(): self.assertEqual(f.read_bytes(),before,str(f))
+        report=p.report()
+        for expected in ('bluetooth_on: 1','bluetooth_on: 0','runtime_status: active','runtime_status: suspended','control: auto','qcom,msm-geni-serial-hs','DT qcom,auto-suspend-disable: absent','ABCDEF012345','TTY owner candidate: 250 vendor.qti.bluetooth@1.0-service /dev/ttyHS0','No TTY descriptor observed: 250','Candidate module SHA256'):
+            self.assertIn(expected,report)
+        self.assertIn(hashlib.sha256(b'FIXTURE_MODULE_BYTES\n').hexdigest(),report)
+        for private in ('PRIVATE_PHOTO_OR_PEER_DATA','PRIVATE_PROCESS_ARGUMENTS','PRIVATE_ACCOUNT','TTY owner candidate: 251'):
+            self.assertNotIn(private,report)
+
+    def test_uart_error_and_zero_length_dt_boolean_are_reported_without_tuning(self):
+        p=self.phone();uart,driver,module,node=self.bluetooth_fixture(p)
+        p.put('sys/bus/platform/devices/4a8c000.qcom,qup_uart/power/runtime_status','error\n')
+        p.put('sys/bus/platform/devices/4a8c000.qcom,qup_uart/power/control','on\n')
+        (node/'qcom,auto-suspend-disable').write_bytes(b'')
+        p.run();p.advance();p.run()
+        report=p.report()
+        self.assertIn('runtime_status: error',report)
+        self.assertIn('control: on',report)
+        self.assertIn('DT qcom,auto-suspend-disable: present',report)
+        self.assertEqual((uart/'power/control').read_text(),'on\n')
+        self.assertEqual((uart/'power/runtime_status').read_text(),'error\n')
+        self.assertEqual((node/'qcom,auto-suspend-disable').read_bytes(),b'')
+
+    def test_missing_module_mapping_is_na_not_a_fabricated_module(self):
+        p=self.phone();uart,driver,module,node=self.bluetooth_fixture(p)
+        (driver/'module').unlink()
+        p.run();p.advance();p.run()
+        report=p.report()
+        self.assertIn(str(uart/'driver/module')+': NA',report)
+        self.assertNotIn('Candidate module SHA256',report)
+
+    def test_bluetooth_property_allowlist_never_requests_name_address_or_all_properties(self):
+        p=self.phone()
+        log=p.root/'property-calls'
+        body='#!/bin/sh\nprintf "%s\\n" "${1:-ALL_PROPERTIES}" >> "'+str(log)+'"\ncase "$1" in persist.vendor.service.bdroid.sibs) printf "false\\n";; ro.vendor.build.fingerprint) printf "vendor/tapas/fixture:13/release-keys\\n";; ""|*.address|*.bdaddr|*.name|ro.serialno) printf "PRIVATE_BT_PEER AA:BB:CC:DD:EE:FF\\n";; *) :;; esac\n'
+        p.put('bin/getprop',body).chmod(0o755)
+        p.run();p.advance();p.run()
+        report=p.report();calls=log.read_text().splitlines()
+        self.assertIn('persist.vendor.service.bdroid.sibs: false',report)
+        self.assertIn('vendor/tapas/fixture:13/release-keys',report)
+        self.assertNotIn('PRIVATE_BT_PEER',report)
+        self.assertNotIn('AA:BB:CC:DD:EE:FF',report)
+        self.assertNotIn('ALL_PROPERTIES',calls)
+        self.assertFalse(any('bdaddr' in key or 'address' in key or key.endswith('.name') for key in calls))
+
+    def test_unavailable_bluetooth_candidate_reader_is_not_reported_as_port_closed(self):
+        p=self.phone()
+        p.put('bin/ps','#!/bin/sh\nif [ "$3" = PID,NAME ]; then exit 1; fi\nprintf "PID STAT %%CPU TIME NAME\\n"\n').chmod(0o755)
+        p.run();p.advance();p.run()
+        report=p.report()
+        self.assertIn('NA: candidate process reader unavailable',report)
+        self.assertIn('TTY candidate probe exit status: 1',report)
+        self.assertNotIn('No TTY descriptor observed:',report)
+
+    def test_uart_device_is_never_opened_to_collect_metadata(self):
+        p=self.phone();self.bluetooth_fixture(p)
+        p.put('bin/cat','#!/bin/sh\ncase "$1" in /dev/ttyHS*) printf "FORBIDDEN_UART_READ\\n"; exit 99;; esac\nexec /bin/cat "$@"\n').chmod(0o755)
+        p.run();p.advance();p.run()
+        self.assertNotIn('FORBIDDEN_UART_READ',p.report())
+        self.assertIn('TTY owner candidate:',p.report())
+
+    def test_bluetooth_manager_scanners_are_scoped_and_peer_data_is_filtered(self):
+        p=self.phone()
+        data='Bluetooth Status\n  enabled: true\n  state: ON\n  address: AA:BB:CC:DD:EE:FF\n  name: PRIVATE_PHONE_NAME\n\nGATT Scanner Map\n  fixture.scanner (Registered)\n  LE scans (started/stopped)                                  : 4 / 3\n  Scan time in ms (active/suspend/total)                      : 100 / 20 / 120\n  Ongoing scans                                               :\n    PRIVATE_SCAN_FILTER_AND_PEER AA:BB:CC:DD:EE:FF\nGATT Advertiser Map\n  private.advertiser (Registered)\n  Ongoing scans                                               :\nGATT Client Map\n  PRIVATE_BONDED_NAME\n'
+        original=(p.bins/'dumpsys').read_text()
+        p.put('bin/dumpsys-base',original).chmod(0o755)
+        fixture=p.put('bluetooth-manager',data)
+        wrapper='#!/bin/sh\nif [ "$1" = bluetooth_manager ]; then cat "'+str(fixture)+'"; else exec "'+str(p.bins/'dumpsys-base')+'" "$@"; fi\n'
+        p.put('bin/dumpsys',wrapper).chmod(0o755)
+        p.run('start')
+        fixture.write_text('Bluetooth Status\n  enabled: false\n  state: OFF\n  address: AA:BB:CC:DD:EE:FF\n  name: PRIVATE_PHONE_NAME\n\n')
+        p.advance();p.run('finish')
+        report=p.report()
+        for value in ('adapter_enabled true','adapter_state ON','adapter_enabled false','adapter_state OFF','BLE scanner package fixture.scanner','BLE scan counts fixture.scanner started 4 stopped 3','BLE scan time_ms fixture.scanner active 100 suspended 20 total 120','BLE ongoing scan section observed fixture.scanner'):
+            self.assertIn(value,report)
+        for private in ('AA:BB:CC:DD:EE:FF','PRIVATE_PHONE_NAME','PRIVATE_SCAN_FILTER_AND_PEER','private.advertiser','PRIVATE_BONDED_NAME'):
+            self.assertNotIn(private,report)
+
+    def test_unlisted_bluetooth_manager_format_is_not_adapter_off(self):
+        p=self.phone()
+        p.put('bin/dumpsys','#!/bin/sh\nif [ "$1" = bluetooth_manager ]; then printf "PRIVATE_BT_UNKNOWN AA:BB:CC:DD:EE:FF\\n"; fi\n').chmod(0o755)
+        p.run();p.advance();p.run()
+        report=p.report()
+        self.assertIn('NA: Bluetooth adapter state format unavailable',report)
+        self.assertIn('NA: supported BLE scanner attribution unavailable; no absence inferred',report)
+        self.assertNotIn('adapter_enabled false',report)
+        self.assertNotIn('PRIVATE_BT_UNKNOWN',report)
+        self.assertNotIn('AA:BB:CC:DD:EE:FF',report)
+
+    def test_unlisted_scanner_header_clears_previous_package(self):
+        p=self.phone()
+        data='GATT Scanner Map\n  fixture.scanner (Registered)\n  LE scans (started/stopped) : 1 / 1\n  android.uid.system:1000 (Registered)\n  Ongoing scans :\nGATT Client Map\n'
+        p.put('bin/dumpsys','#!/bin/sh\nif [ "$1" = bluetooth_manager ]; then cat <<\'EOF\'\n'+data+'EOF\nfi\n').chmod(0o755)
+        p.run();p.advance();p.run()
+        report=p.report()
+        self.assertIn('BLE scanner package fixture.scanner',report)
+        self.assertNotIn('BLE ongoing scan section observed fixture.scanner',report)
+        self.assertNotIn('BLE scanner package android.uid',report)
+
+    def test_unknown_vendor_section_cannot_export_package_like_peer_names(self):
+        for header in ('Vendor Peer List:','  VendorPeerList:','  VendorPeerList'):
+            with self.subTest(header=header):
+                p=self.phone()
+                data='GATT Scanner Map\n  fixture.scanner (Registered)\n  LE scans (started/stopped) : 1 / 1\n'+header+'\n  PRIVATE.PEER.NAME\n  Ongoing scans :\n'
+                p.put('bin/dumpsys','#!/bin/sh\nif [ "$1" = bluetooth_manager ]; then cat <<\'EOF\'\n'+data+'EOF\nfi\n').chmod(0o755)
+                p.run();p.advance();p.run()
+                report=p.report()
+                self.assertIn('BLE scanner package fixture.scanner',report)
+                self.assertNotIn('PRIVATE.PEER.NAME',report)
+                self.assertNotIn('BLE ongoing scan section observed fixture.scanner',report)
 
     def test_module_action_contract_and_no_boot_service(self):
         module = ROOT / 'modules/chatgpt-reposo-diagnostico'

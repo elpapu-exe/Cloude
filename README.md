@@ -1,6 +1,6 @@
 # ChatGPT Kernel — rc5 publicada
 
-**Reposo recuperado en la última prueba:** 92,5% del intervalo suspendido, batería 40 → 38 °C y fuente UART inactiva. Falta confirmar la acción que liberó esa fuente antes de atribuir la causa o proponer una corrección permanente. [Resultado medido](docs/suspend-result-uart-released.md) · [Diagnóstico](docs/suspend-investigation.md).
+**Reposo recuperado al apagar Bluetooth:** el usuario confirmó ese único cambio y que no tenía accesorios conectados. Se midió 92,5% del intervalo suspendido, batería 40 → 38 °C y UART inactiva. Se investiga el módulo vendor y su cliente para conservar Bluetooth utilizable. [Resultado](docs/suspend-result-uart-released.md) · [Siguiente fase](docs/bluetooth-uart-investigation.md).
 
 Kernel experimental para **Redmi Note 12 4G TAPAS/topaz y Android 13**. Conserva la ROM, los módulos necesarios, KernelSU/ReSukiSU y las protecciones térmicas. La LineageOS 20 del usuario es la referencia; otras ROM A13 requieren comprobación real.
 
