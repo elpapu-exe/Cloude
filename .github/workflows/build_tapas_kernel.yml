@@ -41,8 +41,6 @@ jobs:
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL || true
 
-          # El preflight de ci-build-in-container.sh exige >= 36 GiB (RAM + swap).
-          # Con ~14 GiB RAM libre + ~3 GiB swap base, 26 GiB extra dejan ~43 GiB totales.
           SWAP_GIB=26
           if [ "${{ inputs.enable_thinlto }}" != "true" ]; then
             SWAP_GIB=28
@@ -119,45 +117,73 @@ jobs:
             -e INPUT_KP_MODE \
             -e INPUT_THINLTO \
             -e CHATGPT_JOBS \
-            "$TAPAS_BUILD_CONTAINER" bash -euo pipefail -c '
-              # 1. Localizar arbol del kernel parcheado (/work/.cache/linux por defecto)
+            "$TAPAS_BUILD_CONTAINER" bash -eu -c '
+              echo "=== [1/4] Localizando fuentes, Clang 24 y herramientas host ==="
+
+              # 1. Arbol de Linux parcheado
+              KSRC=""
               if [ -f /work/.cache/linux/Makefile ]; then
                 KSRC="/work/.cache/linux"
               else
-                KSRC=$(find /work /tmp /root /opt -maxdepth 8 -path "*/arch/arm64/configs/unified_defconfig" 2>/dev/null | head -n 1 | sed "s|/arch/arm64/configs/unified_defconfig||")
+                while IFS= read -r f; do
+                  KSRC="${f%/arch/arm64/configs/unified_defconfig}"
+                  break
+                done < <(find /work /tmp /root /opt -maxdepth 8 -path "*/arch/arm64/configs/unified_defconfig" 2>/dev/null)
               fi
-              if [ -z "${KSRC:-}" ] || [ ! -f "$KSRC/Makefile" ]; then
+              if [ -z "$KSRC" ] || [ ! -f "$KSRC/Makefile" ]; then
                 echo "::error::No se localizo el arbol fuente del kernel tras setup."
-                find /work -maxdepth 4 2>/dev/null || true
+                ls -la /work /work/.cache 2>/dev/null || true
                 exit 1
               fi
 
-              # 2. Localizar toolchain greenforce_clang (profundidad ampliada)
-              CLANG_BIN=$(find /work /tmp /root /opt -maxdepth 8 -type f -name "clang" -executable 2>/dev/null | grep -E "/bin/clang$" | head -n 1 | xargs -r dirname)
-              if [ -z "${CLANG_BIN:-}" ]; then
+              # 2. Toolchain greenforce_clang (acepta symlinks: bin/clang -> clang-24)
+              CLANG_BIN=""
+              while IFS= read -r c; do
+                case "$c" in
+                  */bin/clang|*/bin/clang-[0-9]*)
+                    CLANG_BIN="$(dirname "$c")"
+                    break
+                    ;;
+                esac
+              done < <(find /work /tmp /root /opt -maxdepth 8 \( -type f -o -type l \) \( -name "clang" -o -name "clang-[0-9]*" \) 2>/dev/null)
+
+              if [ -z "$CLANG_BIN" ] || [ ! -x "$CLANG_BIN/clang" ]; then
                 echo "::error::No se localizo greenforce_clang tras setup."
-                find /work -maxdepth 6 -name "clang" 2>/dev/null || true
+                find /work/.cache -maxdepth 4 2>/dev/null || true
                 exit 1
               fi
 
-              # 3. Localizar directorio out/.config
+              # 3. Directorio out/.config
               OUT_DIR="/work/out"
               if [ ! -f "$OUT_DIR/.config" ]; then
-                FOUND_CFG=$(find /work /tmp -maxdepth 6 -name ".config" 2>/dev/null | head -n 1 || true)
-                [ -n "$FOUND_CFG" ] && OUT_DIR=$(dirname "$FOUND_CFG")
+                while IFS= read -r cfg; do
+                  OUT_DIR="$(dirname "$cfg")"
+                  break
+                done < <(find /work /tmp -maxdepth 6 -name ".config" 2>/dev/null)
               fi
               if [ ! -f "$OUT_DIR/.config" ]; then
                 echo "::error::No se encontro .config en $OUT_DIR tras setup."
                 exit 1
               fi
 
-              echo "KSRC=$KSRC"
-              echo "CLANG_BIN=$CLANG_BIN"
-              echo "OUT_DIR=$OUT_DIR"
+              # 4. Asegurar herramientas host (bc, bison, flex, m4, pahole, lz4, cpio) en el contenedor
+              if ! command -v bison >/dev/null 2>&1 || ! command -v flex >/dev/null 2>&1 || ! command -v bc >/dev/null 2>&1 || ! command -v pahole >/dev/null 2>&1; then
+                echo "Instalando herramientas host (bc, bison, flex, m4, pahole, lz4, cpio) en el contenedor..."
+                DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+                  bc bison flex m4 pahole lz4 cpio libelf-dev libdw-dev libbpf-dev
+              fi
 
               export PATH="$CLANG_BIN:$PATH"
               export ARCH=arm64
               export SUBARCH=arm64
+
+              echo "KSRC      = $KSRC"
+              echo "CLANG_BIN = $CLANG_BIN"
+              echo "OUT_DIR   = $OUT_DIR"
+              "$CLANG_BIN/clang" --version | head -n 2
+              pahole --version || true
+
+              echo "=== [2/4] Aplicando perfil Tapas 60Hz (MGLRU + ZRAM lz4kd + SSG + BBRv3 + Calle) ==="
 
               # Identidad del kernel
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_LOCALVERSION "-${INPUT_KNAME}"
@@ -216,13 +242,15 @@ jobs:
               # Evitar que un warning menor aborte la compilacion
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_WERROR
 
-              MAKE_ARGS="O=$OUT_DIR ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip"
+              MAKE_ARGS="O=$OUT_DIR ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip HOSTCC=gcc HOSTCXX=g++"
+
+              echo "=== [3/4] Resolviendo dependencias con olddefconfig ==="
               make -C "$KSRC" $MAKE_ARGS olddefconfig
 
               echo "=== Resumen de simbolos activos ==="
               grep -E "CONFIG_(LOCALVERSION|LRU_GEN|ZRAM_DEF_COMP|MQ_IOSCHED_SSG|TCP_CONG_BBR|DEFAULT_TCP_CONG|DEFAULT_FQ|KPROFILES|DEFAULT_KP_MODE|KSU|SUSFS|BBG|WQ_POWER_EFFICIENT|LTO_CLANG)" "$OUT_DIR/.config" || true
 
-              echo "=== Compilando Image (-j${CHATGPT_JOBS}) ==="
+              echo "=== [4/4] Compilando Image (-j${CHATGPT_JOBS}) ==="
               make -C "$KSRC" $MAKE_ARGS -j"${CHATGPT_JOBS}" Image
 
               cp -f "$OUT_DIR/arch/arm64/boot/Image" /work/tapas_Image
