@@ -1,0 +1,245 @@
+name: Build Custom Kernel (Tapas / Topaz GKI 5.15)
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernel_name:
+        description: 'Nombre personalizado del kernel (LOCALVERSION)'
+        required: true
+        default: 'CloudeOpt-Tapas'
+      defconfig:
+        description: 'Defconfig (dejar en auto para detectar gki/tapas/topaz)'
+        required: true
+        default: 'auto'
+      ksu_mode:
+        description: 'Soporte KernelSU'
+        type: choice
+        default: 'keep_repo'
+        options:
+          - keep_repo
+          - sukisu_ultra
+          - ksu_next
+      kprofiles_default:
+        description: 'Modo inicial de KProfiles (2=Balanced Calle, 3=Performance Libre)'
+        type: choice
+        default: '2'
+        options:
+          - '2'
+          - '3'
+      enable_thinlto:
+        description: 'Activar ThinLTO (mas rapido en ejecucion, tarda ~5 min extra al compilar)'
+        type: boolean
+        default: true
+
+jobs:
+  build-kernel:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Liberar espacio en disco del runner
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL || true
+          df -h
+
+      - name: Clonar repositorio del kernel (elpapu-exe/Cloude)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Verificar estructura del codigo fuente
+        run: |
+          if [ ! -f Makefile ] || [ ! -d arch/arm64/configs ]; then
+            echo "::error::No se encontro un arbol fuente de kernel Linux (Makefile y arch/arm64/configs) en la raiz de esta rama."
+            echo "Archivos encontrados en la raiz:"
+            ls -la
+            exit 1
+          fi
+          echo "Arbol de kernel detectado correctamente."
+
+      - name: Instalar dependencias de compilacion
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bc bison build-essential ccache curl flex git libssl-dev libelf-dev lz4 python3 unzip zip cpio zstd kmod
+
+      - name: Descargar Toolchain Clang (ZyC Clang con fallback)
+        run: |
+          mkdir -p "$HOME/clang"
+          CLANG_URL=$(curl -s https://api.github.com/repos/ZyCromerZ/Clang/releases/latest | grep -oE 'https://[^"]+Clang-[^"]+\.tar\.gz' | head -n 1)
+          if [ -n "$CLANG_URL" ]; then
+            echo "Descargando ZyC Clang desde: $CLANG_URL"
+            curl -sL "$CLANG_URL" -o /tmp/clang.tar.gz
+            tar -xzf /tmp/clang.tar.gz -C "$HOME/clang"
+            rm -f /tmp/clang.tar.gz
+          else
+            echo "Fallback: instalando clang/lld del sistema"
+            sudo apt-get install -y -qq clang lld llvm
+          fi
+          if [ -x "$HOME/clang/bin/clang" ]; then
+            echo "$HOME/clang/bin" >> "$GITHUB_PATH"
+            "$HOME/clang/bin/clang" --version
+          else
+            clang --version
+          fi
+
+      - name: Configurar KernelSU (segun eleccion)
+        run: |
+          KSU_MODE="${{ inputs.ksu_mode }}"
+          if [ "$KSU_MODE" = "keep_repo" ]; then
+            echo "Manteniendo configuracion KernelSU/SUSFS existente en el repositorio."
+          elif [ "$KSU_MODE" = "sukisu_ultra" ]; then
+            echo "Integrando SukiSU Ultra (rama susfs-main si aplica)..."
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main ||             curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
+          elif [ "$KSU_MODE" = "ksu_next" ]; then
+            echo "Integrando KernelSU Next..."
+            curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -
+          fi
+
+      - name: Detectar defconfig y aplicar optimizaciones para Tapas (60Hz + Multitarea + Calle)
+        id: config
+        run: |
+          REQ_DEF="${{ inputs.defconfig }}"
+          DEFCONFIG=""
+          if [ "$REQ_DEF" != "auto" ] && [ -f "arch/arm64/configs/$REQ_DEF" ]; then
+            DEFCONFIG="$REQ_DEF"
+          else
+            for candidate in               topaz_defconfig               tapas_defconfig               vendor/topaz_defconfig               vendor/tapas_defconfig               vendor/khaje-perf_defconfig               vendor/bengal-perf_defconfig               gki_defconfig; do
+              if [ -f "arch/arm64/configs/$candidate" ]; then
+                DEFCONFIG="$candidate"
+                break
+              fi
+            done
+          fi
+
+          if [ -z "$DEFCONFIG" ]; then
+            echo "::error::No se pudo autodetectar defconfig. Disponibles en arch/arm64/configs:"
+            find arch/arm64/configs -maxdepth 2 -type f
+            exit 1
+          fi
+
+          echo "Defconfig seleccionado: $DEFCONFIG"
+          echo "defconfig=$DEFCONFIG" >> "$GITHUB_OUTPUT"
+
+          export ARCH=arm64
+          export SUBARCH=arm64
+          MAKE_ARGS="O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip"
+
+          make $MAKE_ARGS "$DEFCONFIG"
+
+          # --- 1. Nombre personalizado ---
+          KNAME="-${{ inputs.kernel_name }}"
+          scripts/config --file out/.config --set-str CONFIG_LOCALVERSION "$KNAME"
+          scripts/config --file out/.config --disable CONFIG_LOCALVERSION_AUTO
+
+          # --- 2. Multitarea real: MGLRU encendido por defecto + ZRAM lz4kd ---
+          scripts/config --file out/.config --enable CONFIG_LRU_GEN
+          scripts/config --file out/.config --enable CONFIG_LRU_GEN_ENABLED
+          scripts/config --file out/.config --enable CONFIG_ZRAM
+          if grep -rq "config CRYPTO_LZ4KD" crypto/ drivers/ 2>/dev/null; then
+            scripts/config --file out/.config --enable CONFIG_CRYPTO_LZ4KD
+            scripts/config --file out/.config --enable CONFIG_ZRAM_DEF_COMP_LZ4KD
+            scripts/config --file out/.config --set-str CONFIG_ZRAM_DEF_COMP "lz4kd"
+          else
+            scripts/config --file out/.config --enable CONFIG_CRYPTO_LZ4
+            scripts/config --file out/.config --set-str CONFIG_ZRAM_DEF_COMP "lz4"
+          fi
+
+          # --- 3. Arranque rapido de apps: uclamp + I/O SSG (evitar BFQ por defecto) ---
+          scripts/config --file out/.config --enable CONFIG_UCLAMP_TASK
+          scripts/config --file out/.config --enable CONFIG_UCLAMP_TASK_GROUP
+          if grep -rq "config MQ_IOSCHED_SSG" block/ 2>/dev/null; then
+            scripts/config --file out/.config --enable CONFIG_MQ_IOSCHED_SSG
+            scripts/config --file out/.config --enable CONFIG_MQ_IOSCHED_SSG_CGROUP
+          fi
+
+          # --- 4. Bateria en la calle & Deep Sleep (sin romper Android GKI) ---
+          scripts/config --file out/.config --enable CONFIG_WQ_POWER_EFFICIENT_DEFAULT
+          scripts/config --file out/.config --enable CONFIG_NO_HZ_IDLE
+          scripts/config --file out/.config --disable CONFIG_SCHED_DEBUG
+          scripts/config --file out/.config --disable CONFIG_DEBUG_PREEMPT
+          scripts/config --file out/.config --disable CONFIG_LOCK_STAT
+
+          # --- 5. Red Cloud Gaming (xStreaming): BBRv3 / BBR + FQ ---
+          scripts/config --file out/.config --enable CONFIG_NET_SCH_FQ
+          scripts/config --file out/.config --enable CONFIG_DEFAULT_FQ
+          if grep -rq "config TCP_CONG_BBR3" net/ipv4/ 2>/dev/null; then
+            scripts/config --file out/.config --enable CONFIG_TCP_CONG_BBR3
+            scripts/config --file out/.config --enable CONFIG_DEFAULT_BBR3
+            scripts/config --file out/.config --set-str CONFIG_DEFAULT_TCP_CONG "bbr3"
+          elif grep -rq "config TCP_CONG_BBR" net/ipv4/ 2>/dev/null; then
+            scripts/config --file out/.config --enable CONFIG_TCP_CONG_BBR
+            scripts/config --file out/.config --enable CONFIG_DEFAULT_BBR
+            scripts/config --file out/.config --set-str CONFIG_DEFAULT_TCP_CONG "bbr"
+          fi
+
+          # --- 6. KProfiles modo inicial (2=Balanced Calle, 3=Performance) ---
+          KP_MODE="${{ inputs.kprofiles_default }}"
+          if grep -rq "config KPROFILES" drivers/ 2>/dev/null; then
+            scripts/config --file out/.config --enable CONFIG_KPROFILES
+            scripts/config --file out/.config --set-val CONFIG_DEFAULT_KP_MODE "$KP_MODE"
+          fi
+
+          # --- 7. ThinLTO opcional ---
+          if [ "${{ inputs.enable_thinlto }}" = "true" ]; then
+            scripts/config --file out/.config --enable CONFIG_LTO_CLANG_THIN
+            scripts/config --file out/.config --disable CONFIG_LTO_CLANG_FULL
+            scripts/config --file out/.config --disable CONFIG_LTO_NONE
+          fi
+
+          # --- 8. Garantizar soporte KernelSU y OverlayFS (Hybrid Mount) ---
+          scripts/config --file out/.config --enable CONFIG_OVERLAY_FS
+          scripts/config --file out/.config --enable CONFIG_KPROBES
+          scripts/config --file out/.config --enable CONFIG_KALLSYMS
+          if grep -rq "config KSU" drivers/ 2>/dev/null; then
+            scripts/config --file out/.config --enable CONFIG_KSU
+          fi
+
+          # Resolver dependencias de forma segura
+          make $MAKE_ARGS olddefconfig
+
+          echo "=== Resumen de simbolos activos en out/.config ==="
+          grep -E "CONFIG_(LRU_GEN|ZRAM_DEF_COMP|MQ_IOSCHED_SSG|TCP_CONG_BBR|DEFAULT_TCP_CONG|KPROFILES|DEFAULT_KP_MODE|KSU|SUSFS|WQ_POWER_EFFICIENT|LTO_CLANG)" out/.config || true
+
+      - name: Compilar imagen del kernel (Image)
+        run: |
+          export ARCH=arm64
+          export SUBARCH=arm64
+          MAKE_ARGS="O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip"
+          make -j"$(nproc)" $MAKE_ARGS Image
+
+      - name: Empaquetar ZIP flasheable con AnyKernel3 (Tapas / Topaz)
+        id: package
+        run: |
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git AnyKernel3
+          rm -rf AnyKernel3/.git AnyKernel3/README.md AnyKernel3/modules AnyKernel3/patch AnyKernel3/ramdisk
+
+          if [ -f out/arch/arm64/boot/Image ]; then
+            cp out/arch/arm64/boot/Image AnyKernel3/Image
+          elif [ -f out/arch/arm64/boot/Image.gz ]; then
+            cp out/arch/arm64/boot/Image.gz AnyKernel3/Image.gz
+          else
+            echo "::error::No se genero Image ni Image.gz tras la compilacion."
+            exit 1
+          fi
+
+          if [ -f ak3_tapas/anykernel.sh ]; then
+            cp ak3_tapas/anykernel.sh AnyKernel3/anykernel.sh
+            [ -f ak3_tapas/banner ] && cp ak3_tapas/banner AnyKernel3/banner
+          else
+            printf '%s
+'               "### AnyKernel3 Script - Tapas / Topaz (GKI Safe)"               "properties() { '"               "kernel.string=${{ inputs.kernel_name }} (tapas/topaz GKI 5.15)"               "do.devicecheck=1"               "do.modules=0"               "do.systemless=0"               "do.cleanup=1"               "do.cleanuponabort=0"               "device.name1=topaz"               "device.name2=tapas"               "supported.versions=13-17"               "supported.patchlevels="               "supported.vendorpatchlevels="               "'; }"               "block=boot"               "is_slot_device=auto"               "ramdisk_compression=auto"               "patch_vbmeta_flag=auto"               "no_magisk_check=1"               ". tools/ak3-core.sh"               'if [ -L "/dev/block/bootdevice/by-name/init_boot_a" ] || [ -L "/dev/block/by-name/init_boot_a" ]; then'               "  split_boot"               "  flash_boot"               "else"               "  dump_boot"               "  write_boot"               "fi" > AnyKernel3/anykernel.sh
+          fi
+
+          DATE_TAG=$(date +'%Y%m%d-%H%M')
+          ZIP_NAME="${{ inputs.kernel_name }}-tapas-${DATE_TAG}.zip"
+          (cd AnyKernel3 && zip -r9 "../$ZIP_NAME" * -x '*.git*' 'README.md')
+          echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
+          ls -lh "$ZIP_NAME"
+
+      - name: Subir Kernel ZIP como Artefacto de GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.zip_name }}
+          path: ${{ steps.package.outputs.zip_name }}
+          retention-days: 14
