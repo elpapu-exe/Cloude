@@ -7,18 +7,6 @@ on:
         description: 'Nombre personalizado del kernel (LOCALVERSION)'
         required: true
         default: 'CloudeOpt-Tapas'
-      defconfig:
-        description: 'Defconfig (dejar en auto para detectar gki/tapas/topaz)'
-        required: true
-        default: 'auto'
-      ksu_mode:
-        description: 'Soporte KernelSU'
-        type: choice
-        default: 'keep_repo'
-        options:
-          - keep_repo
-          - sukisu_ultra
-          - ksu_next
       kprofiles_default:
         description: 'Modo inicial de KProfiles (2=Balanced Calle, 3=Performance Libre)'
         type: choice
@@ -27,253 +15,248 @@ on:
           - '2'
           - '3'
       enable_thinlto:
-        description: 'Activar ThinLTO (mas rapido en ejecucion, tarda ~5 min extra al compilar)'
+        description: 'Usar ThinLTO (compila en ~15-20 min sin necesitar 36 GiB de swap)'
         type: boolean
         default: true
 
+permissions:
+  contents: read
+
+concurrency:
+  group: tapas-custom-kernel-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-kernel:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 90
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      TAPAS_BUILD_CONTAINER: tapas-kernel-${{ github.run_id }}-${{ github.run_attempt }}
+      TAPAS_BUILD_IMAGE: debian:13-slim@sha256:1e1a22175fbf1b32157ddaf0219e1db4e5401fab2b94ed285add64d18587cd2d
+      CHATGPT_JOBS: '4'
+      CHATGPT_CI_MIN_FREE_GIB: '10'
 
     steps:
-      - name: Liberar espacio en disco del runner
+      - name: Liberar espacio en disco y preparar swap ligero
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL || true
+          SWAP_GIB=8
+          if [ "${{ inputs.enable_thinlto }}" != "true" ]; then
+            SWAP_GIB=28
+            echo "CHATGPT_JOBS=2" >> "$GITHUB_ENV"
+          fi
+          sudo fallocate -l "${SWAP_GIB}G" /mnt/tapas_swapfile || sudo dd if=/dev/zero of=/mnt/tapas_swapfile bs=1M count=$((SWAP_GIB * 1024)) status=none
+          sudo chmod 600 /mnt/tapas_swapfile
+          sudo mkswap /mnt/tapas_swapfile
+          sudo swapon /mnt/tapas_swapfile
+          echo "TAPAS_SWAPFILE=/mnt/tapas_swapfile" >> "$GITHUB_ENV"
+          free -h
           df -h
 
-      - name: Clonar repositorio del kernel (elpapu-exe/Cloude)
+      - name: Clonar archivos de construccion de elpapu-exe/Cloude
         uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: 1
-          submodules: recursive
+          filter: blob:none
+          sparse-checkout: |
+            /.github/
+            /ak3_tapas/
+            /config/
+            /docs/
+            /installer/
+            /patches/
+            /scripts/
+            /tests/
+            /README.md
+            /STATUS.md
+            /.gitattributes
+            /.gitignore
+          sparse-checkout-cone-mode: false
 
-      - name: Verificar estructura del codigo fuente
+      - name: Iniciar contenedor de compilacion verificado (Debian 13)
         run: |
-          if [ ! -f Makefile ] || [ ! -d arch/arm64/configs ]; then
-            echo "::error::No se encontro un arbol fuente de kernel Linux (Makefile y arch/arm64/configs) en la raiz de esta rama."
-            echo "Archivos encontrados en la raiz:"
-            ls -la
-            exit 1
-          fi
-          echo "Arbol de kernel detectado correctamente."
+          mkdir -p logs
+          docker run --rm --detach --init --name "$TAPAS_BUILD_CONTAINER" \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/work" \
+            --workdir /work \
+            --env CHATGPT_JOBS \
+            --env CHATGPT_CI_MIN_FREE_GIB \
+            "$TAPAS_BUILD_IMAGE" sleep infinity
 
-      - name: Instalar dependencias de compilacion
+      - name: Preparar fuentes pineadas (Zepharo R10 d246c8c + ReSukiSU + SUSFS + Baseband-guard)
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq bc bison build-essential ccache curl flex git libssl-dev libelf-dev lz4 python3 unzip zip cpio zstd kmod
+          set -o pipefail
+          docker exec "$TAPAS_BUILD_CONTAINER" \
+            bash scripts/ci-build-in-container.sh setup 2>&1 | tee logs/tapas-setup.log
 
-      - name: Descargar Toolchain Clang (ZyC Clang con fallback)
+      - name: Aplicar perfil Tapas 60Hz (MGLRU + ZRAM lz4kd + SSG + BBRv3 + Calle) y compilar Image
+        env:
+          INPUT_KNAME: ${{ inputs.kernel_name }}
+          INPUT_KP_MODE: ${{ inputs.kprofiles_default }}
+          INPUT_THINLTO: ${{ inputs.enable_thinlto }}
         run: |
-          mkdir -p "$HOME/clang"
-          CLANG_URL=$(curl -s https://api.github.com/repos/ZyCromerZ/Clang/releases/latest | grep -oE 'https://[^"]+Clang-[^"]+\.tar\.gz' | head -n 1)
-          if [ -n "$CLANG_URL" ]; then
-            echo "Descargando ZyC Clang desde: $CLANG_URL"
-            curl -sL "$CLANG_URL" -o /tmp/clang.tar.gz
-            tar -xzf /tmp/clang.tar.gz -C "$HOME/clang"
-            rm -f /tmp/clang.tar.gz
-          else
-            echo "Fallback: instalando clang/lld del sistema"
-            sudo apt-get install -y -qq clang lld llvm
-          fi
-          if [ -x "$HOME/clang/bin/clang" ]; then
-            echo "$HOME/clang/bin" >> "$GITHUB_PATH"
-            "$HOME/clang/bin/clang" --version
-          else
-            clang --version
-          fi
-
-      - name: Configurar KernelSU (segun eleccion)
-        run: |
-          KSU_MODE="${{ inputs.ksu_mode }}"
-          if [ "$KSU_MODE" = "keep_repo" ]; then
-            echo "Manteniendo configuracion KernelSU/SUSFS existente en el repositorio."
-          elif [ "$KSU_MODE" = "sukisu_ultra" ]; then
-            echo "Integrando SukiSU Ultra (rama susfs-main si aplica)..."
-            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main || \
-            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
-          elif [ "$KSU_MODE" = "ksu_next" ]; then
-            echo "Integrando KernelSU Next..."
-            curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -
-          fi
-
-      - name: Detectar defconfig y aplicar optimizaciones para Tapas (60Hz + Multitarea + Calle)
-        id: config
-        run: |
-          REQ_DEF="${{ inputs.defconfig }}"
-          DEFCONFIG=""
-          if [ "$REQ_DEF" != "auto" ] && [ -f "arch/arm64/configs/$REQ_DEF" ]; then
-            DEFCONFIG="$REQ_DEF"
-          else
-            for candidate in \
-              topaz_defconfig \
-              tapas_defconfig \
-              vendor/topaz_defconfig \
-              vendor/tapas_defconfig \
-              vendor/khaje-perf_defconfig \
-              vendor/bengal-perf_defconfig \
-              gki_defconfig; do
-              if [ -f "arch/arm64/configs/$candidate" ]; then
-                DEFCONFIG="$candidate"
-                break
+          set -o pipefail
+          docker exec \
+            -e INPUT_KNAME \
+            -e INPUT_KP_MODE \
+            -e INPUT_THINLTO \
+            -e CHATGPT_JOBS \
+            "$TAPAS_BUILD_CONTAINER" bash -euo pipefail -c '
+              # Localizar arbol del kernel parcheado, toolchain Clang 24 y directorio out
+              KSRC=$(find /work /tmp /root /opt -maxdepth 5 -path "*/arch/arm64/configs/unified_defconfig" 2>/dev/null | head -n 1 | sed "s|/arch/arm64/configs/unified_defconfig||")
+              if [ -z "$KSRC" ] || [ ! -f "$KSRC/Makefile" ]; then
+                echo "::error::No se localizo el arbol fuente del kernel tras setup."
+                find /work -maxdepth 3
+                exit 1
               fi
-            done
-          fi
 
-          if [ -z "$DEFCONFIG" ]; then
-            echo "::error::No se pudo autodetectar defconfig. Disponibles en arch/arm64/configs:"
-            find arch/arm64/configs -maxdepth 2 -type f
-            exit 1
-          fi
+              CLANG_BIN=$(find /work /tmp /root /opt -maxdepth 5 -type f -name "clang" -executable 2>/dev/null | grep -E "/bin/clang$" | head -n 1 | xargs -r dirname)
+              if [ -z "$CLANG_BIN" ]; then
+                echo "::error::No se localizo greenforce_clang tras setup."
+                find /work -maxdepth 4 -name "clang" 2>/dev/null || true
+                exit 1
+              fi
 
-          echo "Defconfig seleccionado: $DEFCONFIG"
-          echo "defconfig=$DEFCONFIG" >> "$GITHUB_OUTPUT"
+              OUT_DIR="/work/out"
+              if [ ! -f "$OUT_DIR/.config" ]; then
+                FOUND_CFG=$(find /work /tmp -maxdepth 4 -name ".config" 2>/dev/null | head -n 1 || true)
+                [ -n "$FOUND_CFG" ] && OUT_DIR=$(dirname "$FOUND_CFG")
+              fi
+              if [ ! -f "$OUT_DIR/.config" ]; then
+                echo "::error::No se encontro .config en $OUT_DIR tras setup."
+                exit 1
+              fi
 
-          export ARCH=arm64
-          export SUBARCH=arm64
-          MAKE_ARGS="O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip"
+              echo "KSRC=$KSRC"
+              echo "CLANG_BIN=$CLANG_BIN"
+              echo "OUT_DIR=$OUT_DIR"
 
-          make $MAKE_ARGS "$DEFCONFIG"
+              export PATH="$CLANG_BIN:$PATH"
+              export ARCH=arm64
+              export SUBARCH=arm64
 
-          # --- 1. Nombre personalizado ---
-          KNAME="-${{ inputs.kernel_name }}"
-          scripts/config --file out/.config --set-str CONFIG_LOCALVERSION "$KNAME"
-          scripts/config --file out/.config --disable CONFIG_LOCALVERSION_AUTO
+              # 1. Identidad del kernel
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_LOCALVERSION "-${INPUT_KNAME}"
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_LOCALVERSION_AUTO
 
-          # --- 2. Multitarea real: MGLRU encendido por defecto + ZRAM lz4kd ---
-          scripts/config --file out/.config --enable CONFIG_LRU_GEN
-          scripts/config --file out/.config --enable CONFIG_LRU_GEN_ENABLED
-          scripts/config --file out/.config --enable CONFIG_ZRAM
-          if grep -rq "config CRYPTO_LZ4KD" crypto/ drivers/ 2>/dev/null; then
-            scripts/config --file out/.config --enable CONFIG_CRYPTO_LZ4KD
-            scripts/config --file out/.config --enable CONFIG_ZRAM_DEF_COMP_LZ4KD
-            scripts/config --file out/.config --set-str CONFIG_ZRAM_DEF_COMP "lz4kd"
-          else
-            scripts/config --file out/.config --enable CONFIG_CRYPTO_LZ4
-            scripts/config --file out/.config --set-str CONFIG_ZRAM_DEF_COMP "lz4"
-          fi
+              # 2. Multitarea real: MGLRU activo por defecto + ZRAM lz4kd
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_LRU_GEN
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_LRU_GEN_ENABLED
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_ZRAM
+              if grep -rq "config CRYPTO_LZ4KD" "$KSRC/crypto" "$KSRC/drivers" 2>/dev/null; then
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_CRYPTO_LZ4KD
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_ZRAM_DEF_COMP_LZ4KD
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_ZRAM_DEF_COMP "lz4kd"
+              fi
 
-          # --- 3. Arranque rapido de apps: uclamp + I/O SSG (evitar BFQ por defecto) ---
-          scripts/config --file out/.config --enable CONFIG_UCLAMP_TASK
-          scripts/config --file out/.config --enable CONFIG_UCLAMP_TASK_GROUP
-          if grep -rq "config MQ_IOSCHED_SSG" block/ 2>/dev/null; then
-            scripts/config --file out/.config --enable CONFIG_MQ_IOSCHED_SSG
-            scripts/config --file out/.config --enable CONFIG_MQ_IOSCHED_SSG_CGROUP
-          fi
+              # 3. Arranque rapido de apps: uclamp + I/O SSG
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_UCLAMP_TASK
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_UCLAMP_TASK_GROUP
+              if grep -rq "config MQ_IOSCHED_SSG" "$KSRC/block" 2>/dev/null; then
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_MQ_IOSCHED_SSG
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_MQ_IOSCHED_SSG_CGROUP
+              fi
 
-          # --- 4. Bateria en la calle & Deep Sleep (sin romper Android GKI) ---
-          scripts/config --file out/.config --enable CONFIG_WQ_POWER_EFFICIENT_DEFAULT
-          scripts/config --file out/.config --enable CONFIG_NO_HZ_IDLE
-          scripts/config --file out/.config --disable CONFIG_SCHED_DEBUG
-          scripts/config --file out/.config --disable CONFIG_DEBUG_PREEMPT
-          scripts/config --file out/.config --disable CONFIG_LOCK_STAT
+              # 4. Bateria en la calle & Deep Sleep (sin alterar ABI KMI)
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_WQ_POWER_EFFICIENT_DEFAULT
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_NO_HZ_IDLE
 
-          # --- 5. Red Cloud Gaming (xStreaming): BBRv3 / BBR + FQ ---
-          scripts/config --file out/.config --enable CONFIG_NET_SCH_FQ
-          scripts/config --file out/.config --enable CONFIG_DEFAULT_FQ
-          if grep -rq "config TCP_CONG_BBR3" net/ipv4/ 2>/dev/null; then
-            scripts/config --file out/.config --enable CONFIG_TCP_CONG_BBR3
-            scripts/config --file out/.config --enable CONFIG_DEFAULT_BBR3
-            scripts/config --file out/.config --set-str CONFIG_DEFAULT_TCP_CONG "bbr3"
-          elif grep -rq "config TCP_CONG_BBR" net/ipv4/ 2>/dev/null; then
-            scripts/config --file out/.config --enable CONFIG_TCP_CONG_BBR
-            scripts/config --file out/.config --enable CONFIG_DEFAULT_BBR
-            scripts/config --file out/.config --set-str CONFIG_DEFAULT_TCP_CONG "bbr"
-          fi
+              # 5. Red Cloud Gaming y 4G estable: BBRv3 / BBR + FQ por defecto
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_NET_SCH_FQ
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_DEFAULT_FQ
+              if grep -rq "config TCP_CONG_BBR3" "$KSRC/net/ipv4" 2>/dev/null; then
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_TCP_CONG_BBR3
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_DEFAULT_BBR3
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_DEFAULT_TCP_CONG "bbr3"
+              elif grep -rq "config TCP_CONG_BBR" "$KSRC/net/ipv4" 2>/dev/null; then
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_TCP_CONG_BBR
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_DEFAULT_BBR
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_DEFAULT_TCP_CONG "bbr"
+              fi
 
-          # --- 6. KProfiles modo inicial (2=Balanced Calle, 3=Performance) ---
-          KP_MODE="${{ inputs.kprofiles_default }}"
-          if grep -rq "config KPROFILES" drivers/ 2>/dev/null; then
-            scripts/config --file out/.config --enable CONFIG_KPROFILES
-            scripts/config --file out/.config --set-val CONFIG_DEFAULT_KP_MODE "$KP_MODE"
-          fi
+              # 6. Perfil inicial de KProfiles (2=Balanced Calle, 3=Performance)
+              if grep -rq "config KPROFILES" "$KSRC/drivers" 2>/dev/null; then
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_KPROFILES
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-val CONFIG_DEFAULT_KP_MODE "$INPUT_KP_MODE"
+              fi
 
-          # --- 7. ThinLTO opcional ---
-          if [ "${{ inputs.enable_thinlto }}" = "true" ]; then
-            scripts/config --file out/.config --enable CONFIG_LTO_CLANG_THIN
-            scripts/config --file out/.config --disable CONFIG_LTO_CLANG_FULL
-            scripts/config --file out/.config --disable CONFIG_LTO_NONE
-          fi
+              # 7. ThinLTO para compilar rapido sin sacrificar ABI ni rendimiento
+              if [ "$INPUT_THINLTO" = "true" ]; then
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_LTO_CLANG_THIN
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_LTO_CLANG_FULL
+                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_LTO_NONE
+              fi
 
-          # --- 8. Garantizar soporte KernelSU y OverlayFS (Hybrid Mount) ---
-          scripts/config --file out/.config --enable CONFIG_OVERLAY_FS
-          scripts/config --file out/.config --enable CONFIG_KPROBES
-          scripts/config --file out/.config --enable CONFIG_KALLSYMS
-          if grep -rq "config KSU" drivers/ 2>/dev/null; then
-            scripts/config --file out/.config --enable CONFIG_KSU
-          fi
+              # Evitar que un warning menor aborte la compilacion
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_WERROR
 
-          # Resolver dependencias de forma segura
-          make $MAKE_ARGS olddefconfig
+              MAKE_ARGS="O=$OUT_DIR ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip"
+              make -C "$KSRC" $MAKE_ARGS olddefconfig
 
-          echo "=== Resumen de simbolos activos en out/.config ==="
-          grep -E "CONFIG_(LRU_GEN|ZRAM_DEF_COMP|MQ_IOSCHED_SSG|TCP_CONG_BBR|DEFAULT_TCP_CONG|KPROFILES|DEFAULT_KP_MODE|KSU|SUSFS|WQ_POWER_EFFICIENT|LTO_CLANG)" out/.config || true
+              echo "=== Resumen de simbolos activos ==="
+              grep -E "CONFIG_(LOCALVERSION|LRU_GEN|ZRAM_DEF_COMP|MQ_IOSCHED_SSG|TCP_CONG_BBR|DEFAULT_TCP_CONG|DEFAULT_FQ|KPROFILES|DEFAULT_KP_MODE|KSU|SUSFS|BBG|WQ_POWER_EFFICIENT|LTO_CLANG)" "$OUT_DIR/.config" || true
 
-      - name: Compilar imagen del kernel (Image)
-        run: |
-          export ARCH=arm64
-          export SUBARCH=arm64
-          MAKE_ARGS="O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip"
-          make -j"$(nproc)" $MAKE_ARGS Image
+              echo "=== Compilando Image (-j${CHATGPT_JOBS}) ==="
+              make -C "$KSRC" $MAKE_ARGS -j"${CHATGPT_JOBS}" Image
 
-      - name: Empaquetar ZIP flasheable con AnyKernel3 (Tapas / Topaz)
+              cp -f "$OUT_DIR/arch/arm64/boot/Image" /work/tapas_Image
+              cp -f "$OUT_DIR/.config" /work/logs/tapas_final.config
+              ls -lh /work/tapas_Image
+            ' 2>&1 | tee logs/tapas-build.log
+
+      - name: Empaquetar ZIP flasheable con AnyKernel3 (Tapas / Topaz GKI Safe)
         id: package
         run: |
-          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git AnyKernel3
-          rm -rf AnyKernel3/.git AnyKernel3/README.md AnyKernel3/modules AnyKernel3/patch AnyKernel3/ramdisk
-
-          if [ -f out/arch/arm64/boot/Image ]; then
-            cp out/arch/arm64/boot/Image AnyKernel3/Image
-          elif [ -f out/arch/arm64/boot/Image.gz ]; then
-            cp out/arch/arm64/boot/Image.gz AnyKernel3/Image.gz
-          else
-            echo "::error::No se genero Image ni Image.gz tras la compilacion."
+          if [ ! -s tapas_Image ]; then
+            echo "::error::No se encontro tapas_Image tras la compilacion."
             exit 1
           fi
+
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git AnyKernel3
+          rm -rf AnyKernel3/.git AnyKernel3/README.md AnyKernel3/modules AnyKernel3/patch AnyKernel3/ramdisk
+          cp tapas_Image AnyKernel3/Image
 
           if [ -f ak3_tapas/anykernel.sh ]; then
             cp ak3_tapas/anykernel.sh AnyKernel3/anykernel.sh
             [ -f ak3_tapas/banner ] && cp ak3_tapas/banner AnyKernel3/banner
-          else
-            printf '%s\n' \
-              "### AnyKernel3 Script - Tapas / Topaz (GKI Safe)" \
-              "properties() { '" \
-              "kernel.string=${{ inputs.kernel_name }} (tapas/topaz GKI 5.15)" \
-              "do.devicecheck=1" \
-              "do.modules=0" \
-              "do.systemless=0" \
-              "do.cleanup=1" \
-              "do.cleanuponabort=0" \
-              "device.name1=topaz" \
-              "device.name2=tapas" \
-              "supported.versions=13-17" \
-              "supported.patchlevels=" \
-              "supported.vendorpatchlevels=" \
-              "'; }" \
-              "block=boot" \
-              "is_slot_device=auto" \
-              "ramdisk_compression=auto" \
-              "patch_vbmeta_flag=auto" \
-              "no_magisk_check=1" \
-              ". tools/ak3-core.sh" \
-              'if [ -L "/dev/block/bootdevice/by-name/init_boot_a" ] || [ -L "/dev/block/by-name/init_boot_a" ]; then' \
-              "  split_boot" \
-              "  flash_boot" \
-              "else" \
-              "  dump_boot" \
-              "  write_boot" \
-              "fi" > AnyKernel3/anykernel.sh
+          elif [ -f installer/anykernel.sh ]; then
+            cp installer/anykernel.sh AnyKernel3/anykernel.sh
           fi
 
           DATE_TAG=$(date +'%Y%m%d-%H%M')
           ZIP_NAME="${{ inputs.kernel_name }}-tapas-${DATE_TAG}.zip"
           (cd AnyKernel3 && zip -r9 "../$ZIP_NAME" * -x '*.git*' 'README.md')
           echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
+          sha256sum "$ZIP_NAME" > "${ZIP_NAME}.sha256"
           ls -lh "$ZIP_NAME"
 
-      - name: Subir Kernel ZIP como Artefacto de GitHub Actions
+      - name: Subir Kernel ZIP flasheable como Artefacto
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.package.outputs.zip_name }}
-          path: ${{ steps.package.outputs.zip_name }}
+          path: |
+            ${{ steps.package.outputs.zip_name }}
+            ${{ steps.package.outputs.zip_name }}.sha256
+          retention-days: 30
+
+      - name: Guardar logs y configuracion final (tambien si falla)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tapas-build-logs-${{ github.run_id }}
+          path: |
+            logs/
+          if-no-files-found: warn
           retention-days: 14
+
+      - name: Detener contenedor y limpiar swap
+        if: always()
+        run: |
+          if docker container inspect "$TAPAS_BUILD_CONTAINER" >/dev/null 2>&1; then
+            docker rm --force "$TAPAS_BUILD_CONTAINER" || true
+          fi
+          if [ -n "${TAPAS_SWAPFILE:-}" ] && [ -f "$TAPAS_SWAPFILE" ]; then
+            sudo swapoff "$TAPAS_SWAPFILE" || true
+            sudo rm -f "$TAPAS_SWAPFILE" || true
+          fi
