@@ -90,7 +90,8 @@ jobs:
             echo "Manteniendo configuracion KernelSU/SUSFS existente en el repositorio."
           elif [ "$KSU_MODE" = "sukisu_ultra" ]; then
             echo "Integrando SukiSU Ultra (rama susfs-main si aplica)..."
-            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main ||             curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main || \
+            curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
           elif [ "$KSU_MODE" = "ksu_next" ]; then
             echo "Integrando KernelSU Next..."
             curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -
@@ -104,7 +105,14 @@ jobs:
           if [ "$REQ_DEF" != "auto" ] && [ -f "arch/arm64/configs/$REQ_DEF" ]; then
             DEFCONFIG="$REQ_DEF"
           else
-            for candidate in               topaz_defconfig               tapas_defconfig               vendor/topaz_defconfig               vendor/tapas_defconfig               vendor/khaje-perf_defconfig               vendor/bengal-perf_defconfig               gki_defconfig; do
+            for candidate in \
+              topaz_defconfig \
+              tapas_defconfig \
+              vendor/topaz_defconfig \
+              vendor/tapas_defconfig \
+              vendor/khaje-perf_defconfig \
+              vendor/bengal-perf_defconfig \
+              gki_defconfig; do
               if [ -f "arch/arm64/configs/$candidate" ]; then
                 DEFCONFIG="$candidate"
                 break
@@ -227,8 +235,34 @@ jobs:
             cp ak3_tapas/anykernel.sh AnyKernel3/anykernel.sh
             [ -f ak3_tapas/banner ] && cp ak3_tapas/banner AnyKernel3/banner
           else
-            printf '%s
-'               "### AnyKernel3 Script - Tapas / Topaz (GKI Safe)"               "properties() { '"               "kernel.string=${{ inputs.kernel_name }} (tapas/topaz GKI 5.15)"               "do.devicecheck=1"               "do.modules=0"               "do.systemless=0"               "do.cleanup=1"               "do.cleanuponabort=0"               "device.name1=topaz"               "device.name2=tapas"               "supported.versions=13-17"               "supported.patchlevels="               "supported.vendorpatchlevels="               "'; }"               "block=boot"               "is_slot_device=auto"               "ramdisk_compression=auto"               "patch_vbmeta_flag=auto"               "no_magisk_check=1"               ". tools/ak3-core.sh"               'if [ -L "/dev/block/bootdevice/by-name/init_boot_a" ] || [ -L "/dev/block/by-name/init_boot_a" ]; then'               "  split_boot"               "  flash_boot"               "else"               "  dump_boot"               "  write_boot"               "fi" > AnyKernel3/anykernel.sh
+            printf '%s\n' \
+              "### AnyKernel3 Script - Tapas / Topaz (GKI Safe)" \
+              "properties() { '" \
+              "kernel.string=${{ inputs.kernel_name }} (tapas/topaz GKI 5.15)" \
+              "do.devicecheck=1" \
+              "do.modules=0" \
+              "do.systemless=0" \
+              "do.cleanup=1" \
+              "do.cleanuponabort=0" \
+              "device.name1=topaz" \
+              "device.name2=tapas" \
+              "supported.versions=13-17" \
+              "supported.patchlevels=" \
+              "supported.vendorpatchlevels=" \
+              "'; }" \
+              "block=boot" \
+              "is_slot_device=auto" \
+              "ramdisk_compression=auto" \
+              "patch_vbmeta_flag=auto" \
+              "no_magisk_check=1" \
+              ". tools/ak3-core.sh" \
+              'if [ -L "/dev/block/bootdevice/by-name/init_boot_a" ] || [ -L "/dev/block/by-name/init_boot_a" ]; then' \
+              "  split_boot" \
+              "  flash_boot" \
+              "else" \
+              "  dump_boot" \
+              "  write_boot" \
+              "fi" > AnyKernel3/anykernel.sh
           fi
 
           DATE_TAG=$(date +'%Y%m%d-%H%M')
