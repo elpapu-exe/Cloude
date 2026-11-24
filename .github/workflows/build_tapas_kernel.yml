@@ -15,7 +15,7 @@ on:
           - '2'
           - '3'
       enable_thinlto:
-        description: 'Usar ThinLTO (compila en ~15-20 min sin necesitar 36 GiB de swap)'
+        description: 'Usar ThinLTO (compila en ~15-20 min; desactivar para Full LTO)'
         type: boolean
         default: true
 
@@ -37,19 +37,36 @@ jobs:
       CHATGPT_CI_MIN_FREE_GIB: '10'
 
     steps:
-      - name: Liberar espacio en disco y preparar swap ligero
+      - name: Liberar espacio en disco y crear swap para superar preflight de 36 GiB
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL || true
-          SWAP_GIB=8
+
+          # El preflight de ci-build-in-container.sh exige >= 36 GiB (RAM + swap).
+          # Con ~14 GiB RAM libre + ~3 GiB swap base, 26 GiB extra dejan ~43 GiB totales.
+          SWAP_GIB=26
           if [ "${{ inputs.enable_thinlto }}" != "true" ]; then
             SWAP_GIB=28
             echo "CHATGPT_JOBS=2" >> "$GITHUB_ENV"
           fi
-          sudo fallocate -l "${SWAP_GIB}G" /mnt/tapas_swapfile || sudo dd if=/dev/zero of=/mnt/tapas_swapfile bs=1M count=$((SWAP_GIB * 1024)) status=none
-          sudo chmod 600 /mnt/tapas_swapfile
-          sudo mkswap /mnt/tapas_swapfile
-          sudo swapon /mnt/tapas_swapfile
-          echo "TAPAS_SWAPFILE=/mnt/tapas_swapfile" >> "$GITHUB_ENV"
+
+          AVAIL_MNT=$(df -BG --output=avail /mnt 2>/dev/null | tail -n 1 | tr -dc '0-9')
+          AVAIL_ROOT=$(df -BG --output=avail / 2>/dev/null | tail -n 1 | tr -dc '0-9')
+          if [ -n "$AVAIL_MNT" ] && [ "$AVAIL_MNT" -ge $((SWAP_GIB + 4)) ]; then
+            SWAPFILE="/mnt/tapas_swapfile"
+          elif [ -n "$AVAIL_ROOT" ] && [ "$AVAIL_ROOT" -ge $((SWAP_GIB + 12)) ]; then
+            SWAPFILE="/tapas_swapfile"
+          else
+            echo "::error::Espacio insuficiente para crear ${SWAP_GIB}G de swap (/mnt=${AVAIL_MNT}G, /=${AVAIL_ROOT}G)"
+            df -h
+            exit 1
+          fi
+
+          echo "Creando swapfile de ${SWAP_GIB}G en $SWAPFILE..."
+          sudo fallocate -l "${SWAP_GIB}G" "$SWAPFILE" || sudo dd if=/dev/zero of="$SWAPFILE" bs=1M count=$((SWAP_GIB * 1024)) status=none
+          sudo chmod 600 "$SWAPFILE"
+          sudo mkswap "$SWAPFILE"
+          sudo swapon "$SWAPFILE"
+          echo "TAPAS_SWAPFILE=$SWAPFILE" >> "$GITHUB_ENV"
           free -h
           df -h
 
@@ -103,24 +120,30 @@ jobs:
             -e INPUT_THINLTO \
             -e CHATGPT_JOBS \
             "$TAPAS_BUILD_CONTAINER" bash -euo pipefail -c '
-              # Localizar arbol del kernel parcheado, toolchain Clang 24 y directorio out
-              KSRC=$(find /work /tmp /root /opt -maxdepth 5 -path "*/arch/arm64/configs/unified_defconfig" 2>/dev/null | head -n 1 | sed "s|/arch/arm64/configs/unified_defconfig||")
-              if [ -z "$KSRC" ] || [ ! -f "$KSRC/Makefile" ]; then
+              # 1. Localizar arbol del kernel parcheado (/work/.cache/linux por defecto)
+              if [ -f /work/.cache/linux/Makefile ]; then
+                KSRC="/work/.cache/linux"
+              else
+                KSRC=$(find /work /tmp /root /opt -maxdepth 8 -path "*/arch/arm64/configs/unified_defconfig" 2>/dev/null | head -n 1 | sed "s|/arch/arm64/configs/unified_defconfig||")
+              fi
+              if [ -z "${KSRC:-}" ] || [ ! -f "$KSRC/Makefile" ]; then
                 echo "::error::No se localizo el arbol fuente del kernel tras setup."
-                find /work -maxdepth 3
+                find /work -maxdepth 4 2>/dev/null || true
                 exit 1
               fi
 
-              CLANG_BIN=$(find /work /tmp /root /opt -maxdepth 5 -type f -name "clang" -executable 2>/dev/null | grep -E "/bin/clang$" | head -n 1 | xargs -r dirname)
-              if [ -z "$CLANG_BIN" ]; then
+              # 2. Localizar toolchain greenforce_clang (profundidad ampliada)
+              CLANG_BIN=$(find /work /tmp /root /opt -maxdepth 8 -type f -name "clang" -executable 2>/dev/null | grep -E "/bin/clang$" | head -n 1 | xargs -r dirname)
+              if [ -z "${CLANG_BIN:-}" ]; then
                 echo "::error::No se localizo greenforce_clang tras setup."
-                find /work -maxdepth 4 -name "clang" 2>/dev/null || true
+                find /work -maxdepth 6 -name "clang" 2>/dev/null || true
                 exit 1
               fi
 
+              # 3. Localizar directorio out/.config
               OUT_DIR="/work/out"
               if [ ! -f "$OUT_DIR/.config" ]; then
-                FOUND_CFG=$(find /work /tmp -maxdepth 4 -name ".config" 2>/dev/null | head -n 1 || true)
+                FOUND_CFG=$(find /work /tmp -maxdepth 6 -name ".config" 2>/dev/null | head -n 1 || true)
                 [ -n "$FOUND_CFG" ] && OUT_DIR=$(dirname "$FOUND_CFG")
               fi
               if [ ! -f "$OUT_DIR/.config" ]; then
@@ -136,11 +159,11 @@ jobs:
               export ARCH=arm64
               export SUBARCH=arm64
 
-              # 1. Identidad del kernel
+              # Identidad del kernel
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_LOCALVERSION "-${INPUT_KNAME}"
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_LOCALVERSION_AUTO
 
-              # 2. Multitarea real: MGLRU activo por defecto + ZRAM lz4kd
+              # Multitarea real: MGLRU activo por defecto + ZRAM lz4kd
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_LRU_GEN
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_LRU_GEN_ENABLED
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_ZRAM
@@ -150,7 +173,7 @@ jobs:
                 "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_ZRAM_DEF_COMP "lz4kd"
               fi
 
-              # 3. Arranque rapido de apps: uclamp + I/O SSG
+              # Arranque rapido de apps: uclamp + I/O SSG
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_UCLAMP_TASK
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_UCLAMP_TASK_GROUP
               if grep -rq "config MQ_IOSCHED_SSG" "$KSRC/block" 2>/dev/null; then
@@ -158,11 +181,11 @@ jobs:
                 "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_MQ_IOSCHED_SSG_CGROUP
               fi
 
-              # 4. Bateria en la calle & Deep Sleep (sin alterar ABI KMI)
+              # Bateria en la calle & Deep Sleep (sin alterar ABI KMI)
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_WQ_POWER_EFFICIENT_DEFAULT
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_NO_HZ_IDLE
 
-              # 5. Red Cloud Gaming y 4G estable: BBRv3 / BBR + FQ por defecto
+              # Red Cloud Gaming y 4G estable: BBRv3 / BBR + FQ por defecto
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_NET_SCH_FQ
               "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_DEFAULT_FQ
               if grep -rq "config TCP_CONG_BBR3" "$KSRC/net/ipv4" 2>/dev/null; then
@@ -175,13 +198,15 @@ jobs:
                 "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_DEFAULT_TCP_CONG "bbr"
               fi
 
-              # 6. Perfil inicial de KProfiles (2=Balanced Calle, 3=Performance)
+              # Perfil inicial de KProfiles (2=Balanced Calle, 3=Performance)
               if grep -rq "config KPROFILES" "$KSRC/drivers" 2>/dev/null; then
                 "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_KPROFILES
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-val CONFIG_DEFAULT_KP_MODE "$INPUT_KP_MODE"
+                if grep -rq "config DEFAULT_KP_MODE" "$KSRC/drivers" 2>/dev/null; then
+                  "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-val CONFIG_DEFAULT_KP_MODE "$INPUT_KP_MODE"
+                fi
               fi
 
-              # 7. ThinLTO para compilar rapido sin sacrificar ABI ni rendimiento
+              # ThinLTO para compilar rapido (~15-20 min) manteniendo rendimiento y compatibilidad
               if [ "$INPUT_THINLTO" = "true" ]; then
                 "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_LTO_CLANG_THIN
                 "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_LTO_CLANG_FULL
