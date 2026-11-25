@@ -37,11 +37,11 @@ jobs:
       CHATGPT_CI_MIN_FREE_GIB: '10'
 
     steps:
-      - name: Liberar espacio en disco y crear swap para Full LTO (28 GiB)
+      - name: Liberar espacio en disco y crear swap para Full LTO (34 GiB)
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL || true
 
-          SWAP_GIB=28
+          SWAP_GIB=34
           AVAIL_MNT=$(df -BG --output=avail /mnt 2>/dev/null | tail -n 1 | tr -dc '0-9')
           AVAIL_ROOT=$(df -BG --output=avail / 2>/dev/null | tail -n 1 | tr -dc '0-9')
           if [ -n "$AVAIL_MNT" ] && [ "$AVAIL_MNT" -ge $((SWAP_GIB + 4)) ]; then
@@ -89,6 +89,7 @@ jobs:
         run: |
           mkdir -p logs
           docker run --rm --detach --init --name "$TAPAS_BUILD_CONTAINER" \
+            --memory=12g --memory-swap=44g --cpus=3 \
             --mount "type=bind,source=$GITHUB_WORKSPACE,target=/work" \
             --workdir /work \
             --env CHATGPT_JOBS \
@@ -307,7 +308,7 @@ jobs:
           grep -E "^CONFIG_(LOCALVERSION|LTO_CLANG|CFI_CLANG|MODVERSIONS|LRU_GEN|ZRAM_DEF_COMP|MQ_IOSCHED_SSG|DEFAULT_TCP_CONG|DEFAULT_NET_SCH|DEFAULT_FQ|KPROFILES|KP_DEFAULT_MODE|KSU=|KSU_SUSFS=|BBG=|WQ_POWER_EFFICIENT)" "$OUT_DIR/.config" || true
 
           echo "=== [4/5] Compilando Image con Full LTO (-j${CHATGPT_JOBS}) ==="
-          make -C "$KSRC" $MAKE_ARGS -j"${CHATGPT_JOBS}" Image
+nice -n 15 ionice -c 3 make -C "$KSRC" $MAKE_ARGS -j"${CHATGPT_JOBS}" Image
 
           echo "=== [5/5] Auditoria ABI/KMI contra downloads/vmlinux.symvers ==="
           if [ ! -f "$OUT_DIR/vmlinux" ]; then
