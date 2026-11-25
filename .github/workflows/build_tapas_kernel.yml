@@ -308,7 +308,11 @@ jobs:
           grep -E "^CONFIG_(LOCALVERSION|LTO_CLANG|CFI_CLANG|MODVERSIONS|LRU_GEN|ZRAM_DEF_COMP|MQ_IOSCHED_SSG|DEFAULT_TCP_CONG|DEFAULT_NET_SCH|DEFAULT_FQ|KPROFILES|KP_DEFAULT_MODE|KSU=|KSU_SUSFS=|BBG=|WQ_POWER_EFFICIENT)" "$OUT_DIR/.config" || true
 
           echo "=== [4/5] Compilando Image con Full LTO (-j${CHATGPT_JOBS}) ==="
-nice -n 15 ionice -c 3 make -C "$KSRC" $MAKE_ARGS -j"${CHATGPT_JOBS}" Image
+          if command -v ionice >/dev/null 2>&1 && ionice -c 3 true 2>/dev/null; then
+            nice -n 15 ionice -c 3 make -C "$KSRC" $MAKE_ARGS -j"${CHATGPT_JOBS}" Image
+          else
+            nice -n 15 make -C "$KSRC" $MAKE_ARGS -j"${CHATGPT_JOBS}" Image
+          fi
 
           echo "=== [5/5] Auditoria ABI/KMI contra downloads/vmlinux.symvers ==="
           if [ ! -f "$OUT_DIR/vmlinux" ]; then
