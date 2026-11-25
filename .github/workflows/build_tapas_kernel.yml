@@ -14,13 +14,13 @@ on:
         options:
           - '2'
           - '3'
-      enable_thinlto:
-        description: 'Usar ThinLTO (compila en ~15-20 min; desactivar para Full LTO)'
+      publish_release:
+        description: 'Publicar el ZIP flasheable directo en GitHub Releases (recomendado)'
         type: boolean
         default: true
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: tapas-custom-kernel-${{ github.ref }}
@@ -29,24 +29,19 @@ concurrency:
 jobs:
   build-kernel:
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 240
     env:
       TAPAS_BUILD_CONTAINER: tapas-kernel-${{ github.run_id }}-${{ github.run_attempt }}
       TAPAS_BUILD_IMAGE: debian:13-slim@sha256:1e1a22175fbf1b32157ddaf0219e1db4e5401fab2b94ed285add64d18587cd2d
-      CHATGPT_JOBS: '4'
+      CHATGPT_JOBS: '2'
       CHATGPT_CI_MIN_FREE_GIB: '10'
 
     steps:
-      - name: Liberar espacio en disco y crear swap para superar preflight de 36 GiB
+      - name: Liberar espacio en disco y crear swap para Full LTO (28 GiB)
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL || true
 
-          SWAP_GIB=26
-          if [ "${{ inputs.enable_thinlto }}" != "true" ]; then
-            SWAP_GIB=28
-            echo "CHATGPT_JOBS=2" >> "$GITHUB_ENV"
-          fi
-
+          SWAP_GIB=28
           AVAIL_MNT=$(df -BG --output=avail /mnt 2>/dev/null | tail -n 1 | tr -dc '0-9')
           AVAIL_ROOT=$(df -BG --output=avail / 2>/dev/null | tail -n 1 | tr -dc '0-9')
           if [ -n "$AVAIL_MNT" ] && [ "$AVAIL_MNT" -ge $((SWAP_GIB + 4)) ]; then
@@ -68,7 +63,7 @@ jobs:
           free -h
           df -h
 
-      - name: Clonar archivos de construccion de elpapu-exe/Cloude
+      - name: Clonar archivos de construccion y referencia ABI de elpapu-exe/Cloude
         uses: actions/checkout@v4
         with:
           persist-credentials: false
@@ -79,6 +74,7 @@ jobs:
             /ak3_tapas/
             /config/
             /docs/
+            /downloads/vmlinux.symvers
             /installer/
             /patches/
             /scripts/
@@ -105,160 +101,239 @@ jobs:
           docker exec "$TAPAS_BUILD_CONTAINER" \
             bash scripts/ci-build-in-container.sh setup 2>&1 | tee logs/tapas-setup.log
 
-      - name: Aplicar perfil Tapas 60Hz (MGLRU + ZRAM lz4kd + SSG + BBRv3 + Calle) y compilar Image
+      - name: Compilar kernel ABI-Safe (Full LTO + CFI + MGLRU + BBRv3/FQ + KP2) y auditar simbolos
         env:
           INPUT_KNAME: ${{ inputs.kernel_name }}
           INPUT_KP_MODE: ${{ inputs.kprofiles_default }}
-          INPUT_THINLTO: ${{ inputs.enable_thinlto }}
         run: |
           set -o pipefail
+
+          cat << 'PYABI' > logs/verify_abi.py
+          import subprocess
+          import sys
+
+          vmlinux_path, ref_path, report_path = sys.argv[1:4]
+
+          nm_out = subprocess.check_output(["llvm-nm", vmlinux_path], text=True)
+          built = {}
+          for line in nm_out.splitlines():
+              parts = line.split()
+              if len(parts) == 3 and parts[1] == "A" and parts[2].startswith("__crc_"):
+                  built[parts[2][6:]] = int(parts[0], 16) & 0xFFFFFFFF
+
+          ref = {}
+          with open(ref_path, "r", encoding="utf-8") as f:
+              for line in f:
+                  parts = line.strip().split()
+                  if len(parts) >= 2:
+                      ref[parts[1]] = int(parts[0], 16) & 0xFFFFFFFF
+
+          ignore_prefixes = ("ksu_", "susfs_", "bbg_")
+          missing = []
+          mismatched = []
+          for sym, ref_crc in sorted(ref.items()):
+              if sym.startswith(ignore_prefixes):
+                  continue
+              if sym not in built:
+                  missing.append(sym)
+              elif built[sym] != ref_crc:
+                  mismatched.append((sym, ref_crc, built[sym]))
+
+          lines = [
+              f"Reference KMI symbols: {len(ref)}",
+              f"Built __crc_ symbols:  {len(built)}",
+              f"Missing KMI symbols:   {len(missing)}",
+              f"CRC mismatches:        {len(mismatched)}",
+          ]
+          if missing:
+              lines.append("\n--- Missing (first 50) ---")
+              lines.extend(f"  {s}" for s in missing[:50])
+          if mismatched:
+              lines.append("\n--- CRC Mismatches (first 50) ---")
+              lines.extend(f"  {s}: ref=0x{r:08x} built=0x{b:08x}" for s, r, b in mismatched[:50])
+
+          report = "\n".join(lines) + "\n"
+          with open(report_path, "w", encoding="utf-8") as rep:
+              rep.write(report)
+          print(report)
+
+          if len(built) < 1000:
+              print("::error::Muy pocos simbolos __crc_ extraidos de vmlinux; abortando por seguridad.")
+              sys.exit(1)
+
+          if missing or mismatched:
+              print(f"::error::AUDITORIA ABI FALLIDA ({len(missing)} faltantes, {len(mismatched)} CRC distintos). No se empaqueta el ZIP para evitar bootloop.")
+              sys.exit(1)
+
+          print("AUDITORIA ABI APROBADA: 0 simbolos KMI faltantes y 0 CRC modificados.")
+          PYABI
+
+          cat << 'BUILDSH' > logs/run_tapas_build.sh
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          echo "=== [1/5] Localizando fuentes, Clang 24 y herramientas host ==="
+
+          KSRC=""
+          if [ -f /work/.cache/linux/Makefile ]; then
+            KSRC="/work/.cache/linux"
+          else
+            while IFS= read -r f; do
+              KSRC="${f%/arch/arm64/configs/unified_defconfig}"
+              break
+            done < <(find /work /tmp /root /opt -maxdepth 8 -path "*/arch/arm64/configs/unified_defconfig" 2>/dev/null)
+          fi
+          if [ -z "$KSRC" ] || [ ! -f "$KSRC/Makefile" ]; then
+            echo "::error::No se localizo el arbol fuente del kernel tras setup."
+            exit 1
+          fi
+
+          CLANG_BIN=""
+          while IFS= read -r c; do
+            case "$c" in
+              */bin/clang|*/bin/clang-[0-9]*)
+                CLANG_BIN="$(dirname "$c")"
+                break
+                ;;
+            esac
+          done < <(find /work /tmp /root /opt -maxdepth 8 \( -type f -o -type l \) \( -name "clang" -o -name "clang-[0-9]*" \) 2>/dev/null)
+
+          if [ -z "$CLANG_BIN" ] || [ ! -x "$CLANG_BIN/clang" ]; then
+            echo "::error::No se localizo greenforce_clang tras setup."
+            exit 1
+          fi
+
+          OUT_DIR="/work/out"
+          if [ ! -f "$OUT_DIR/.config" ]; then
+            echo "::error::No se encontro .config en $OUT_DIR tras setup."
+            exit 1
+          fi
+
+          if ! command -v bison >/dev/null 2>&1 || ! command -v flex >/dev/null 2>&1 || ! command -v bc >/dev/null 2>&1 || ! command -v pahole >/dev/null 2>&1; then
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+              bc bison flex m4 pahole lz4 cpio libelf-dev libdw-dev libbpf-dev
+          fi
+
+          export PATH="$CLANG_BIN:$PATH"
+          export ARCH=arm64
+          export SUBARCH=arm64
+
+          echo "KSRC      = $KSRC"
+          echo "CLANG_BIN = $CLANG_BIN"
+          echo "OUT_DIR   = $OUT_DIR"
+          "$CLANG_BIN/clang" --version | head -n 2
+
+          echo "=== [2/5] Aplicando perfil Tapas ABI-Safe (Full LTO + CFI obligatorios) ==="
+
+          # Identidad del kernel
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_LOCALVERSION "-${INPUT_KNAME}"
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_LOCALVERSION_AUTO
+
+          # CRITICO: Mantener Full LTO + CFI estricto + MODVERSIONS identicos a Zepharo R10
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_LTO_CLANG_FULL
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_LTO_CLANG_THIN
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_LTO_NONE
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_CFI_CLANG
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_MODVERSIONS
+
+          # Multitarea: MGLRU activo + ZRAM lz4kd por defecto
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_LRU_GEN
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_LRU_GEN_ENABLED
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_ZRAM
+          if grep -rq "config CRYPTO_LZ4KD" "$KSRC/crypto" "$KSRC/drivers" 2>/dev/null; then
+            "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_CRYPTO_LZ4KD
+            "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_ZRAM_DEF_COMP_LZ4KD
+            "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_ZRAM_DEF_COMP "lz4kd"
+          fi
+
+          # Fluidez y I/O: uclamp + SSG
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_UCLAMP_TASK
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_UCLAMP_TASK_GROUP
+          if grep -rq "config MQ_IOSCHED_SSG" "$KSRC/block" 2>/dev/null; then
+            "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_MQ_IOSCHED_SSG
+            "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_MQ_IOSCHED_SSG_CGROUP
+          fi
+
+          # Bateria en la calle y Deep Sleep (sin alterar structs ABI)
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_WQ_POWER_EFFICIENT_DEFAULT
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_NO_HZ_IDLE
+
+          # Red baja latencia: BBRv3 + FQ realmente activos por defecto
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_NET_SCH_FQ
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_NET_SCH_DEFAULT
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_DEFAULT_FQ
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_DEFAULT_FQ_CODEL
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_DEFAULT_PFIFO_FAST
+          if grep -rq "config TCP_CONG_BBR3" "$KSRC/net/ipv4" 2>/dev/null; then
+            "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_TCP_CONG_BBR3
+            "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_DEFAULT_BBR3
+            "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_DEFAULT_CUBIC
+            "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_DEFAULT_TCP_CONG "bbr3"
+          fi
+
+          # KProfiles: simbolo real verificado es CONFIG_KP_DEFAULT_MODE
+          if grep -rq "config KPROFILES" "$KSRC/drivers" 2>/dev/null; then
+            "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_KPROFILES
+            if grep -rq "config KP_DEFAULT_MODE" "$KSRC/drivers" 2>/dev/null; then
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-val CONFIG_KP_DEFAULT_MODE "$INPUT_KP_MODE"
+            elif grep -rq "config DEFAULT_KP_MODE" "$KSRC/drivers" 2>/dev/null; then
+              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-val CONFIG_DEFAULT_KP_MODE "$INPUT_KP_MODE"
+            fi
+          fi
+
+          "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_WERROR
+
+          MAKE_ARGS="O=$OUT_DIR ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip HOSTCC=gcc HOSTCXX=g++"
+
+          echo "=== [3/5] Resolviendo dependencias y verificando configuracion critica ==="
+          make -C "$KSRC" $MAKE_ARGS olddefconfig
+
+          # Compuerta previa: abortar antes de gastar 1h si Full LTO/CFI/KSU no quedaron activos
+          for req in \
+            "CONFIG_LTO_CLANG_FULL=y" \
+            "CONFIG_CFI_CLANG=y" \
+            "CONFIG_MODVERSIONS=y" \
+            "CONFIG_LRU_GEN_ENABLED=y" \
+            "CONFIG_KSU=y" \
+            "CONFIG_KSU_SUSFS=y" \
+            "CONFIG_BBG=y"; do
+            if ! grep -qx "$req" "$OUT_DIR/.config"; then
+              echo "::error::Falta configuracion critica requerida: $req"
+              exit 1
+            fi
+          done
+
+          echo "=== Resumen de simbolos activos ==="
+          grep -E "^CONFIG_(LOCALVERSION|LTO_CLANG|CFI_CLANG|MODVERSIONS|LRU_GEN|ZRAM_DEF_COMP|MQ_IOSCHED_SSG|DEFAULT_TCP_CONG|DEFAULT_NET_SCH|DEFAULT_FQ|KPROFILES|KP_DEFAULT_MODE|KSU=|KSU_SUSFS=|BBG=|WQ_POWER_EFFICIENT)" "$OUT_DIR/.config" || true
+
+          echo "=== [4/5] Compilando Image con Full LTO (-j${CHATGPT_JOBS}) ==="
+          make -C "$KSRC" $MAKE_ARGS -j"${CHATGPT_JOBS}" Image
+
+          echo "=== [5/5] Auditoria ABI/KMI contra downloads/vmlinux.symvers ==="
+          if [ ! -f "$OUT_DIR/vmlinux" ]; then
+            echo "::error::No se encontro $OUT_DIR/vmlinux para verificar ABI."
+            exit 1
+          fi
+          if [ ! -f /work/downloads/vmlinux.symvers ]; then
+            echo "::error::No se encontro /work/downloads/vmlinux.symvers para auditoria ABI."
+            exit 1
+          fi
+
+          python3 /work/logs/verify_abi.py "$OUT_DIR/vmlinux" /work/downloads/vmlinux.symvers /work/logs/abi-check.txt
+
+          cp -f "$OUT_DIR/arch/arm64/boot/Image" /work/tapas_Image
+          cp -f "$OUT_DIR/.config" /work/logs/tapas_final.config
+          ls -lh /work/tapas_Image
+          BUILDSH
+
+          chmod +x logs/run_tapas_build.sh
           docker exec \
             -e INPUT_KNAME \
             -e INPUT_KP_MODE \
-            -e INPUT_THINLTO \
             -e CHATGPT_JOBS \
-            "$TAPAS_BUILD_CONTAINER" bash -eu -c '
-              echo "=== [1/4] Localizando fuentes, Clang 24 y herramientas host ==="
+            "$TAPAS_BUILD_CONTAINER" bash /work/logs/run_tapas_build.sh 2>&1 | tee logs/tapas-build.log
 
-              # 1. Arbol de Linux parcheado
-              KSRC=""
-              if [ -f /work/.cache/linux/Makefile ]; then
-                KSRC="/work/.cache/linux"
-              else
-                while IFS= read -r f; do
-                  KSRC="${f%/arch/arm64/configs/unified_defconfig}"
-                  break
-                done < <(find /work /tmp /root /opt -maxdepth 8 -path "*/arch/arm64/configs/unified_defconfig" 2>/dev/null)
-              fi
-              if [ -z "$KSRC" ] || [ ! -f "$KSRC/Makefile" ]; then
-                echo "::error::No se localizo el arbol fuente del kernel tras setup."
-                ls -la /work /work/.cache 2>/dev/null || true
-                exit 1
-              fi
-
-              # 2. Toolchain greenforce_clang (acepta symlinks: bin/clang -> clang-24)
-              CLANG_BIN=""
-              while IFS= read -r c; do
-                case "$c" in
-                  */bin/clang|*/bin/clang-[0-9]*)
-                    CLANG_BIN="$(dirname "$c")"
-                    break
-                    ;;
-                esac
-              done < <(find /work /tmp /root /opt -maxdepth 8 \( -type f -o -type l \) \( -name "clang" -o -name "clang-[0-9]*" \) 2>/dev/null)
-
-              if [ -z "$CLANG_BIN" ] || [ ! -x "$CLANG_BIN/clang" ]; then
-                echo "::error::No se localizo greenforce_clang tras setup."
-                find /work/.cache -maxdepth 4 2>/dev/null || true
-                exit 1
-              fi
-
-              # 3. Directorio out/.config
-              OUT_DIR="/work/out"
-              if [ ! -f "$OUT_DIR/.config" ]; then
-                while IFS= read -r cfg; do
-                  OUT_DIR="$(dirname "$cfg")"
-                  break
-                done < <(find /work /tmp -maxdepth 6 -name ".config" 2>/dev/null)
-              fi
-              if [ ! -f "$OUT_DIR/.config" ]; then
-                echo "::error::No se encontro .config en $OUT_DIR tras setup."
-                exit 1
-              fi
-
-              # 4. Asegurar herramientas host (bc, bison, flex, m4, pahole, lz4, cpio) en el contenedor
-              if ! command -v bison >/dev/null 2>&1 || ! command -v flex >/dev/null 2>&1 || ! command -v bc >/dev/null 2>&1 || ! command -v pahole >/dev/null 2>&1; then
-                echo "Instalando herramientas host (bc, bison, flex, m4, pahole, lz4, cpio) en el contenedor..."
-                DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
-                  bc bison flex m4 pahole lz4 cpio libelf-dev libdw-dev libbpf-dev
-              fi
-
-              export PATH="$CLANG_BIN:$PATH"
-              export ARCH=arm64
-              export SUBARCH=arm64
-
-              echo "KSRC      = $KSRC"
-              echo "CLANG_BIN = $CLANG_BIN"
-              echo "OUT_DIR   = $OUT_DIR"
-              "$CLANG_BIN/clang" --version | head -n 2
-              pahole --version || true
-
-              echo "=== [2/4] Aplicando perfil Tapas 60Hz (MGLRU + ZRAM lz4kd + SSG + BBRv3 + Calle) ==="
-
-              # Identidad del kernel
-              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_LOCALVERSION "-${INPUT_KNAME}"
-              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_LOCALVERSION_AUTO
-
-              # Multitarea real: MGLRU activo por defecto + ZRAM lz4kd
-              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_LRU_GEN
-              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_LRU_GEN_ENABLED
-              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_ZRAM
-              if grep -rq "config CRYPTO_LZ4KD" "$KSRC/crypto" "$KSRC/drivers" 2>/dev/null; then
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_CRYPTO_LZ4KD
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_ZRAM_DEF_COMP_LZ4KD
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_ZRAM_DEF_COMP "lz4kd"
-              fi
-
-              # Arranque rapido de apps: uclamp + I/O SSG
-              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_UCLAMP_TASK
-              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_UCLAMP_TASK_GROUP
-              if grep -rq "config MQ_IOSCHED_SSG" "$KSRC/block" 2>/dev/null; then
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_MQ_IOSCHED_SSG
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_MQ_IOSCHED_SSG_CGROUP
-              fi
-
-              # Bateria en la calle & Deep Sleep (sin alterar ABI KMI)
-              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_WQ_POWER_EFFICIENT_DEFAULT
-              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_NO_HZ_IDLE
-
-              # Red Cloud Gaming y 4G estable: BBRv3 / BBR + FQ por defecto
-              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_NET_SCH_FQ
-              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_DEFAULT_FQ
-              if grep -rq "config TCP_CONG_BBR3" "$KSRC/net/ipv4" 2>/dev/null; then
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_TCP_CONG_BBR3
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_DEFAULT_BBR3
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_DEFAULT_TCP_CONG "bbr3"
-              elif grep -rq "config TCP_CONG_BBR" "$KSRC/net/ipv4" 2>/dev/null; then
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_TCP_CONG_BBR
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_DEFAULT_BBR
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-str CONFIG_DEFAULT_TCP_CONG "bbr"
-              fi
-
-              # Perfil inicial de KProfiles (2=Balanced Calle, 3=Performance)
-              if grep -rq "config KPROFILES" "$KSRC/drivers" 2>/dev/null; then
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_KPROFILES
-                if grep -rq "config DEFAULT_KP_MODE" "$KSRC/drivers" 2>/dev/null; then
-                  "$KSRC/scripts/config" --file "$OUT_DIR/.config" --set-val CONFIG_DEFAULT_KP_MODE "$INPUT_KP_MODE"
-                fi
-              fi
-
-              # ThinLTO para compilar rapido (~15-20 min) manteniendo rendimiento y compatibilidad
-              if [ "$INPUT_THINLTO" = "true" ]; then
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --enable CONFIG_LTO_CLANG_THIN
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_LTO_CLANG_FULL
-                "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_LTO_NONE
-              fi
-
-              # Evitar que un warning menor aborte la compilacion
-              "$KSRC/scripts/config" --file "$OUT_DIR/.config" --disable CONFIG_WERROR
-
-              MAKE_ARGS="O=$OUT_DIR ARCH=arm64 LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip HOSTCC=gcc HOSTCXX=g++"
-
-              echo "=== [3/4] Resolviendo dependencias con olddefconfig ==="
-              make -C "$KSRC" $MAKE_ARGS olddefconfig
-
-              echo "=== Resumen de simbolos activos ==="
-              grep -E "CONFIG_(LOCALVERSION|LRU_GEN|ZRAM_DEF_COMP|MQ_IOSCHED_SSG|TCP_CONG_BBR|DEFAULT_TCP_CONG|DEFAULT_FQ|KPROFILES|DEFAULT_KP_MODE|KSU|SUSFS|BBG|WQ_POWER_EFFICIENT|LTO_CLANG)" "$OUT_DIR/.config" || true
-
-              echo "=== [4/4] Compilando Image (-j${CHATGPT_JOBS}) ==="
-              make -C "$KSRC" $MAKE_ARGS -j"${CHATGPT_JOBS}" Image
-
-              cp -f "$OUT_DIR/arch/arm64/boot/Image" /work/tapas_Image
-              cp -f "$OUT_DIR/.config" /work/logs/tapas_final.config
-              ls -lh /work/tapas_Image
-            ' 2>&1 | tee logs/tapas-build.log
-
-      - name: Empaquetar ZIP flasheable con AnyKernel3 (Tapas / Topaz GKI Safe)
+      - name: Empaquetar ZIP flasheable verificado (AnyKernel3 con variables en mayusculas)
         id: package
         run: |
           if [ ! -s tapas_Image ]; then
@@ -270,21 +345,81 @@ jobs:
           rm -rf AnyKernel3/.git AnyKernel3/README.md AnyKernel3/modules AnyKernel3/patch AnyKernel3/ramdisk
           cp tapas_Image AnyKernel3/Image
 
-          if [ -f ak3_tapas/anykernel.sh ]; then
-            cp ak3_tapas/anykernel.sh AnyKernel3/anykernel.sh
-            [ -f ak3_tapas/banner ] && cp ak3_tapas/banner AnyKernel3/banner
-          elif [ -f installer/anykernel.sh ]; then
-            cp installer/anykernel.sh AnyKernel3/anykernel.sh
+          cat << 'EOF' > AnyKernel3/anykernel.sh
+          ### AnyKernel3 Script - Tapas / Topaz (GKI Safe - Full LTO ABI Verified)
+          ## osm0sis @ xda-developers
+
+          properties() { '
+          kernel.string=CloudeOpt Kernel (Tapas/Topaz GKI 5.15 - Full LTO + MGLRU + BBRv3/FQ)
+          do.devicecheck=1
+          do.modules=0
+          do.systemless=0
+          do.cleanup=1
+          do.cleanuponabort=0
+          device.name1=topaz
+          device.name2=tapas
+          supported.versions=13-17
+          supported.patchlevels=
+          supported.vendorpatchlevels=
+          '; }
+
+          BLOCK=boot;
+          IS_SLOT_DEVICE=auto;
+          RAMDISK_COMPRESSION=auto;
+          PATCH_VBMETA_FLAG=auto;
+          NO_MAGISK_CHECK=1;
+
+          . tools/ak3-core.sh;
+
+          split_boot;
+          flash_boot;
+          EOF
+          chmod 755 AnyKernel3/anykernel.sh
+          sh -n AnyKernel3/anykernel.sh
+
+          if [ -f ak3_tapas/banner ]; then
+            cp ak3_tapas/banner AnyKernel3/banner
           fi
 
           DATE_TAG=$(date +'%Y%m%d-%H%M')
-          ZIP_NAME="${{ inputs.kernel_name }}-tapas-${DATE_TAG}.zip"
+          ZIP_NAME="${{ inputs.kernel_name }}-FullLTO-tapas-${DATE_TAG}.zip"
           (cd AnyKernel3 && zip -r9 "../$ZIP_NAME" * -x '*.git*' 'README.md')
+
+          # Validar estructura interna del ZIP antes de publicarlo
+          unzip -t "$ZIP_NAME" >/dev/null
+          unzip -l "$ZIP_NAME" | grep -q "META-INF/com/google/android/update-binary"
+          unzip -l "$ZIP_NAME" | grep -q "anykernel.sh"
+          unzip -l "$ZIP_NAME" | grep -q "Image"
+
           echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
+          echo "release_tag=cloudeopt-${DATE_TAG}" >> "$GITHUB_OUTPUT"
           sha256sum "$ZIP_NAME" > "${ZIP_NAME}.sha256"
           ls -lh "$ZIP_NAME"
 
-      - name: Subir Kernel ZIP flasheable como Artefacto
+      - name: Publicar ZIP flasheable directo en GitHub Releases (sin doble ZIP)
+        if: inputs.publish_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.package.outputs.release_tag }}"
+          ZIP="${{ steps.package.outputs.zip_name }}"
+          cat << EOF > logs/release-notes.md
+          Kernel GKI 5.15 para **Redmi Note 12 4G (tapas/topaz)** compilado con **Full LTO + CFI estricto** y **auditoria ABI/KMI aprobada (0 errores)**.
+
+          - **Base:** Zepharo R10 (d246c8c) + parches de \`elpapu-exe/Cloude\`
+          - **Root y seguridad:** ReSukiSU + SUSFS v2.3.0 + Baseband-guard
+          - **Optimizaciones activas:** MGLRU, ZRAM \`lz4kd\`, SSG, BBRv3 + FQ por defecto, WQ Power Efficient, KProfiles modo \`${{ inputs.kprofiles_default }}\`
+
+          Descarga directamente el archivo \`$ZIP\` de abajo y flashealo en **OrangeFox Recovery** sin descomprimir.
+          EOF
+
+          gh release create "$TAG" "$ZIP" "${ZIP}.sha256" \
+            --repo "${{ github.repository }}" \
+            --title "$ZIP" \
+            --notes-file logs/release-notes.md \
+            --prerelease
+
+      - name: Subir respaldo como Artefacto
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.package.outputs.zip_name }}
@@ -293,7 +428,7 @@ jobs:
             ${{ steps.package.outputs.zip_name }}.sha256
           retention-days: 30
 
-      - name: Guardar logs y configuracion final (tambien si falla)
+      - name: Guardar logs y reporte ABI (tambien si falla)
         if: always()
         uses: actions/upload-artifact@v4
         with:
